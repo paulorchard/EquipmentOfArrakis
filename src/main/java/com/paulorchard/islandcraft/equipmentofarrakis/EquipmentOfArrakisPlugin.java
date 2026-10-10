@@ -1,6 +1,7 @@
 package com.paulorchard.islandcraft.equipmentofarrakis;
 
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
+import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -30,6 +31,8 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
         getCodecRegistry(Interaction.CODEC).register(CutterBeamInteraction.TYPE, CutterBeamInteraction.class,
                 CutterBeamInteraction.CODEC);
         getCommandRegistry().registerCommand(PowerCommands.build());
+        getEntityStoreRegistry().registerSystem(new BeamExpirySystem());
+        getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, event -> BeamDisplay.forget(event.getPlayerRef().getUuid()));
     }
 
     /** Assets are loaded by now: say which of this mod's assets this game has. */

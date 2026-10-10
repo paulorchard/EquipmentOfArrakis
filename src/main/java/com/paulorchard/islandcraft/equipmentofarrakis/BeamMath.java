@@ -27,4 +27,24 @@ final class BeamMath {
         }
         return near <= far ? near : 0;
     }
+
+    /** Number of beam lengths: 1.0, 1.5, ... 5.0 blocks. */
+    static final int STEPS = 9;
+    static final double FIRST_LENGTH = 1.0;
+    static final double STEP_LENGTH = 0.5;
+
+    /**
+     * The beam length step (1 to {@link #STEPS}) for a surface {@code distance} blocks away: the shortest beam that
+     * reaches it, so the beam may poke up to half a block into the surface but never stops short of it. Anything
+     * closer than the first length gets step 1, anything farther than the last gets the last.
+     */
+    static int stepForDistance(double distance) {
+        int step = (int) Math.ceil((distance - FIRST_LENGTH) / STEP_LENGTH - 1e-9) + 1;
+        return Math.max(1, Math.min(STEPS, step));
+    }
+
+    /** Length in blocks of a step: 1 + 0.5 * (step - 1). */
+    static double lengthOfStep(int step) {
+        return FIRST_LENGTH + STEP_LENGTH * (step - 1);
+    }
 }

@@ -5,7 +5,6 @@ import com.hypixel.hytale.protocol.ItemAnimation;
 import com.hypixel.hytale.protocol.PrioritySlot;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.asset.type.itemanimation.config.ItemPlayerAnimations;
-import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.RootInteraction;
 
@@ -93,10 +92,8 @@ final class AssetSelfCheck {
                 lines.add("PROBLEM no animation set " + ray.getPlayerAnimationsId());
             }
         }
-        for (String particle : new String[] {"Arrakis_Cutter_Beam", "Laser_Impact"}) {
-            lines.add("particle system " + particle + ": "
-                    + (ParticleSystem.getAssetMap().getAsset(particle) == null ? "PROBLEM MISSING" : "ok"));
-        }
+        lines.add("beam stat " + BeamDisplay.STAT_ID + ": "
+                + (BeamDisplay.statIndex() == Integer.MIN_VALUE ? "PROBLEM MISSING" : "ok"));
         return lines;
     }
 }

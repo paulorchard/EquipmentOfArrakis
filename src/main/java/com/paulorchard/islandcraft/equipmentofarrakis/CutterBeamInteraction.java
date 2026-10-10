@@ -15,7 +15,6 @@ import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.BlockHarvestUtils;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInstantInteraction;
-import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -26,8 +25,9 @@ import org.joml.Vector3i;
 /**
  * Interaction type {@code Arrakis_Cutter_Beam}: one tick of the Cutter Ray. The engine runs it again every
  * {@code RunTime} seconds for as long as Primary is held, so a tick does everything: pays for the tick out of
- * {@link ArrakisPower}, finds the first block on the look ray within {@code Range}, damages it, and draws the beam.
- * When there is no power left the tick fails, which draws nothing and does nothing.
+ * {@link ArrakisPower}, finds the first block on the look ray within {@code Range}, damages it, and tells the weapon
+ * model how long the beam is (see {@link BeamDisplay}). When there is no power left the tick fails, switches the
+ * beam off and does nothing else.
  *
  * <p>Block damage goes through {@link BlockHarvestUtils#performBlockDamage}, the same call a pickaxe swing makes,
  * with an unbreakable stack of {@code ToolItemId} standing in for the held item: the block's hardness, the tool's
@@ -46,8 +46,6 @@ public class CutterBeamInteraction extends SimpleInstantInteraction {
 
     /** The tool id the block asset's gathering data is looked up with: what the vanilla pickaxe breaks with. */
     private static final String TOOL_ID = "Pickaxe";
-    /** Distance between the glowing dots that make up the beam, in blocks. */
-    private static final double DOT_SPACING = 0.12;
 
     public static final BuilderCodec<CutterBeamInteraction> CODEC = BuilderCodec
             .builder(CutterBeamInteraction.class, CutterBeamInteraction::new, SimpleInstantInteraction.CODEC)
@@ -61,16 +59,12 @@ public class CutterBeamInteraction extends SimpleInstantInteraction {
             .append(new KeyedCodec<>("DamageScale", Codec.FLOAT, false), (i, v) -> i.damageScale = v,
                     i -> i.damageScale)
             .add()
-            .append(new KeyedCodec<>("BeamParticleId", Codec.STRING, false), (i, v) -> i.beamParticleId = v,
-                    i -> i.beamParticleId)
-            .add()
             .build();
 
     private String toolItemId = "Tool_Pickaxe_Mithril";
     private float range = 5f;
     private float powerPerSecond = 1f;
     private float damageScale = 0.24f;
-    private String beamParticleId = "Arrakis_Cutter_Beam";
 
     /** Built on first use: the stack needs the item assets, which are not loaded when the codec is. */
     private transient ItemStack toolStack;
@@ -84,6 +78,7 @@ public class CutterBeamInteraction extends SimpleInstantInteraction {
             return;
         }
         if (!ArrakisPower.spend(buffer, ref, powerPerSecond * getRunTime())) {
+            BeamDisplay.hide(buffer, ref);
             context.getState().state = InteractionState.Failed;
             return;
         }
@@ -93,13 +88,14 @@ public class CutterBeamInteraction extends SimpleInstantInteraction {
         Vector3d eye = look.getPosition();
         Vector3d dir = look.getDirection().normalize();
 
+        // With nothing in range the beam is full length; otherwise it reaches the surface it hits.
         double length = range;
         Vector3i target = TargetUtil.getTargetBlock(ref, range, buffer);
         if (target != null) {
             length = Math.min(range, BeamMath.entryDistance(eye, dir, target));
             damage(world, buffer, ref, target);
         }
-        drawBeam(buffer, eye, dir, length);
+        BeamDisplay.show(buffer, ref, BeamMath.stepForDistance(length));
     }
 
     private void damage(World world, CommandBuffer<EntityStore> buffer, Ref<EntityStore> ref, Vector3i target) {
@@ -133,25 +129,5 @@ public class CutterBeamInteraction extends SimpleInstantInteraction {
             }
         }
         return toolStack;
-    }
-
-    /** Dots from just in front of the muzzle to the end of the beam, as a solid red line. */
-    private void drawBeam(CommandBuffer<EntityStore> buffer, Vector3d eye, Vector3d dir, double length) {
-        // Right-hand vector (forward x up), so the beam leaves from the gun held at the right hip, not from the eye.
-        Vector3d right = new Vector3d(-dir.z, 0, dir.x);
-        if (right.lengthSquared() > 1e-6) {
-            right.normalize();
-        }
-        Vector3d muzzle = new Vector3d(eye).fma(0.7, dir).fma(0.22, right).add(0, -0.22, 0);
-        Vector3d end = new Vector3d(eye).fma(length, dir);
-        Vector3d along = new Vector3d(end).sub(muzzle);
-        double beam = along.length();
-        if (beam < 0.1) {
-            return;
-        }
-        along.div(beam);
-        for (double d = 0; d <= beam; d += DOT_SPACING) {
-            ParticleUtil.spawnParticleEffect(beamParticleId, new Vector3d(muzzle).fma(d, along), buffer);
-        }
     }
 }

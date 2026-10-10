@@ -5,6 +5,7 @@ import org.joml.Vector3i;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BeamMathTest {
 
@@ -24,6 +25,31 @@ class BeamMathTest {
         double d = BeamMath.entryDistance(new Vector3d(0, 4, 0.5), dir, new Vector3i(3, 0, 0));
         // At x=3 the ray is at y=1, which is the top face (y=1) of the block at y 0: enters at the corner, t = 3*sqrt(2).
         assertEquals(3 * Math.sqrt(2), d, 1e-9);
+    }
+
+    @Test
+    void stepsRoundUpToTheNextHalfBlockAndStayInRange() {
+        assertEquals(1, BeamMath.stepForDistance(0.0));
+        assertEquals(1, BeamMath.stepForDistance(0.7));
+        assertEquals(1, BeamMath.stepForDistance(1.0));
+        assertEquals(2, BeamMath.stepForDistance(1.01));
+        assertEquals(2, BeamMath.stepForDistance(1.5));
+        assertEquals(3, BeamMath.stepForDistance(1.51));
+        assertEquals(5, BeamMath.stepForDistance(3.0));
+        assertEquals(9, BeamMath.stepForDistance(4.51));
+        assertEquals(9, BeamMath.stepForDistance(5.0));
+        assertEquals(9, BeamMath.stepForDistance(7.0));
+    }
+
+    @Test
+    void aStepAlwaysReachesTheSurfaceAndNeverOvershootsByMoreThanAStep() {
+        for (double d = 0.0; d <= 5.0; d += 0.013) {
+            double length = BeamMath.lengthOfStep(BeamMath.stepForDistance(d));
+            assertTrue(length >= d - 1e-9, "reaches " + d);
+            assertTrue(length - Math.max(d, 1.0) <= BeamMath.STEP_LENGTH + 1e-9, "overshoots " + d);
+        }
+        assertEquals(1.0, BeamMath.lengthOfStep(1), 1e-12);
+        assertEquals(5.0, BeamMath.lengthOfStep(BeamMath.STEPS), 1e-12);
     }
 
     @Test
