@@ -102,6 +102,44 @@ final class AssetSelfCheck {
             lines.add("particle system " + id + ": "
                     + (ParticleSystem.getAssetMap().getAsset(id) == null ? "PROBLEM MISSING" : "ok"));
         }
+        lines.addAll(mk2());
+        return lines;
+    }
+
+    /** The Cutter Ray Mk2: the item, its animations, the gate, the projectile and the particle systems it refers to. */
+    private static List<String> mk2() {
+        List<String> lines = new ArrayList<>();
+        Item mk2 = Item.getAssetMap().getAsset("Arrakis_Cutter_Ray_Mk2");
+        if (mk2 == null) {
+            lines.add("PROBLEM no item Arrakis_Cutter_Ray_Mk2");
+            return lines;
+        }
+        lines.add(String.format("Arrakis_Cutter_Ray_Mk2: model=%s animations=%s primary=%s secondary=%s priority primary/secondary %d/%d",
+                mk2.getModel(), mk2.getPlayerAnimationsId(), mk2.getInteractions().get(InteractionType.Primary),
+                mk2.getInteractions().get(InteractionType.Secondary),
+                mk2.getInteractionConfig().getPriorityFor(InteractionType.Primary, PrioritySlot.MainHand),
+                mk2.getInteractionConfig().getPriorityFor(InteractionType.Secondary, PrioritySlot.MainHand)));
+        ItemPlayerAnimations set = ItemPlayerAnimations.getAssetMap().getAsset(mk2.getPlayerAnimationsId());
+        ItemAnimation shoot = set == null ? null : set.getAnimations().get("Shoot");
+        lines.add("  Mk2 animation set: " + (shoot == null ? "PROBLEM no Shoot animation" : "Shoot speed " + shoot.speed + " "
+                + shoot.thirdPerson + " / " + shoot.firstPerson));
+        Interaction gate = Interaction.getAssetMap().getAsset("Arrakis_Cutter_Mk2_Gate");
+        lines.add("  gate: " + (gate instanceof CutterMk2GateInteraction ? "ok" : "PROBLEM missing or of the wrong type"));
+        Interaction shot = Interaction.getAssetMap().getAsset("Arrakis_Cutter_Mk2_Shoot");
+        lines.add("  shot interaction: " + (shot == null ? "PROBLEM MISSING" : shot.getClass().getSimpleName()
+                + " runTime=" + shot.getRunTime()));
+        RootInteraction primary = RootInteraction.getAssetMap().getAsset("Arrakis_Cutter_Mk2_Primary");
+        lines.add("  primary root: " + (primary == null ? "PROBLEM MISSING" : "ok"));
+        com.hypixel.hytale.server.core.asset.type.projectile.config.Projectile bullet =
+                com.hypixel.hytale.server.core.asset.type.projectile.config.Projectile.getAssetMap()
+                        .getAsset("Arrakis_Cutter_Mk2_Bullet");
+        lines.add("  projectile: " + (bullet == null ? "PROBLEM MISSING" : "damage=" + bullet.getDamage()
+                + " deathSound=" + bullet.getDeathSoundEventId() + " hitSound=" + bullet.getHitSoundEventId()
+                + " missSound=" + bullet.getMissSoundEventId()));
+        for (String id : new String[] {"Arrakis_Cutter_Mk2_Muzzle", "Arrakis_Cutter_Mk2_Impact", "Arrakis_Cutter_Mk2_Sparks"}) {
+            lines.add("  particle system " + id + ": "
+                    + (ParticleSystem.getAssetMap().getAsset(id) == null ? "PROBLEM MISSING" : "ok"));
+        }
         return lines;
     }
 }

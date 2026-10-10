@@ -30,6 +30,8 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
     protected void setup() {
         getCodecRegistry(Interaction.CODEC).register(CutterBeamInteraction.TYPE, CutterBeamInteraction.class,
                 CutterBeamInteraction.CODEC);
+        getCodecRegistry(Interaction.CODEC).register(CutterMk2GateInteraction.TYPE, CutterMk2GateInteraction.class,
+                CutterMk2GateInteraction.CODEC);
         getCommandRegistry().registerCommand(PowerCommands.build());
         getEntityStoreRegistry().registerSystem(new PowerRechargeSystem());
         // No codec: the laser segments are never saved (they also carry NonSerialized).
@@ -47,7 +49,7 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
     protected void start() {
         StringBuilder missing = new StringBuilder();
         for (String id : new String[] {"Arrakis_Blood_Extractor", "Arrakis_Dew_Reaper", "Arrakis_Compactor",
-                "Arrakis_Cutter_Ray"}) {
+                "Arrakis_Cutter_Ray", "Arrakis_Cutter_Ray_Mk2"}) {
             if (Item.getAssetMap().getAsset(id) == null) {
                 missing.append(' ').append(id);
             }

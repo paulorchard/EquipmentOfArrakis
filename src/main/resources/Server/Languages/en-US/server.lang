@@ -17,3 +17,5 @@ commands.arrakis.laser.rig.desc = Add three test rods ahead of you to see which 
 commands.arrakis.laser.clear.desc = Remove the test rods: arrakis laser clear
 commands.arrakis.laser.rig.desc = Add three test rods ahead of you to see which way a laser piece lies: arrakis laser rig
 commands.arrakis.laser.clear.desc = Remove the test rods: arrakis laser clear
+items.Arrakis_Cutter_Ray_Mk2.name = Cutter Ray Mk2
+items.Arrakis_Cutter_Ray_Mk2.description = A two-handed pulse rifle. Hold the left mouse button to fire at a block up to 5 blocks away: each shot chips the block and throws sparks and white globs. Costs 1 power per second. Does not hurt creatures.

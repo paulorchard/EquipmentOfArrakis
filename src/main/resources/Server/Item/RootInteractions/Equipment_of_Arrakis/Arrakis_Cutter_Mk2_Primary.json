@@ -1,0 +1,12 @@
+{
+  "$Comment": "Primary of the Cutter Ray Mk2: the range gate, then the vanilla shot.",
+  "Interactions": [
+    "Arrakis_Cutter_Mk2_Gate",
+    "Arrakis_Cutter_Mk2_Shoot"
+  ],
+  "Tags": {
+    "Attack": [
+      "Ranged"
+    ]
+  }
+}
