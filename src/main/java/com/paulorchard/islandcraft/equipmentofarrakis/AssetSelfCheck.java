@@ -5,6 +5,7 @@ import com.hypixel.hytale.protocol.ItemAnimation;
 import com.hypixel.hytale.protocol.PrioritySlot;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.asset.type.itemanimation.config.ItemPlayerAnimations;
+import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.RootInteraction;
 
@@ -16,6 +17,8 @@ import java.util.List;
  * start instead of as a missing animation in the world. Pure reporting: nothing here changes any state.
  */
 final class AssetSelfCheck {
+
+    private static final String MOLTEN = "Arrakis_Cutter_Molten";
 
     private AssetSelfCheck() {
     }
@@ -92,8 +95,11 @@ final class AssetSelfCheck {
                 lines.add("PROBLEM no animation set " + ray.getPlayerAnimationsId());
             }
         }
-        lines.add("beam stat " + BeamDisplay.STAT_ID + ": "
-                + (BeamDisplay.statIndex() == Integer.MIN_VALUE ? "PROBLEM MISSING" : "ok"));
+        for (int globs = 1; globs <= MoltenTrail.MAX_GLOBS; globs++) {
+            String id = MOLTEN + "_" + globs;
+            lines.add("particle system " + id + ": "
+                    + (ParticleSystem.getAssetMap().getAsset(id) == null ? "PROBLEM MISSING" : "ok"));
+        }
         return lines;
     }
 }

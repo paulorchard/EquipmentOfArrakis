@@ -5,7 +5,6 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.InteractionState;
 import com.hypixel.hytale.protocol.InteractionType;
@@ -19,15 +18,14 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
-import org.joml.Vector3d;
 import org.joml.Vector3i;
 
 /**
  * Interaction type {@code Arrakis_Cutter_Beam}: one tick of the Cutter Ray. The engine runs it again every
  * {@code RunTime} seconds for as long as Primary is held, so a tick does everything: pays for the tick out of
- * {@link ArrakisPower}, finds the first block on the look ray within {@code Range}, damages it, and tells the weapon
- * model how long the beam is (see {@link BeamDisplay}). When there is no power left the tick fails, switches the
- * beam off and does nothing else.
+ * {@link ArrakisPower}, finds the first block on the look ray within {@code Range}, damages it, and keeps the molten
+ * trail effect on ({@link MoltenTrail}, which draws it on every world tick). There is no beam to see, only that
+ * effect. When there is no power left the tick fails, switches the effect off and does nothing else.
  *
  * <p>Block damage goes through {@link BlockHarvestUtils#performBlockDamage}, the same call a pickaxe swing makes,
  * with an unbreakable stack of {@code ToolItemId} standing in for the held item: the block's hardness, the tool's
@@ -37,7 +35,8 @@ import org.joml.Vector3i;
  *
  * <pre>
  * {"Type": "Arrakis_Cutter_Beam", "RunTime": 0.1, "ToolItemId": "Tool_Pickaxe_Mithril", "Range": 5,
- *  "PowerPerSecond": 1, "DamageScale": 0.24}
+ *  "PowerPerSecond": 1, "DamageScale": 0.24, "ParticleId": "Arrakis_Cutter_Molten", "TrailSpacing": 0.1,
+ *  "SpawnsPerTick": 2}
  * </pre>
  */
 public class CutterBeamInteraction extends SimpleInstantInteraction {
@@ -59,12 +58,25 @@ public class CutterBeamInteraction extends SimpleInstantInteraction {
             .append(new KeyedCodec<>("DamageScale", Codec.FLOAT, false), (i, v) -> i.damageScale = v,
                     i -> i.damageScale)
             .add()
+            .append(new KeyedCodec<>("ParticleId", Codec.STRING, false), (i, v) -> i.particleId = v, i -> i.particleId)
+            .add()
+            .append(new KeyedCodec<>("TrailSpacing", Codec.FLOAT, false), (i, v) -> i.trailSpacing = v,
+                    i -> i.trailSpacing)
+            .add()
+            .append(new KeyedCodec<>("SpawnsPerTick", Codec.INTEGER, false), (i, v) -> i.spawnsPerTick = v,
+                    i -> i.spawnsPerTick)
+            .add()
             .build();
 
     private String toolItemId = "Tool_Pickaxe_Mithril";
     private float range = 5f;
     private float powerPerSecond = 1f;
     private float damageScale = 0.24f;
+    private String particleId = "Arrakis_Cutter_Molten";
+    /** Largest gap between bursts along the trail, in blocks. */
+    private float trailSpacing = 0.1f;
+    /** Least bursts per world tick, all at one point when the aim is still: the intensity dial (each burst is 1 glob). */
+    private int spawnsPerTick = 1;
 
     /** Built on first use: the stack needs the item assets, which are not loaded when the codec is. */
     private transient ItemStack toolStack;
@@ -78,24 +90,17 @@ public class CutterBeamInteraction extends SimpleInstantInteraction {
             return;
         }
         if (!ArrakisPower.spend(buffer, ref, powerPerSecond * getRunTime())) {
-            BeamDisplay.hide(buffer, ref);
+            MoltenTrail.stop(buffer, ref);
             context.getState().state = InteractionState.Failed;
             return;
         }
 
         World world = buffer.getExternalData().getWorld();
-        Transform look = TargetUtil.getLook(ref, buffer);
-        Vector3d eye = look.getPosition();
-        Vector3d dir = look.getDirection().normalize();
-
-        // With nothing in range the beam is full length; otherwise it reaches the surface it hits.
-        double length = range;
         Vector3i target = TargetUtil.getTargetBlock(ref, range, buffer);
         if (target != null) {
-            length = Math.min(range, BeamMath.entryDistance(eye, dir, target));
             damage(world, buffer, ref, target);
         }
-        BeamDisplay.show(buffer, ref, BeamMath.stepForDistance(length));
+        MoltenTrail.fire(buffer, ref, particleId, range, trailSpacing, spawnsPerTick);
     }
 
     private void damage(World world, CommandBuffer<EntityStore> buffer, Ref<EntityStore> ref, Vector3i target) {

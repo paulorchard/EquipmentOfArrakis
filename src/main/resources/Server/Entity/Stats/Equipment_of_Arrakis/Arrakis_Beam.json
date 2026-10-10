@@ -1,9 +1,0 @@
-{
-  "$Comment": "What the Cutter Ray beam looks like: 0 is off, 1 to 9 is the beam length step (1 + 0.5 * (step - 1) blocks). The Cutter Ray swaps its held model by this value (ItemAppearanceConditions), so the client draws the beam on the barrel. Shared so other players see it too. The server sets it each beam tick and BeamExpirySystem sets it back to 0 when the ticks stop.",
-  "InitialValue": 0,
-  "Min": 0,
-  "Max": 9,
-  "Shared": true,
-  "IgnoreInvulnerability": true,
-  "ResetType": "InitialValue"
-}

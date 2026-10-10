@@ -43,37 +43,92 @@ Models are regenerated with `node tools/assets/make_models.js <folder holding th
 - That the Z radial lists the tools and that Primary repeats while held (assumed from the Gun's 0.05 s RunTime).
 - How the chosen vanilla poses look: Interact (Blood Extractor), Build (Compactor), Swing_Left (Dew Reaper) were picked
   from their keyframes (forearm straightens; hand turns 90 degrees forward; arm swing), not seen.
-- The beam (prompt 02): that the Arrakis_Beam stat swaps the held model in the client, that the red box sits on the muzzle, that 32 model units are one block for a held item (the 9 lengths 1 to 5 blocks assume it), and how the line looks. Not seen on a client.
+- The molten effect (prompt 04): how the globs look (size, spread, speed, glow), that they fall and vanish as meant, and that other players see them. Not seen on a client.
 
+## Cutter Ray surface effect (prompt 04)
 
-## Cutter Ray beam (prompt 02)
+The beam is gone, in every form: no model variants, no stat, no entities, no particle line. The Cutter Ray now shows
+only a molten effect on the surface it cuts. The gun is the vanilla Pulse Rifle, with no Shoot animation.
 
-The dotted particle beam is gone: the `drawBeam` code, the `Arrakis_Cutter_Beam*` particle files, the Shoot animation
-override and the `ItemAnimationId` on the beam tick. The beam is now part of the weapon model.
+**Verified in the assets and the jar**
+- Particle systems are lists of spawners, spawned at a point with `ParticleUtil.spawnParticleEffect(id, position,
+  accessor)`. A spawner has initial velocity (speed, yaw, pitch ranges), `Attractors` with a `LinearAcceleration`
+  (the vanilla lava splash uses Y -7.2 for gravity), and `ParticleCollision` (`BlockType: Solid`, `Action: Expire`
+  makes a particle vanish when it hits something solid).
+- `Particles/Textures/Fire/Lava_Bubble2.png` is 8 frames of 32 x 32; frame 0 is a glowing lava-textured ball.
+  `Particles/Textures/Basic/Glow.png` is the soft glow sprite.
+- The point on the surface is where the look ray enters the targeted block (`BeamMath.entryDistance`, tested), moved
+  0.08 block back toward the player so the globs start in the air.
 
-**Verified in the jar and assets**
-- Item JSON `ItemAppearanceConditions` swaps the held model and texture of an item by the value of an entity stat on the
-  holder (`Condition` [min, max], `Model`, `Texture`). Vanilla uses it for the glider (stat GlidingActive) and bows
-  (SignatureCharges). The client does the swap, so a laser box that is a node of the model moves with the gun with no
-  network delay; only the choice of length is server-driven.
-- The vanilla Laser_Red sight is a node chain R-Attachment > Base > Lens > Laser, with Laser a 3 x 3 x 18 box stretched
-  100 times along z and offset by half its stretched length. Copied as the shape; here the box is stretched to the wanted length.
-- Rifle muzzle: in the frame of the Pulse Rifle's Main node the barrel runs along -x and ends at x = -27.8 (from the
-  transformed corners of all its boxes). The Laser node is a child of Main at (-28, 0.5, 0), turned so its length runs
-  out of the muzzle.
-- Variant items were not needed, so the held stack never changes and the Primary repeat is not affected. Animation node
-  scale was not needed either, so whether held items honour it was not tested.
+**Built**: system `Arrakis_Cutter_Molten` with one spawner, spawned each beam tick (while firing and a block is
+targeted):
+- `Arrakis_Cutter_Molten_Globs`, currently set to the **100% test setting**: a constant stream, 90 globs spread over 0.2 s
+  (450 a second) from each beam tick, so the streams of consecutive ticks overlap. Sizes 0.02 to 0.06, tinted orange
+  (#ff6a00), shrinking to almost nothing as they fall. Let go from rest (speed 0 to 0.12, pitch -90 to -60, nothing
+  moves upward) with gravity -9. The engine has no per-particle delay, so the 0.03 s pause before falling is the
+  natural start from rest: after 0.03 s a glob has moved 4 mm, after 0.1 s 4.5 cm. Life 0.5 to 0.9 s; they also vanish
+  on touching a solid block. Lava bubble texture, not lit by the world. To scale back, lower `TotalParticles` (and
+  `MaxConcurrentParticles`).
+There is no glow spot: a first version had one, and in game it appeared about a second after the globs and after the
+block broke, so it was removed. Nothing is shown when no block is in range. The effect is data: change sizes, speeds, counts or the texture in the
+two spawner files; `ParticleId` in `Arrakis_Cutter_Beam.json` picks the system.
 
-**Built**
-- Stat `Arrakis_Beam` (0 off, 1 to 9 a step; Shared so other players see the beam too).
-- Nine models `Arrakis_Cutter_Ray_Beam_1..9`: lengths 1.0, 1.5 ... 5.0 blocks.
-- A texture with a red #ff2a1a patch added under the rifle texture; the laser box is drawn fullbright.
-- `BeamMath.stepForDistance`: the smallest step whose length reaches the surface, clamped to 1..9 (tested).
-- `BeamDisplay` sets the stat each tick. `BeamExpirySystem` sets it back to 0 when no tick has refreshed it for 0.15 s
-  (button released, power 0, hotbar switch, death, disconnect, or a stale value in a save). At 0 power the tick also
-  sets it to 0 at once. With nothing in range the step is 9.
-- Generators: `tools/assets/make_models.js` and `tools/assets/make_ray_texture.ps1`.
+**Not verified (needs a client)**: all of it visually, in particular whether particle scale 0.04 to 0.12 is the
+size wanted, whether the spread looks like globs thrown off a cut, and whether a burst per tick looks continuous.
 
-**Not verified (needs a client)**: all of it visually; whether 32 model units are a block for a held item (if the beam
-is too long or too short, change UNITS_PER_BLOCK in make_models.js); the release delay is up to about 0.15 s plus one
-network trip.
+## Power recharge
+
+`PowerRechargeSystem` (a ticking system over players) adds `ArrakisPower.RECHARGE_PER_SECOND` (10) per second, up to 100,
+while the player has not tried to spend power for 0.35 s (`IDLE_NANOS`; beam ticks come every 0.1 to 0.2 s). A spend
+attempt counts as use even at 0 power, so holding the button on an empty pack does not recharge. Dead players do not
+recharge. It is code and not a Regenerating rule in the stat asset because a stat rule cannot tell whether the Cutter
+Ray is firing. Not tested with a player: the headless server only checks that the plugin loads.
+
+## Molten trail (supersedes how the effect is spawned above)
+
+In game the effect read as separate shots: one burst per beam tick (every 0.1 to 0.2 s), each from one fixed point.
+The engine has no line or moving emitter, so the effect is now drawn as a trail:
+- `MoltenTrailSystem` runs on every world tick (about 30 a second), not on the beam tick. For each firing player,
+  `MoltenTrail` finds the surface point under the crosshair (look ray and `TargetUtil.getTargetBlock`, entry point of
+  the block, 0.08 block out) and spawns the burst there, and at evenly spaced points (`TrailSpacing`, 0.1 block) along
+  the line from the previous tick's point (`BeamMath.trailPoints`, tested). A jump of more than 1.5 blocks, or a miss,
+  starts a new stroke instead of joining.
+- The burst is now short (`TotalParticles` 5 within 0.01 s) from a thin spot (0.04 block). A still aim spawns
+  `SpawnsPerTick` (3, the 100% setting) bursts per world tick at one point: 450 globs a second as before.
+- The beam tick only keeps the effect on (`MoltenTrail.fire`); it is off 0.3 s after the last beam tick (button
+  released), at once when power runs out, and when the player dies, leaves or holds another item.
+
+Limits: the resolution is one world tick, with straight-line gaps; the engine cannot follow the crosshair pixel by
+pixel. The effect continues up to 0.3 s after the button is released. Not tested with a player.
+
+## Molten globs: directions, delay and intensity (latest)
+
+- Intensity is about 50% of the test setting: `SpawnsPerTick` 5 bursts per world tick, each burst 3 parts (see below)
+  of 1 or 2 globs, about 7.5 globs a tick, 225 a second (100% would be `SpawnsPerTick` 10).
+- Directions: let go from rest with pitch -90 to -10 degrees (straight down to nearly sideways, never upward), any yaw,
+  speed 0 to 0.5, then gravity. Some globs fall straight, some peel off outward.
+- Gravity delay: the engine has no per-particle delay before gravity. The globs start from rest, so each hangs for
+  about 0.03 s anyway. The variation of about +/- 0.05 s comes from starting the glob spawner three times in the
+  system, with a `StartDelay` of 0, 0.04 and 0.08 s: some globs appear and start to fall later at the same spot.
+  They are not visible while they wait, which is the difference from a glob that really hangs. A true hang would need a
+  stationary sprite per delay followed by a falling one. Not tested with a player.
+
+## Molten globs hang, then fall (latest; replaces the start-delay copies above)
+
+A glob now hangs still where it is thrown off, with no gravity, for 0.5 to 0.75 s and then falls. The engine has no
+per-particle delay before gravity, so `tools/assets/make_molten.js` generates four pairs of spawners: a **Hold** (a
+stationary glob living for the delay, 0.5, 0.58, 0.67 and 0.75 s) and a **Fall** (the same glob, same size and
+position, started after the delay with `StartDelay`: random direction from straight down to almost sideways, never
+upward, speed 0 to 0.5, gravity -9, shrinking to almost nothing, life 0.5 to 0.9 s, vanishes on touching something
+solid). Sizes 0.03 to 0.06. Each pair has a fixed offset (a few hundredths of a block) so the globs of a burst do not
+overlap; this fixed offset replaces the random one so that a Fall starts exactly where its Hold hung. The Hold outlives
+its delay by 0.04 s, hidden under the Fall.
+A burst is 4 globs, so `SpawnsPerTick` 2 is about 240 globs a second (about 50%); 4 is about 100%. Globs now live
+about 1.3 s instead of 0.7 s, so the number on screen at once is higher for the same rate. Not tested with a player.
+
+## Molten globs: smaller, varied colour, cooling (latest)
+
+Sizes are now 0.018 to 0.036 (about 0.6 of before). The four globs of a burst have different orange tints, from bright
+(#ff6a00) to dark (#b84000); a Hold keeps its tint and a falling glob darkens to a quarter of it over its life
+(for example #ff6a00 to #3f1a00). Whether the tint multiplies the lava texture or blends with it, and how dark the end
+colour reads, are not seen in game.

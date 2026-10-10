@@ -1,8 +1,11 @@
 {
-  "$Comment": "One tick of the Cutter Ray beam, run every RunTime seconds while Primary is held. ToolItemId is the pickaxe the block damage is applied as (the strongest in the game, Tool_Pickaxe_Mithril); a later upgrade tier is another copy of this file with a different ToolItemId, Range or PowerPerSecond, referenced from another root interaction. The beam you see is the weapon model, driven by the Arrakis_Beam stat; this interaction only sets that stat.",
+  "$Comment": "One tick of the Cutter Ray, run every RunTime seconds while Primary is held: it pays for the tick, damages the targeted block and keeps the molten effect switched on. ToolItemId is the pickaxe the block damage is applied as (the strongest in the game, Tool_Pickaxe_Mithril); a later upgrade tier is another copy of this file with a different ToolItemId, Range or PowerPerSecond, referenced from another root interaction. The effect itself is drawn on every world tick by MoltenTrail as a trail of ParticleId bursts under the crosshair: TrailSpacing is the largest gap between bursts along a moving aim, in blocks, and SpawnsPerTick the least number of bursts per world tick (each burst is 1 glob, tinted with the colour of the block hit; ParticleId is the prefix of Arrakis_Cutter_Molten_1 to _3).",
   "Type": "Arrakis_Cutter_Beam",
   "RunTime": 0.1,
   "ToolItemId": "Tool_Pickaxe_Mithril",
   "Range": 5,
-  "PowerPerSecond": 1
+  "PowerPerSecond": 1,
+  "ParticleId": "Arrakis_Cutter_Molten",
+  "TrailSpacing": 0.1,
+  "SpawnsPerTick": 1
 }

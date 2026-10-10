@@ -4,6 +4,8 @@ import org.joml.Vector3d;
 import org.joml.Vector3i;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,38 +25,38 @@ class BeamMathTest {
     void slantedRayUsesTheFaceItCrossesFirst() {
         Vector3d dir = new Vector3d(1, -1, 0).normalize();
         double d = BeamMath.entryDistance(new Vector3d(0, 4, 0.5), dir, new Vector3i(3, 0, 0));
-        // At x=3 the ray is at y=1, which is the top face (y=1) of the block at y 0: enters at the corner, t = 3*sqrt(2).
+        // At x=3 the ray is at y=1, the top face of the block at y 0: it enters at the corner, t = 3 * sqrt(2).
         assertEquals(3 * Math.sqrt(2), d, 1e-9);
-    }
-
-    @Test
-    void stepsRoundUpToTheNextHalfBlockAndStayInRange() {
-        assertEquals(1, BeamMath.stepForDistance(0.0));
-        assertEquals(1, BeamMath.stepForDistance(0.7));
-        assertEquals(1, BeamMath.stepForDistance(1.0));
-        assertEquals(2, BeamMath.stepForDistance(1.01));
-        assertEquals(2, BeamMath.stepForDistance(1.5));
-        assertEquals(3, BeamMath.stepForDistance(1.51));
-        assertEquals(5, BeamMath.stepForDistance(3.0));
-        assertEquals(9, BeamMath.stepForDistance(4.51));
-        assertEquals(9, BeamMath.stepForDistance(5.0));
-        assertEquals(9, BeamMath.stepForDistance(7.0));
-    }
-
-    @Test
-    void aStepAlwaysReachesTheSurfaceAndNeverOvershootsByMoreThanAStep() {
-        for (double d = 0.0; d <= 5.0; d += 0.013) {
-            double length = BeamMath.lengthOfStep(BeamMath.stepForDistance(d));
-            assertTrue(length >= d - 1e-9, "reaches " + d);
-            assertTrue(length - Math.max(d, 1.0) <= BeamMath.STEP_LENGTH + 1e-9, "overshoots " + d);
-        }
-        assertEquals(1.0, BeamMath.lengthOfStep(1), 1e-12);
-        assertEquals(5.0, BeamMath.lengthOfStep(BeamMath.STEPS), 1e-12);
     }
 
     @Test
     void startingInsideTheBlockIsDistanceZero() {
         assertEquals(0.0, BeamMath.entryDistance(new Vector3d(0.5, 0.5, 0.5), new Vector3d(1, 0, 0),
                 new Vector3i(0, 0, 0)), 1e-9);
+    }
+
+    @Test
+    void aStillOrFirstAimPointIsJustThatPoint() {
+        Vector3d now = new Vector3d(1, 2, 3);
+        assertEquals(List.of(now), BeamMath.trailPoints(null, now, 0.1, 1.5));
+        assertEquals(List.of(now), BeamMath.trailPoints(new Vector3d(1.05, 2, 3), now, 0.1, 1.5));
+    }
+
+    @Test
+    void aMovingAimIsFilledInEvenlyUpToTheCurrentPoint() {
+        List<Vector3d> points = BeamMath.trailPoints(new Vector3d(0, 0, 0), new Vector3d(1, 0, 0), 0.1, 1.5);
+        assertEquals(10, points.size());
+        assertEquals(1.0, points.get(points.size() - 1).x, 1e-9);
+        double last = 0;
+        for (Vector3d p : points) {
+            assertTrue(p.x - last <= 0.1 + 1e-9);
+            last = p.x;
+        }
+    }
+
+    @Test
+    void aJumpFartherThanTheLinkStartsANewStroke() {
+        Vector3d now = new Vector3d(5, 0, 0);
+        assertEquals(List.of(now), BeamMath.trailPoints(new Vector3d(0, 0, 0), now, 0.1, 1.5));
     }
 }

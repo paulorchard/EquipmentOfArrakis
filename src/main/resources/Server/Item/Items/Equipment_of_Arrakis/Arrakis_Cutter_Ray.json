@@ -1,5 +1,5 @@
 {
-  "$Comment": "Main-hand, two-handed. Model: the Pulse Rifle of Weapon_Gun, with its own texture (the vanilla one plus a red patch for the beam). The beam is part of the model: while the Arrakis_Beam stat is 1 to 9 the client holds the matching Arrakis_Cutter_Ray_Beam_<step> model, the rifle with a red Laser box on the muzzle. No projectile, no muzzle flash, no recoil animation. Two-handed because there is no Utility.Compatible and a Secondary interaction exists: the interaction context then gives both clicks to this item, never to the off-hand tool. The priorities below make that explicit.",
+  "$Comment": "Main-hand, two-handed. Model: the Pulse Rifle of Weapon_Gun, unchanged. No projectile, no muzzle flash, no recoil animation, no visible beam; while Primary is held the Arrakis_Cutter_Beam interaction throws molten globs off the surface it hits. Two-handed because there is no Utility.Compatible and a Secondary interaction exists: the interaction context then gives both clicks to this item, never to the off-hand tool. The priorities below make that explicit.",
   "TranslationProperties": {
     "Name": "server.items.Arrakis_Cutter_Ray.name",
     "Description": "server.items.Arrakis_Cutter_Ray.description"
@@ -23,7 +23,7 @@
     ]
   },
   "Model": "Items/Hypixel/Minigames/Space_Swarm/Weapons/Pulse_Rifle.blockymodel",
-  "Texture": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Texture.png",
+  "Texture": "Items/Hypixel/Minigames/Space_Swarm/Weapons/Pulse_Rifle_Texture.png",
   "PlayerAnimationsId": "Rifle",
   "InteractionConfig": {
     "Priorities": {
@@ -38,90 +38,5 @@
   "Interactions": {
     "Primary": "Arrakis_Root_Cutter_Ray",
     "Secondary": "Arrakis_Root_Cutter_Ray_Secondary"
-  },
-  "ItemAppearanceConditions": {
-    "Arrakis_Beam": [
-      {
-        "Condition": [
-          1,
-          1
-        ],
-        "ConditionValueType": "Absolute",
-        "Model": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Beam_1.blockymodel",
-        "Texture": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Texture.png"
-      },
-      {
-        "Condition": [
-          2,
-          2
-        ],
-        "ConditionValueType": "Absolute",
-        "Model": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Beam_2.blockymodel",
-        "Texture": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Texture.png"
-      },
-      {
-        "Condition": [
-          3,
-          3
-        ],
-        "ConditionValueType": "Absolute",
-        "Model": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Beam_3.blockymodel",
-        "Texture": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Texture.png"
-      },
-      {
-        "Condition": [
-          4,
-          4
-        ],
-        "ConditionValueType": "Absolute",
-        "Model": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Beam_4.blockymodel",
-        "Texture": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Texture.png"
-      },
-      {
-        "Condition": [
-          5,
-          5
-        ],
-        "ConditionValueType": "Absolute",
-        "Model": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Beam_5.blockymodel",
-        "Texture": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Texture.png"
-      },
-      {
-        "Condition": [
-          6,
-          6
-        ],
-        "ConditionValueType": "Absolute",
-        "Model": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Beam_6.blockymodel",
-        "Texture": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Texture.png"
-      },
-      {
-        "Condition": [
-          7,
-          7
-        ],
-        "ConditionValueType": "Absolute",
-        "Model": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Beam_7.blockymodel",
-        "Texture": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Texture.png"
-      },
-      {
-        "Condition": [
-          8,
-          8
-        ],
-        "ConditionValueType": "Absolute",
-        "Model": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Beam_8.blockymodel",
-        "Texture": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Texture.png"
-      },
-      {
-        "Condition": [
-          9,
-          9
-        ],
-        "ConditionValueType": "Absolute",
-        "Model": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Beam_9.blockymodel",
-        "Texture": "Items/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Texture.png"
-      }
-    ]
   }
 }

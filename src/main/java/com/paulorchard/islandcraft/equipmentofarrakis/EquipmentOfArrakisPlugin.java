@@ -31,8 +31,12 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
         getCodecRegistry(Interaction.CODEC).register(CutterBeamInteraction.TYPE, CutterBeamInteraction.class,
                 CutterBeamInteraction.CODEC);
         getCommandRegistry().registerCommand(PowerCommands.build());
-        getEntityStoreRegistry().registerSystem(new BeamExpirySystem());
-        getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, event -> BeamDisplay.forget(event.getPlayerRef().getUuid()));
+        getEntityStoreRegistry().registerSystem(new PowerRechargeSystem());
+        getEntityStoreRegistry().registerSystem(new MoltenTrailSystem());
+        getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, event -> {
+            ArrakisPower.forget(event.getPlayerRef().getUuid());
+            MoltenTrail.forget(event.getPlayerRef().getUuid());
+        });
     }
 
     /** Assets are loaded by now: say which of this mod's assets this game has. */
