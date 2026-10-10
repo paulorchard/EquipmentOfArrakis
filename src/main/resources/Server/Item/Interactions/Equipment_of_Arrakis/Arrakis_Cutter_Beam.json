@@ -1,11 +1,11 @@
 {
-  "$Comment": "One tick of the Cutter Ray, run every RunTime seconds while Primary is held: it pays for the tick, damages the targeted block and keeps the molten effect switched on. ToolItemId is the pickaxe the block damage is applied as (the strongest in the game, Tool_Pickaxe_Mithril); a later upgrade tier is another copy of this file with a different ToolItemId, Range or PowerPerSecond, referenced from another root interaction. The effect itself is drawn on every world tick by MoltenTrail as a trail of ParticleId bursts under the crosshair: TrailSpacing is the largest gap between bursts along a moving aim, in blocks, and SpawnsPerTick the least number of bursts per world tick (each burst is 1 glob, tinted with the colour of the block hit; ParticleId is the prefix of Arrakis_Cutter_Molten_1 to _3).",
+  "$Comment": "One tick of the Cutter Ray, run every RunTime seconds while Primary is held. With no lock it locks onto the first block in Range under the crosshair (and the face it enters through); with a lock it pays for the tick and damages the locked block, never re-targeting. ToolItemId is the pickaxe the block damage is applied as (the strongest in the game, Tool_Pickaxe_Mithril); a later upgrade tier is another copy of this file with a different ToolItemId, Range or PowerPerSecond, referenced from another root interaction. The globs (ParticleId is the prefix of Arrakis_Cutter_Molten_1; SpawnsPerTick bursts per world tick) are thrown from a fixed point just out from the middle of the locked face, and the red laser line runs from the barrel to that middle. LockGraceSeconds is how long the crosshair may be off the locked block before the lock breaks; after a break the gun waits for the button to be released.",
   "Type": "Arrakis_Cutter_Beam",
   "RunTime": 0.1,
   "ToolItemId": "Tool_Pickaxe_Mithril",
   "Range": 5,
   "PowerPerSecond": 1,
   "ParticleId": "Arrakis_Cutter_Molten",
-  "TrailSpacing": 0.1,
-  "SpawnsPerTick": 1
+  "SpawnsPerTick": 1,
+  "LockGraceSeconds": 0.15
 }

@@ -1,5 +1,5 @@
 {
-  "$Comment": "Main-hand, two-handed. Model: the Pulse Rifle of Weapon_Gun, unchanged. No projectile, no muzzle flash, no recoil animation, no visible beam; while Primary is held the Arrakis_Cutter_Beam interaction throws molten globs off the surface it hits. Two-handed because there is no Utility.Compatible and a Secondary interaction exists: the interaction context then gives both clicks to this item, never to the off-hand tool. The priorities below make that explicit.",
+  "$Comment": "Main-hand, two-handed. Model: the Pulse Rifle of Weapon_Gun, unchanged. No projectile, no muzzle flash, no recoil animation, no beam in the model; while Primary is held the Arrakis_Cutter_Beam interaction locks onto the block under the crosshair, draws a red laser line (entities, see CutterLaser) from the barrel to the middle of the locked face, and throws molten globs from there. Two-handed because there is no Utility.Compatible and a Secondary interaction exists: the interaction context then gives both clicks to this item, never to the off-hand tool. The priorities below make that explicit.",
   "TranslationProperties": {
     "Name": "server.items.Arrakis_Cutter_Ray.name",
     "Description": "server.items.Arrakis_Cutter_Ray.description"

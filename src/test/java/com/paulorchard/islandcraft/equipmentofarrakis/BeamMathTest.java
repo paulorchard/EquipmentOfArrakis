@@ -36,27 +36,100 @@ class BeamMathTest {
     }
 
     @Test
-    void aStillOrFirstAimPointIsJustThatPoint() {
-        Vector3d now = new Vector3d(1, 2, 3);
-        assertEquals(List.of(now), BeamMath.trailPoints(null, now, 0.1, 1.5));
-        assertEquals(List.of(now), BeamMath.trailPoints(new Vector3d(1.05, 2, 3), now, 0.1, 1.5));
+    void theEntryFaceIsTheOneTheRayCrossesFirst() {
+        // Along +x into the block at x=3: it enters through the west face (normal -x), whose middle is (3, 1.5, 0.5).
+        BeamMath.Entry west = BeamMath.entry(new Vector3d(0.5, 1.5, 0.5), new Vector3d(1, 0, 0), new Vector3i(3, 1, 0));
+        assertEquals(new Vector3i(-1, 0, 0), west.normal());
+        assertEquals(new Vector3d(3, 1.5, 0.5), west.faceCenter());
+        assertEquals(2.5, west.distance(), 1e-9);
+        // Down onto a block: the top face (normal +y), middle at the block's top.
+        BeamMath.Entry top = BeamMath.entry(new Vector3d(0.5, 5.0, 0.5), new Vector3d(0, -1, 0), new Vector3i(0, 2, 0));
+        assertEquals(new Vector3i(0, 1, 0), top.normal());
+        assertEquals(new Vector3d(0.5, 3, 0.5), top.faceCenter());
+        // Looking along -z at a block ahead: it enters through the +z face of the block at z=-2.
+        BeamMath.Entry south = BeamMath.entry(new Vector3d(0.5, 0.5, 5.0), new Vector3d(0, 0, -1), new Vector3i(0, 0, -2));
+        assertEquals(new Vector3i(0, 0, 1), south.normal());
+        assertEquals(new Vector3d(0.5, 0.5, -1), south.faceCenter());
     }
 
     @Test
-    void aMovingAimIsFilledInEvenlyUpToTheCurrentPoint() {
-        List<Vector3d> points = BeamMath.trailPoints(new Vector3d(0, 0, 0), new Vector3d(1, 0, 0), 0.1, 1.5);
-        assertEquals(10, points.size());
-        assertEquals(1.0, points.get(points.size() - 1).x, 1e-9);
-        double last = 0;
-        for (Vector3d p : points) {
-            assertTrue(p.x - last <= 0.1 + 1e-9);
-            last = p.x;
+    void aSlantedRayEntersThroughTheFaceItCrossesFirst() {
+        // From (0, 4.5, 0.5) going right and down into the block at (3, 1, 0): at x=3 the ray is at y=1.5, inside the
+        // block's side, so it enters through the west face.
+        Vector3d dir = new Vector3d(1, -1, 0).normalize();
+        BeamMath.Entry e = BeamMath.entry(new Vector3d(0, 4.5, 0.5), dir, new Vector3i(3, 1, 0));
+        assertEquals(new Vector3i(-1, 0, 0), e.normal());
+        // A shallow ray that reaches the top of the block before its side enters through the top.
+        Vector3d shallow = new Vector3d(2, -1, 0).normalize();
+        BeamMath.Entry top = BeamMath.entry(new Vector3d(0, 2.7, 0.5), shallow, new Vector3i(3, 0, 0));
+        assertEquals(new Vector3i(0, 1, 0), top.normal());
+    }
+
+    @Test
+    void aRayStartingInsideGetsTheFaceOppositeItsDirection() {
+        BeamMath.Entry e = BeamMath.entry(new Vector3d(0.5, 0.5, 0.5), new Vector3d(1, 0.2, 0).normalize(),
+                new Vector3i(0, 0, 0));
+        assertEquals(0.0, e.distance(), 1e-9);
+        assertEquals(new Vector3i(-1, 0, 0), e.normal());
+    }
+
+    @Test
+    void theGlobPointIsClearOfTheFace() {
+        BeamMath.Entry e = BeamMath.entry(new Vector3d(0.5, 5.0, 0.5), new Vector3d(0, -1, 0), new Vector3i(0, 2, 0));
+        assertEquals(new Vector3d(0.5, 3.08, 0.5), BeamMath.offFace(e, 0.08));
+    }
+
+    @Test
+    void theHandIsInFrontBelowAndToTheRightOfTheEye() {
+        // Looking along +x, the hand is 0.9 ahead and 0.3 below the eye, and 0.2 to one side.
+        Vector3d hand = BeamMath.hand(new Vector3d(0, 1.6, 0), new Vector3d(1, 0, 0), 0.9, 0.2, 0.3);
+        assertEquals(0.9, hand.x, 1e-9);
+        assertEquals(1.3, hand.y, 1e-9);
+        assertEquals(0.2, Math.abs(hand.z), 1e-9);
+        // To the right: looking along -z (north in Hytale), right is +x.
+        Vector3d north = BeamMath.hand(new Vector3d(0, 0, 0), new Vector3d(0, 0, -1), 1, 0.2, 0);
+        assertTrue(north.x > 0.19 && north.x < 0.21);
+        assertEquals(-1.0, north.z, 1e-9);
+    }
+
+    @Test
+    void theHandFollowsThePitchAndSurvivesALookStraightDown() {
+        Vector3d eye = new Vector3d(0, 1.6, 0);
+        Vector3d down = BeamMath.hand(eye, new Vector3d(0, -1, 0), 0.9, 0.2, 0.3);
+        assertEquals(0.7, down.y, 1e-9);
+        assertTrue(Double.isFinite(down.x) && Double.isFinite(down.z));
+    }
+
+    @Test
+    void thePiecesCoverTheLineWithoutGapsAndTaper() {
+        Vector3d start = new Vector3d(0, 0, 0);
+        Vector3d end = new Vector3d(5, 0, 0);
+        List<BeamMath.Piece> pieces = BeamMath.pieces(start, end, 0.012, 0.003, 96, 0.85, 0.15, 24);
+        assertTrue(pieces.size() > 3 && pieces.size() < 24);
+        double covered = 0;
+        double lastWidth = Double.MAX_VALUE;
+        for (BeamMath.Piece p : pieces) {
+            double from = p.center().x - p.length() / 2;
+            double to = p.center().x + p.length() / 2;
+            assertTrue(from <= covered + 1e-9, "gap before " + from + " (covered up to " + covered + ")");
+            covered = Math.max(covered, to);
+            assertTrue(p.width() <= lastWidth + 1e-12, "the line gets thinner");
+            lastWidth = p.width();
+            assertEquals(96 * p.width(), p.length(), 1e-9);
         }
+        assertEquals(5.0, covered, 1e-9);
+        assertEquals(0.012, pieces.get(0).width(), 1e-9);
+        assertTrue(pieces.get(pieces.size() - 1).width() < 0.005);
     }
 
     @Test
-    void aJumpFartherThanTheLinkStartsANewStroke() {
-        Vector3d now = new Vector3d(5, 0, 0);
-        assertEquals(List.of(now), BeamMath.trailPoints(new Vector3d(0, 0, 0), now, 0.1, 1.5));
+    void thePiecesNeverRunPastTheEndAndAShortLineIsOnePiece() {
+        List<BeamMath.Piece> one = BeamMath.pieces(new Vector3d(0, 0, 0), new Vector3d(0, 0, 0.5), 0.012, 0.003, 96, 0.85,
+                0.15, 24);
+        assertEquals(1, one.size());
+        assertEquals(0.5, one.get(0).length(), 1e-9);
+        assertEquals(0.25, one.get(0).center().z, 1e-9);
+        assertTrue(BeamMath.pieces(new Vector3d(), new Vector3d(0.05, 0, 0), 0.012, 0.003, 96, 0.85, 0.15, 24).isEmpty());
+        assertEquals(4, BeamMath.pieces(new Vector3d(), new Vector3d(50, 0, 0), 0.012, 0.003, 96, 0.85, 0.15, 4).size());
     }
 }

@@ -43,7 +43,7 @@ Models are regenerated with `node tools/assets/make_models.js <folder holding th
 - That the Z radial lists the tools and that Primary repeats while held (assumed from the Gun's 0.05 s RunTime).
 - How the chosen vanilla poses look: Interact (Blood Extractor), Build (Compactor), Swing_Left (Dew Reaper) were picked
   from their keyframes (forearm straightens; hand turns 90 degrees forward; arm swing), not seen.
-- The molten effect (prompt 04): how the globs look (size, spread, speed, glow), that they fall and vanish as meant, and that other players see them. Not seen on a client.
+- The molten effect (prompt 04): how the globs look (size, spread, speed, glow), that they fall and vanish as meant, and that other players see them. Not seen on a client. See the lock-on section for the laser line.
 
 ## Cutter Ray surface effect (prompt 04)
 
@@ -84,22 +84,75 @@ attempt counts as use even at 0 power, so holding the button on an empty pack do
 recharge. It is code and not a Regenerating rule in the stat asset because a stat rule cannot tell whether the Cutter
 Ray is firing. Not tested with a player: the headless server only checks that the plugin loads.
 
-## Molten trail (supersedes how the effect is spawned above)
+## Lock-on, laser line, globs at the beam end (replaces "Molten trail"; supersedes how the effect is spawned above)
 
-In game the effect read as separate shots: one burst per beam tick (every 0.1 to 0.2 s), each from one fixed point.
-The engine has no line or moving emitter, so the effect is now drawn as a trail:
-- `MoltenTrailSystem` runs on every world tick (about 30 a second), not on the beam tick. For each firing player,
-  `MoltenTrail` finds the surface point under the crosshair (look ray and `TargetUtil.getTargetBlock`, entry point of
-  the block, 0.08 block out) and spawns the burst there, and at evenly spaced points (`TrailSpacing`, 0.1 block) along
-  the line from the previous tick's point (`BeamMath.trailPoints`, tested). A jump of more than 1.5 blocks, or a miss,
-  starts a new stroke instead of joining.
-- The burst is now short (`TotalParticles` 5 within 0.01 s) from a thin spot (0.04 block). A still aim spawns
-  `SpawnsPerTick` (3, the 100% setting) bursts per world tick at one point: 450 globs a second as before.
-- The beam tick only keeps the effect on (`MoltenTrail.fire`); it is off 0.3 s after the last beam tick (button
-  released), at once when power runs out, and when the player dies, leaves or holds another item.
+The aim-following trail is gone (`BeamMath.trailPoints`, `MAX_LINK`, `TrailSpacing`, the per-player last point). The Cutter Ray now
+locks onto a block and draws a red line to it.
 
-Limits: the resolution is one world tick, with straight-line gaps; the engine cannot follow the crosshair pixel by
-pixel. The effect continues up to 0.3 s after the button is released. Not tested with a player.
+**Lock-on** (`CutterBeamInteraction`, `MoltenTrail`)
+- First beam tick with power left and a block within `Range` (5) under the crosshair: that block, the face the look ray entered
+  (`BeamMath.entry`: distance, face normal, face centre) and the globs' point (face centre plus 0.08 along the normal) are fixed for
+  the whole lock. No block in range: nothing happens and no power is spent. Later ticks pay `PowerPerSecond * RunTime` and damage the
+  locked block (same call, same Mithril stand-in, same `DamageScale`); they never re-target.
+- Every world tick (`MoltenTrailSystem`, now an entity-ticking system over players because adding and removing the laser entities needs
+  the command buffer): the lock breaks when the block id at the locked position changed (broken or replaced, by the beam or anything
+  else), or when `TargetUtil.getTargetBlock` has not been the locked block for more than `LockGraceSeconds` (0.15, in
+  `Arrakis_Cutter_Beam.json`; the time counts from when the crosshair left and resets when it is back).
+- A break sets `needsRelease`. While it is set, beam ticks do nothing: no damage, no power, no globs, and they do not count as use of
+  power (`ArrakisPower.spend` is not called), so recharge starts. Release is told by the gap between beam ticks of any kind
+  (`lastArrival`): a tick that arrives more than `EXPIRY_NANOS` (0.3 s) after the previous one is a new press and clears the flag.
+  Refused ticks are recorded as arrivals (that is what lets a held button be told from a release) but not as use. The prompt asked that
+  refused ticks "do not extend the idle time"; read literally that would clear the flag while the button is still down, so the idle time
+  here is the power idle time. Limit: a release and re-press faster than 0.3 s counts as still held and is refused once.
+- The lock also ends, without needing a release, when no beam tick has fired for 0.3 s (button released), the player dies, holds
+  another item, leaves, or power reaches 0 (Creative mode breaks the block at once, which ends it the first way).
+- Trying with an empty pack still counts as use (so holding the button at 0 does not recharge), as before.
+
+**Ticks after Failed.** Verified in the jar: `SimpleInstantInteraction` runs `firstRun` and then `SimpleInteraction.tick0`, which on a
+Failed state only jumps to the failure label or ends the chain; the only server code that restarts a held interaction
+(`InteractionManager.tryRunHeldInteraction`) is called by the NPC systems, not for players. So for a player the next tick is started by
+the client, and whether a Failed chain is started again while the button is down is not something the server can show. The beam
+therefore ends refused ticks as Finished (the default), which come again after `RunTime` like every other tick; release detection
+relies only on that. Not tested with a client.
+
+**Laser line** (`CutterLaser`, `BeamSegment`, `BeamSegmentSystem`, `tools/assets/make_laser.js`) - second version
+The first version (one-block rods of 3 units, red) was seen in game: far too thick, with gaps between the segments. Now:
+- A white-hot core that tapers from 4 "pixels" at the barrel to 1 at the locked face, plus a translucent white glow around it that
+  pulses in and out. A "pixel" is `CutterLaser.PIXEL` = 0.003 block (4 px = 0.012 block, about 0.38 model unit; the vanilla Laser_Red
+  sight is 0.6 unit): the one number to change to make the whole line thicker or thinner. The glow reaches 1 to 3 pixels out on each
+  side, 3 times a second.
+- Entities can only be scaled evenly, so the line is a row of pieces of different scale (`BeamMath.pieces`, tested): both models
+  (`Arrakis_Cutter_Laser` white opaque, `Arrakis_Cutter_Laser_Glow` white alpha 110) are a 1 x 1 x 96 unit box, a piece of width w is
+  96 w long, so the pieces get shorter towards the thin end (about 9 for a 5 block line); each starts 0.85 of a length after the one
+  before (15% overlap), and the last is cut to end exactly at the face. The scale of every piece is set from its width, and the glow
+  pieces' scale is changed every tick (`EntityScaleComponent`, which the engine sends as a model update when it changes).
+- Not known without a client, and possible causes of the gaps and the thickness seen: the model's long axis may not lie along the look
+  direction (the first version would then show as slabs across the line, which is both thick and gappy); pitch may not be applied
+  to the body of a model entity; 32 units to a block may not hold. `arrakis laser rig` (as a player) puts three 1.5 block rods
+  ahead of you: the middle one should point away from you, the one on your right straight up, the one on your left to your right;
+  `arrakis laser clear` removes them. If they do not, the model axis or rotation is what to change.
+- The glow relies on the client blending a translucent texture; with an alpha test only, it is not drawn and the white core is
+  seen alone (the texture alpha of 110 was chosen to fail that way).
+- A broken lock now needs a gap of 0.5 s (`RELEASE_NANOS`) between beam ticks to count as a release, up from 0.3 s, so a server or
+  network hiccup while the button is down cannot clear it and let the gun jump to another block.
+- The pieces of the core are kept in `State.segments`, those of the glow in `State.glows`; nothing is spawned per tick.
+- Entity components, hand point and safety nets: unchanged (see above: Transform, HeadRotation, UUID, Model, EntityScale, BoundingBox,
+  NetworkId, Visible, Intangible, NonSerialized, `BeamSegment`; hand point eye + 0.9 forward, 0.22 right, 0.32 down; the sweeper).
+- Globs: unchanged effect, thrown from the fixed point at the end of the beam, `SpawnsPerTick` bursts per world tick, tinted with the
+  locked block's `getParticleColor()`. The glob is a soft white glow (`Basic/Glow.png`, additive), not the yellow lava bubble.
+
+**Verified in the headless server (no client)**: all assets load (`model asset Arrakis_Cutter_Laser: ok`, `particle system
+Arrakis_Cutter_Molten_1: ok`), a segment is accepted by the store with that component set, `BeamSegmentSystem` removes an unowned segment within a
+tick, an owned one stays, and after a restart (chunk loaded again) the count is 0, so it is not saved. `arrakis laser spawn [keep] [x y z]`
+and `arrakis laser count` are the commands for this (operators only). An entity in a chunk that is not loaded logs `Entity has moved into a
+chunk that isn't currently loaded` every tick and is dropped, which does not happen next to a player.
+
+**Not verified (needs a client)**: that the line is visible and red, 3 units thick reads right, the unit size of 32 per block for entity models
+(from the Rat's hitbox against its model), that the segment lies along the look direction and not across it, that pitch is applied to a model
+entity's body (it is set on both the transform and the head rotation), that clients interpolate the 30-per-second moves, the hand offset,
+the `LockGraceSeconds` feel, release detection and the Failed behaviour above with a real held button, a second player seeing the line and globs, and
+that no beam entity is left after release, power 0, slot change, death or relog (the code paths are there; only the unowned/owned cases
+were run).
 
 ## Molten globs: directions, delay and intensity (latest)
 

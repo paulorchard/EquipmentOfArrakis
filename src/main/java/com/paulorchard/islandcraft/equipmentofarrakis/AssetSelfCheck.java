@@ -95,6 +95,8 @@ final class AssetSelfCheck {
                 lines.add("PROBLEM no animation set " + ray.getPlayerAnimationsId());
             }
         }
+        lines.add("model assets " + CutterLaser.CORE_ID + ", " + CutterLaser.GLOW_ID + ": "
+                + (CutterLaser.available() ? "ok" : "PROBLEM MISSING"));
         for (int globs = 1; globs <= MoltenTrail.MAX_GLOBS; globs++) {
             String id = MOLTEN + "_" + globs;
             lines.add("particle system " + id + ": "

@@ -32,7 +32,10 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
                 CutterBeamInteraction.CODEC);
         getCommandRegistry().registerCommand(PowerCommands.build());
         getEntityStoreRegistry().registerSystem(new PowerRechargeSystem());
+        // No codec: the laser segments are never saved (they also carry NonSerialized).
+        BeamSegment.register(getEntityStoreRegistry().registerComponent(BeamSegment.class, BeamSegment::new));
         getEntityStoreRegistry().registerSystem(new MoltenTrailSystem());
+        getEntityStoreRegistry().registerSystem(new BeamSegmentSystem());
         getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, event -> {
             ArrakisPower.forget(event.getPlayerRef().getUuid());
             MoltenTrail.forget(event.getPlayerRef().getUuid());

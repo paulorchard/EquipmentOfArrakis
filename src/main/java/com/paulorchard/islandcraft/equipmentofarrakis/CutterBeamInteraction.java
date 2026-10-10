@@ -17,15 +17,25 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Sim
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.util.TargetUtil;
 import org.joml.Vector3i;
 
 /**
  * Interaction type {@code Arrakis_Cutter_Beam}: one tick of the Cutter Ray. The engine runs it again every
- * {@code RunTime} seconds for as long as Primary is held, so a tick does everything: pays for the tick out of
- * {@link ArrakisPower}, finds the first block on the look ray within {@code Range}, damages it, and keeps the molten
- * trail effect on ({@link MoltenTrail}, which draws it on every world tick). There is no beam to see, only that
- * effect. When there is no power left the tick fails, switches the effect off and does nothing else.
+ * {@code RunTime} seconds for as long as Primary is held. A tick does one of these:
+ * <ul>
+ *   <li>With no lock: traces the look ray; if it hits a block within {@code Range} and there is power, that block (and
+ *       the face the ray entered, and its middle) becomes the lock, see {@link MoltenTrail.Lock}. With no block in range,
+ *       or no power, nothing happens.</li>
+ *   <li>With a lock: pays for the tick out of {@link ArrakisPower} and damages the locked block. It never re-targets.</li>
+ *   <li>While a broken lock waits for a release: nothing at all, and no power is spent.</li>
+ * </ul>
+ * The molten globs and the laser line are drawn on every world tick by {@link MoltenTrailSystem}, which also breaks the
+ * lock when the crosshair has been off the block for longer than {@code LockGraceSeconds}.
+ *
+ * <p>A tick that does nothing ends as Finished and not Failed. Whether a Failed chain is started again while the button
+ * is held is up to the client, which the server cannot see; a Finished tick comes again after {@code RunTime} like every
+ * other, so a held button always keeps arriving and a released one always stops, and that is what the release test
+ * ({@link MoltenTrail#refuse}) relies on.
  *
  * <p>Block damage goes through {@link BlockHarvestUtils#performBlockDamage}, the same call a pickaxe swing makes,
  * with an unbreakable stack of {@code ToolItemId} standing in for the held item: the block's hardness, the tool's
@@ -35,8 +45,8 @@ import org.joml.Vector3i;
  *
  * <pre>
  * {"Type": "Arrakis_Cutter_Beam", "RunTime": 0.1, "ToolItemId": "Tool_Pickaxe_Mithril", "Range": 5,
- *  "PowerPerSecond": 1, "DamageScale": 0.24, "ParticleId": "Arrakis_Cutter_Molten", "TrailSpacing": 0.1,
- *  "SpawnsPerTick": 2}
+ *  "PowerPerSecond": 1, "DamageScale": 0.24, "ParticleId": "Arrakis_Cutter_Molten", "SpawnsPerTick": 1,
+ *  "LockGraceSeconds": 0.15}
  * </pre>
  */
 public class CutterBeamInteraction extends SimpleInstantInteraction {
@@ -60,11 +70,11 @@ public class CutterBeamInteraction extends SimpleInstantInteraction {
             .add()
             .append(new KeyedCodec<>("ParticleId", Codec.STRING, false), (i, v) -> i.particleId = v, i -> i.particleId)
             .add()
-            .append(new KeyedCodec<>("TrailSpacing", Codec.FLOAT, false), (i, v) -> i.trailSpacing = v,
-                    i -> i.trailSpacing)
-            .add()
             .append(new KeyedCodec<>("SpawnsPerTick", Codec.INTEGER, false), (i, v) -> i.spawnsPerTick = v,
                     i -> i.spawnsPerTick)
+            .add()
+            .append(new KeyedCodec<>("LockGraceSeconds", Codec.FLOAT, false), (i, v) -> i.lockGraceSeconds = v,
+                    i -> i.lockGraceSeconds)
             .add()
             .build();
 
@@ -73,10 +83,10 @@ public class CutterBeamInteraction extends SimpleInstantInteraction {
     private float powerPerSecond = 1f;
     private float damageScale = 0.24f;
     private String particleId = "Arrakis_Cutter_Molten";
-    /** Largest gap between bursts along the trail, in blocks. */
-    private float trailSpacing = 0.1f;
-    /** Least bursts per world tick, all at one point when the aim is still: the intensity dial (each burst is 1 glob). */
+    /** Bursts of globs per world tick, all at the one fixed point at the end of the beam: the intensity dial. */
     private int spawnsPerTick = 1;
+    /** How long the crosshair may be off the locked block before the lock breaks. */
+    private float lockGraceSeconds = 0.15f;
 
     /** Built on first use: the stack needs the item assets, which are not loaded when the codec is. */
     private transient ItemStack toolStack;
@@ -85,22 +95,46 @@ public class CutterBeamInteraction extends SimpleInstantInteraction {
     protected void firstRun(InteractionType type, InteractionContext context, CooldownHandler cooldowns) {
         CommandBuffer<EntityStore> buffer = context.getCommandBuffer();
         Ref<EntityStore> ref = context.getEntity();
-        if (buffer == null || ref == null) {
+        MoltenTrail.State state = buffer == null || ref == null ? null : MoltenTrail.state(buffer, ref);
+        if (state == null) {
             context.getState().state = InteractionState.Failed;
             return;
         }
-        if (!ArrakisPower.spend(buffer, ref, powerPerSecond * getRunTime())) {
-            MoltenTrail.stop(buffer, ref);
-            context.getState().state = InteractionState.Failed;
+        long now = System.nanoTime();
+        if (MoltenTrail.refuse(state, now)) {
+            // A broken lock waits for a release: nothing happens, no power is spent, and it does not count as use.
             return;
         }
-
         World world = buffer.getExternalData().getWorld();
-        Vector3i target = TargetUtil.getTargetBlock(ref, range, buffer);
-        if (target != null) {
-            damage(world, buffer, ref, target);
+        float cost = powerPerSecond * getRunTime();
+        if (state.lock == null) {
+            if (ArrakisPower.get(buffer, ref) <= 0f) {
+                // Trying with an empty pack counts as use, so that holding the button does not recharge it.
+                ArrakisPower.spend(buffer, ref, cost);
+                return;
+            }
+            MoltenTrail.Lock lock = MoltenTrail.acquire(buffer, ref, world, range);
+            if (lock == null) {
+                return;
+            }
+            ArrakisPower.spend(buffer, ref, cost);
+            state.particleId = particleId;
+            state.range = range;
+            state.spawnsPerTick = spawnsPerTick;
+            state.graceNanos = (long) (lockGraceSeconds * 1_000_000_000L);
+            state.lock = lock;
+        } else if (!MoltenTrail.blockStillThere(world, state.lock)) {
+            MoltenTrail.breakLock(buffer, state);
+            return;
+        } else if (!ArrakisPower.spend(buffer, ref, cost)) {
+            MoltenTrail.end(buffer, state);
+            return;
         }
-        MoltenTrail.fire(buffer, ref, particleId, range, trailSpacing, spawnsPerTick);
+        state.lastTick = now;
+        damage(world, buffer, ref, state.lock.block);
+        if (ArrakisPower.get(buffer, ref) <= 0f) {
+            MoltenTrail.end(buffer, state);
+        }
     }
 
     private void damage(World world, CommandBuffer<EntityStore> buffer, Ref<EntityStore> ref, Vector3i target) {
