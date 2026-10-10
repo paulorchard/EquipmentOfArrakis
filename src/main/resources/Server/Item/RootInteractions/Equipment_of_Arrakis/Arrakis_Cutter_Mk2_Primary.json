@@ -1,7 +1,8 @@
 {
-  "$Comment": "Primary of the Cutter Ray Mk2: the range gate, then the vanilla shot.",
+  "$Comment": "Primary of the Cutter Ray Mk2: the range gate, then the held-fire effect (start, loop and end sound), then the vanilla shot.",
   "Interactions": [
     "Arrakis_Cutter_Mk2_Gate",
+    "Arrakis_Cutter_Mk2_Firing",
     "Arrakis_Cutter_Mk2_Shoot"
   ],
   "Tags": {

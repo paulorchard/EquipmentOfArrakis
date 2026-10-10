@@ -1,0 +1,12 @@
+{
+  "$Comment": "Held-fire sounds, modelled on the vanilla FlamethrowerSource: the start+loop sound plays when the effect is first applied, the effect is refreshed at every shot (OVERWRITE: remaining time back to Duration, no new effect, so no new start), and when the shots stop it lapses after Duration and the removal sound plays.",
+  "ApplicationEffects": {
+    "WorldSoundEventId": "SFX_Arrakis_Cutter_Mk2_Firing",
+    "LocalSoundEventId": "SFX_Arrakis_Cutter_Mk2_Firing_Local"
+  },
+  "WorldRemovalSoundEventId": "SFX_Arrakis_Cutter_Mk2_Firing_End",
+  "LocalRemovalSoundEventId": "SFX_Arrakis_Cutter_Mk2_Firing_End_Local",
+  "OverlapBehavior": "Overwrite",
+  "Infinite": false,
+  "Duration": 0.25
+}

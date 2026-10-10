@@ -1,0 +1,5 @@
+{
+  "$Comment": "Applies (refreshes) the entity effect Arrakis_Cutter_Mk2_Firing on the shooter at every shot that got through the gate; its sounds are the held-fire start, loop and end.",
+  "Type": "ApplyEffect",
+  "EffectId": "Arrakis_Cutter_Mk2_Firing"
+}

@@ -1,10 +1,12 @@
 {
-  "$Comment": "First in the Primary chain. Fires the shot only if a block is within Range under the crosshair and there is power; fails (which stops the chain, so that nothing else happens) if not. When it fires it also pays 0.05 power, damages the block by BlockDamage and spawns the sparks at the crosshair point.",
+  "$Comment": "First in the Primary chain. Fires the shot only if a block is within Range under the crosshair and there is power; fails (which stops the chain, so that nothing else happens) if not. When it fires it also pays 0.05 power, damages the block by BlockDamage, spawns the sparks and plays the impact sound (at most every ImpactSoundMinInterval s) at the crosshair point. A refusal for range plays the fizzle (at most every FizzleMinInterval s).",
   "Type": "Arrakis_Cutter_Mk2_Range_Gate",
   "Range": 5,
   "PowerPerSecond": 1,
   "FireInterval": 0.05,
   "BlockDamage": 1,
-  "ToolItemId": "Tool_Pickaxe_Mithril",
-  "SparksId": "Arrakis_Cutter_Mk2_Sparks"
+  "ToolItemId": "Tool_Pickaxe_Crude",
+  "SparksId": "Arrakis_Cutter_Mk2_Sparks",
+  "ImpactSoundMinInterval": 0.1,
+  "FizzleMinInterval": 0.27
 }

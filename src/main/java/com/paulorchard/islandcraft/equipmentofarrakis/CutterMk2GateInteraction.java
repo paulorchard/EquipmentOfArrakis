@@ -9,6 +9,8 @@ import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.InteractionState;
 import com.hypixel.hytale.protocol.InteractionType;
+import com.hypixel.hytale.protocol.SoundCategory;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -17,12 +19,16 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHa
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInstantInteraction;
 import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.SetBlockSettings;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 import org.joml.Vector3d;
 import org.joml.Vector3i;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Interaction type {@code Arrakis_Cutter_Mk2_Range_Gate}: the first interaction of the Primary chain of the Cutter Ray Mk2,
@@ -42,12 +48,21 @@ import org.joml.Vector3i;
  *
  * <p>{@code BlockDamage} is the {@code damageScale} of {@link BlockHarvestUtils#performBlockDamage}: the damage done is the power of
  * the stand-in tool for the block's gather type times this, taken off the block's health of 1.0 (a block breaks when its health
- * reaches 0). Tool_Pickaxe_Mithril has power 1.0 on Rocks and Soils, so 1 is one whole block per hit; 0.05 would be 20 hits.
+ * reaches 0). With the Tool_Pickaxe_Crude stand-in (power 0.25 on Rocks, 0.35 on Soils) 1 is one swing of a crude pickaxe per hit.
  *
  * <pre>
  * {"Type": "Arrakis_Cutter_Mk2_Range_Gate", "Range": 5, "PowerPerSecond": 1, "FireInterval": 0.05, "BlockDamage": 1,
- *  "ToolItemId": "Tool_Pickaxe_Mithril", "SparksId": "Arrakis_Cutter_Mk2_Sparks"}
+ *  "ToolItemId": "Tool_Pickaxe_Crude", "SparksId": "Arrakis_Cutter_Mk2_Sparks",
+ *  "ImpactSoundMinInterval": 0.1, "FizzleMinInterval": 0.27}
  * </pre>
+ *
+ * <p>Two of the gun's sounds come from here (the held-fire start, loop and end belong to the entity effect applied by the interaction
+ * after this one). A shot that damages a block plays {@code SFX_Arrakis_Cutter_Mk2_Impact} at the point where the look ray enters the
+ * block (to the other players, positionally) and {@code _Local} (to the shooter alone, not attenuated), at most once every
+ * {@code ImpactSoundMinInterval} seconds. A shot refused because no block is within range plays {@code SFX_Arrakis_Cutter_Mk2_Fizzle} /
+ * {@code _Local} the same way at the shooter's eye, at most once every {@code FizzleMinInterval} seconds (the length of the clip, so a
+ * held trigger does not restart it). A refusal for empty power is silent. The refusal cancels the chain, so an interaction on the Failed
+ * branch would never run: hence code, and the intervals need code anyway.
  */
 public class CutterMk2GateInteraction extends SimpleInstantInteraction {
 
@@ -71,15 +86,27 @@ public class CutterMk2GateInteraction extends SimpleInstantInteraction {
             .add()
             .append(new KeyedCodec<>("SparksId", Codec.STRING, false), (i, v) -> i.sparksId = v, i -> i.sparksId)
             .add()
+            .append(new KeyedCodec<>("ImpactSoundMinInterval", Codec.FLOAT, false), (i, v) -> i.impactSoundMinInterval = v,
+                    i -> i.impactSoundMinInterval)
+            .add()
+            .append(new KeyedCodec<>("FizzleMinInterval", Codec.FLOAT, false), (i, v) -> i.fizzleMinInterval = v,
+                    i -> i.fizzleMinInterval)
+            .add()
             .build();
 
-    private String toolItemId = "Tool_Pickaxe_Mithril";
+    private String toolItemId = "Tool_Pickaxe_Crude";
     private float range = 5f;
     private float powerPerSecond = 1f;
     /** Seconds between two shots (the RunTime of the shot interaction): power per shot is PowerPerSecond times this. */
     private float fireInterval = 0.05f;
     private float blockDamage = 1f;
     private String sparksId = "Arrakis_Cutter_Mk2_Sparks";
+    private float impactSoundMinInterval = 0.1f;
+    private float fizzleMinInterval = 0.27f;
+
+    /** When each shooter last heard the impact / fizzle sound (System.nanoTime). Shared by all players: one gate asset. */
+    private final transient Map<Ref<EntityStore>, Long> lastImpact = new ConcurrentHashMap<>();
+    private final transient Map<Ref<EntityStore>, Long> lastFizzle = new ConcurrentHashMap<>();
 
     /** Built on first use: the stack needs the item assets, which are not loaded when the codec is. */
     private transient ItemStack toolStack;
@@ -100,7 +127,13 @@ public class CutterMk2GateInteraction extends SimpleInstantInteraction {
             return;
         }
         Vector3i target = TargetUtil.getTargetBlock(ref, range, buffer);
-        if (target == null || !ArrakisPower.spend(buffer, ref, cost)) {
+        if (target == null) {
+            // Power is left but nothing is in reach: the fizzle, and nothing else.
+            playOnce(lastFizzle, fizzleMinInterval, "SFX_Arrakis_Cutter_Mk2_Fizzle", ref, TargetUtil.getLook(ref, buffer).getPosition(), buffer);
+            context.getState().state = InteractionState.Failed;
+            return;
+        }
+        if (!ArrakisPower.spend(buffer, ref, cost)) {
             context.getState().state = InteractionState.Failed;
             return;
         }
@@ -110,7 +143,31 @@ public class CutterMk2GateInteraction extends SimpleInstantInteraction {
         // The point where the look ray enters the block face: exactly under the crosshair.
         Vector3d hit = new Vector3d(eye).fma(BeamMath.entryDistance(eye, dir, target), dir);
         ParticleUtil.spawnParticleEffect(sparksId, hit, buffer);
+        playOnce(lastImpact, impactSoundMinInterval, "SFX_Arrakis_Cutter_Mk2_Impact", ref, hit, buffer);
         damage(buffer.getExternalData().getWorld(), buffer, ref, target);
+    }
+
+    /** Plays {id} at {at} to the others and {id}_Local to the shooter, unless the shooter heard it less than minInterval seconds ago. */
+    private static void playOnce(Map<Ref<EntityStore>, Long> last, float minInterval, String id, Ref<EntityStore> ref,
+            Vector3d at, CommandBuffer<EntityStore> buffer) {
+        long now = System.nanoTime();
+        Long before = last.get(ref);
+        if (before != null && now - before < (long) (minInterval * 1_000_000_000L)) {
+            return;
+        }
+        if (last.size() > 64) {
+            last.values().removeIf(t -> now - t > 10_000_000_000L);
+        }
+        last.put(ref, now);
+        int world = SoundEvent.getAssetMap().getIndex(id);
+        int local = SoundEvent.getAssetMap().getIndex(id + "_Local");
+        if (world > 0) {
+            // The shooter is left out (true): the shooter hears the local one.
+            SoundUtil.playSoundEvent3d(ref, world, at, true, buffer);
+        }
+        if (local > 0) {
+            SoundUtil.playSoundEvent2d(ref, local, SoundCategory.SFX, buffer);
+        }
     }
 
     private void damage(World world, CommandBuffer<EntityStore> buffer, Ref<EntityStore> ref, Vector3i target) {

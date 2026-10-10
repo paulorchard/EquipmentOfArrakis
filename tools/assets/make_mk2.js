@@ -208,18 +208,37 @@ shoot.Effects.Particles[0].SystemId = ID + 'Muzzle';
 shoot.$Comment = 'Gun_Shoot with the Mk2 projectile, camera effect and muzzle, at the fire rate of the vanilla gun (RunTime 0.05). It has no sound of its own, like the vanilla one.';
 write(SERVER + 'Item/Interactions/Equipment_of_Arrakis/' + ID + 'Shoot.json', shoot);
 write(SERVER + 'Item/Interactions/Equipment_of_Arrakis/' + ID + 'Gate.json', {
-    $Comment: 'First in the Primary chain. Fires the shot only if a block is within Range under the crosshair and there is power; fails (which stops the chain, so that nothing else happens) if not. When it fires it also pays 0.05 power, damages the block by BlockDamage and spawns the sparks at the crosshair point.',
+    $Comment: 'First in the Primary chain. Fires the shot only if a block is within Range under the crosshair and there is power; fails (which stops the chain, so that nothing else happens) if not. When it fires it also pays 0.05 power, damages the block by BlockDamage, spawns the sparks and plays the impact sound (at most every ImpactSoundMinInterval s) at the crosshair point. A refusal for range plays the fizzle (at most every FizzleMinInterval s).',
     Type: 'Arrakis_Cutter_Mk2_Range_Gate',
     Range: 5,
     PowerPerSecond: 1,
     FireInterval: 0.05,
     BlockDamage: 1,
-    ToolItemId: 'Tool_Pickaxe_Mithril',
+    ToolItemId: 'Tool_Pickaxe_Crude',
     SparksId: ID + 'Sparks',
+    ImpactSoundMinInterval: 0.1,
+    FizzleMinInterval: 0.27,
+});
+write(SERVER + 'Item/Interactions/Equipment_of_Arrakis/' + ID + 'Firing.json', {
+    $Comment: 'Applies (refreshes) the entity effect Arrakis_Cutter_Mk2_Firing on the shooter at every shot that got through the gate; its sounds are the held-fire start, loop and end.',
+    Type: 'ApplyEffect',
+    EffectId: ID + 'Firing',
+});
+write(SERVER + 'Entity/Effects/Equipment_of_Arrakis/' + ID + 'Firing.json', {
+    $Comment: 'Held-fire sounds, modelled on the vanilla FlamethrowerSource: the start+loop sound plays when the effect is first applied, the effect is refreshed at every shot (OVERWRITE: remaining time back to Duration, no new effect, so no new start), and when the shots stop it lapses after Duration and the removal sound plays.',
+    ApplicationEffects: {
+        WorldSoundEventId: 'SFX_Arrakis_Cutter_Mk2_Firing',
+        LocalSoundEventId: 'SFX_Arrakis_Cutter_Mk2_Firing_Local',
+    },
+    WorldRemovalSoundEventId: 'SFX_Arrakis_Cutter_Mk2_Firing_End',
+    LocalRemovalSoundEventId: 'SFX_Arrakis_Cutter_Mk2_Firing_End_Local',
+    OverlapBehavior: 'Overwrite',
+    Infinite: false,
+    Duration: 0.25,
 });
 write(SERVER + 'Item/RootInteractions/Equipment_of_Arrakis/' + ID + 'Primary.json', {
-    $Comment: 'Primary of the Cutter Ray Mk2: the range gate, then the vanilla shot.',
-    Interactions: [ID + 'Gate', ID + 'Shoot'],
+    $Comment: 'Primary of the Cutter Ray Mk2: the range gate, then the held-fire effect (start, loop and end sound), then the vanilla shot.',
+    Interactions: [ID + 'Gate', ID + 'Firing', ID + 'Shoot'],
     Tags: { Attack: ['Ranged'] },
 });
 

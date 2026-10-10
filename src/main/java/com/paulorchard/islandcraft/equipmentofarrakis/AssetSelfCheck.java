@@ -140,6 +140,27 @@ final class AssetSelfCheck {
             lines.add("  particle system " + id + ": "
                     + (ParticleSystem.getAssetMap().getAsset(id) == null ? "PROBLEM MISSING" : "ok"));
         }
+        for (String id : new String[] {"SFX_Arrakis_Cutter_Mk2_Firing", "SFX_Arrakis_Cutter_Mk2_Firing_Local",
+                "SFX_Arrakis_Cutter_Mk2_Firing_End", "SFX_Arrakis_Cutter_Mk2_Firing_End_Local",
+                "SFX_Arrakis_Cutter_Mk2_Impact", "SFX_Arrakis_Cutter_Mk2_Impact_Local",
+                "SFX_Arrakis_Cutter_Mk2_Fizzle", "SFX_Arrakis_Cutter_Mk2_Fizzle_Local"}) {
+            com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent sound =
+                    com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent.getAssetMap().getAsset(id);
+            lines.add("  sound event " + id + ": " + (sound == null ? "PROBLEM MISSING" : "ok, layers=" + sound.getLayers().length
+                    + " maxInstance=" + sound.getMaxInstance() + " files=" + sound.getLayers()[0].getFiles().length));
+        }
+        com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect firing =
+                com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect.getAssetMap()
+                        .getAsset("Arrakis_Cutter_Mk2_Firing");
+        lines.add("  effect Arrakis_Cutter_Mk2_Firing: " + (firing == null ? "PROBLEM MISSING" : "ok, duration=" + firing.getDuration()
+                + " overlap=" + firing.getOverlapBehavior() + " infinite=" + firing.isInfinite()));
+        lines.add("  firing interaction: " + (Interaction.getAssetMap().getAsset("Arrakis_Cutter_Mk2_Firing") == null
+                ? "PROBLEM MISSING" : "ok"));
+        for (String clip : new String[] {"Fizzle", "Impact_Stone", "Impact_Burn"}) {
+            boolean there = AssetSelfCheck.class.getResource("/Common/Sounds/Equipment_of_Arrakis/Arrakis_Cutter_Mk2_" + clip + ".ogg")
+                    != null;
+            lines.add("  clip " + clip + " in the jar: " + (there ? "ok" : "PROBLEM MISSING"));
+        }
         return lines;
     }
 }
