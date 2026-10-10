@@ -1,0 +1,51 @@
+{
+  "$Comment": "One red dot that lives 0.13 s, a little longer than a beam tick. The Cutter Ray draws its red line by spawning a close row of these along the ray every tick, so the line is solid and follows the aim.",
+  "RenderMode": "BlendAdd",
+  "EmitOffset": {
+    "X": { "Min": 0, "Max": 0 },
+    "Y": { "Min": 0, "Max": 0 },
+    "Z": { "Min": 0, "Max": 0 }
+  },
+  "ParticleRotationInfluence": "Billboard",
+  "LinearFiltering": true,
+  "LightInfluence": 0,
+  "ParticleRotateWithSpawner": false,
+  "MaxConcurrentParticles": 1,
+  "ParticleLifeSpan": { "Min": 0.13, "Max": 0.13 },
+  "SpawnRate": { "Min": 1, "Max": 1 },
+  "TotalParticles": { "Min": 1, "Max": 1 },
+  "InitialVelocity": {},
+  "Particle": {
+    "Texture": "Particles/Textures/Basic/Glow.png",
+    "ScaleRatioConstraint": "OneToOne",
+    "UVOption": "None",
+    "Animation": {
+      "0": {
+        "FrameIndex": { "Min": 0, "Max": 0 },
+        "Opacity": 1,
+        "Color": "#ff1a1a",
+        "Scale": { "X": { "Min": 1, "Max": 1 } },
+        "Rotation": {
+          "X": { "Min": 0, "Max": 0 },
+          "Y": { "Min": 0, "Max": 0 },
+          "Z": { "Min": 0, "Max": 0 }
+        }
+      },
+      "100": {
+        "Opacity": 1
+      }
+    },
+    "InitialAnimationFrame": {
+      "Rotation": {
+        "X": { "Min": 0, "Max": 0 },
+        "Y": { "Min": 0, "Max": 0 },
+        "Z": { "Min": 0, "Max": 0 }
+      },
+      "Scale": { "X": { "Min": 0.16, "Max": 0.16 } },
+      "Color": "#ff1a1a",
+      "Opacity": 1,
+      "FrameIndex": { "Min": 0, "Max": 0 }
+    },
+    "SoftParticles": "Disable"
+  }
+}

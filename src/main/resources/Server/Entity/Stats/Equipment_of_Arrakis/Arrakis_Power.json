@@ -1,0 +1,8 @@
+{
+  "$Comment": "Power for the equipment of Arrakis. Every living entity gets every stat asset when its stat map is set up, with this InitialValue, so new characters and old saves both start full. No Regenerating rules in stage one: it only goes up by the debug command.",
+  "InitialValue": 100,
+  "Min": 0,
+  "Max": 100,
+  "Shared": false,
+  "ResetType": "MaxValue"
+}

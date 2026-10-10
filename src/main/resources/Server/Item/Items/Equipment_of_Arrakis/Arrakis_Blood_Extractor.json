@@ -1,0 +1,25 @@
+{
+  "$Comment": "Off-hand tool. Model: Temple Scarak lantern with the glowing core made ordinary and no light, at half scale.",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Blood_Extractor.name",
+    "Description": "server.items.Arrakis_Blood_Extractor.description"
+  },
+  "Categories": [
+    "Items.Tools"
+  ],
+  "Quality": "Rare",
+  "MaxStack": 1,
+  "Icon": "Icons/ItemsGenerated/Furniture_Temple_Scarak_Lantern.png",
+  "IconProperties": {"Scale": 0.7, "Translation": [0, -13.5], "Rotation": [22.5, 45, 22.5]},
+  "Model": "Items/Equipment_of_Arrakis/Arrakis_Blood_Extractor.blockymodel",
+  "Texture": "Items/Equipment_of_Arrakis/Arrakis_Blood_Extractor_Texture.png",
+  "Scale": 0.5,
+  "PlayerAnimationsId": "Arrakis_Blood_Extractor",
+  "Utility": {
+    "Usable": true
+  },
+  "Interactions": {
+    "Secondary": "Arrakis_Root_Blood_Extractor"
+  },
+  "ItemSoundSetId": "ISS_Items_Metal"
+}

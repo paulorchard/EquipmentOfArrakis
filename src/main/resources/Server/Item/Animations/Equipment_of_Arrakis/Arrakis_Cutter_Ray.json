@@ -1,0 +1,14 @@
+{
+  "$Comment": "The vanilla rifle set (two-handed: Dual_Handed animations) with the shot animation played fast, because the beam ticks ten times a second.",
+  "Parent": "Rifle",
+  "Animations": {
+    "Shoot": {
+      "ThirdPerson": "Characters/Animations/Items/Dual_Handed/Rifle/Attacks/Shoot/Shoot.blockyanim",
+      "ThirdPersonMoving": "Characters/Animations/Items/Dual_Handed/Rifle/Attacks/Shoot/Shoot_Moving.blockyanim",
+      "FirstPerson": "Characters/Animations/Items/Dual_Handed/Rifle/Attacks/Shoot/Shoot_FPS.blockyanim",
+      "Speed": 3,
+      "BlendingDuration": 0,
+      "ThirdPersonFace": "Characters/Animations/Expressions/Frown.blockyanim"
+    }
+  }
+}

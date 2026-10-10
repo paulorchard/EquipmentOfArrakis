@@ -1,0 +1,12 @@
+{
+  "$Comment": "One tick of the Cutter Ray beam, run every RunTime seconds while Primary is held. ToolItemId is the pickaxe the block damage is applied as (the strongest in the game, Tool_Pickaxe_Mithril); a later upgrade tier is another copy of this file with a different ToolItemId, Range or PowerPerSecond, referenced from another root interaction.",
+  "Type": "Arrakis_Cutter_Beam",
+  "RunTime": 0.1,
+  "ToolItemId": "Tool_Pickaxe_Mithril",
+  "Range": 5,
+  "PowerPerSecond": 1,
+  "BeamParticleId": "Arrakis_Cutter_Beam",
+  "Effects": {
+    "ItemAnimationId": "Shoot"
+  }
+}

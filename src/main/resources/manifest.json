@@ -1,0 +1,18 @@
+{
+  "Group": "IslandCraft",
+  "Name": "IslandCraft - Equipment of Arrakis",
+  "Version": "0.1.0",
+  "Description": "Tools for survival on Arrakis: the Blood Extractor, Dew Reaper, Compactor and Cutter Ray.",
+  "Authors": [
+    {
+      "Name": "paulo"
+    }
+  ],
+  "ServerVersion": "*",
+  "Main": "com.paulorchard.islandcraft.equipmentofarrakis.EquipmentOfArrakisPlugin",
+  "Dependencies": {
+    "Hytale:EntityModule": "*"
+  },
+  "DisabledByDefault": false,
+  "IncludesAssetPack": true
+}

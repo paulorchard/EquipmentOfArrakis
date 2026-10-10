@@ -1,0 +1,35 @@
+{
+  "$Comment": "Main-hand, two-handed. Model: the Pulse Rifle of Weapon_Gun, but no projectile and no muzzle flash (the Primary interaction is the beam). Two-handed because there is no Utility.Compatible and a Secondary interaction exists: the interaction context then gives both clicks to this item, never to the off-hand tool. The priorities below make that explicit.",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Cutter_Ray.name",
+    "Description": "server.items.Arrakis_Cutter_Ray.description"
+  },
+  "Categories": [
+    "Items.Tools"
+  ],
+  "Quality": "Rare",
+  "MaxStack": 1,
+  "Icon": "Icons/ItemsGenerated/Weapon_Gun.png",
+  "IconProperties": {
+    "Scale": 0.37,
+    "Translation": [-13.8, -15.6],
+    "Rotation": [327.375, 90, 0]
+  },
+  "Model": "Items/Hypixel/Minigames/Space_Swarm/Weapons/Pulse_Rifle.blockymodel",
+  "Texture": "Items/Hypixel/Minigames/Space_Swarm/Weapons/Pulse_Rifle_Texture.png",
+  "PlayerAnimationsId": "Arrakis_Cutter_Ray",
+  "InteractionConfig": {
+    "Priorities": {
+      "Primary": {
+        "MainHand": 10
+      },
+      "Secondary": {
+        "MainHand": 10
+      }
+    }
+  },
+  "Interactions": {
+    "Primary": "Arrakis_Root_Cutter_Ray",
+    "Secondary": "Arrakis_Root_Cutter_Ray_Secondary"
+  }
+}

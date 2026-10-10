@@ -1,0 +1,19 @@
+{
+  "$Comment": "Right click: aim the Compactor like a flashlight for as long as the button is down. The animation set's Camera.Pitch block keeps the arm following the look pitch. Animation only.",
+  "Type": "Charging",
+  "AllowIndefiniteHold": true,
+  "FailOnDamage": false,
+  "Effects": {
+    "ItemAnimationId": "Arrakis_Aim",
+    "ClearAnimationOnFinish": true
+  },
+  "HorizontalSpeedMultiplier": 0.8,
+  "Next": {
+    "0": {
+      "Type": "Simple"
+    }
+  },
+  "Failed": {
+    "Type": "Simple"
+  }
+}

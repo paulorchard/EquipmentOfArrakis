@@ -1,0 +1,10 @@
+{
+  "$Comment": "Right click: one slow swing. The torch Swing_Left animation (25 frames = 0.41667 s) is played at Speed 0.2 by the Arrakis_Dew_Reaper animation set, so it lasts 2.08333 s, and this interaction lasts exactly as long. Animation only; no damage yet.",
+  "Type": "Simple",
+  "RunTime": 2.08333,
+  "Effects": {
+    "ItemAnimationId": "Arrakis_Slow_Swing",
+    "ClearAnimationOnFinish": true
+  },
+  "HorizontalSpeedMultiplier": 0.6
+}

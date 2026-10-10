@@ -1,0 +1,25 @@
+{
+  "$Comment": "Off-hand tool. Model: Adamantite pickaxe (shown in game as Adamantium) at two thirds scale, gripped by the left hand.",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Dew_Reaper.name",
+    "Description": "server.items.Arrakis_Dew_Reaper.description"
+  },
+  "Categories": [
+    "Items.Tools"
+  ],
+  "Quality": "Rare",
+  "MaxStack": 1,
+  "Icon": "Icons/ItemsGenerated/Tool_Pickaxe_Adamantite.png",
+  "IconProperties": {"Scale": 0.45, "Translation": [13.8, -14.4], "Rotation": [45, 270, 0]},
+  "Model": "Items/Equipment_of_Arrakis/Arrakis_Dew_Reaper.blockymodel",
+  "Texture": "Items/Equipment_of_Arrakis/Arrakis_Dew_Reaper_Texture.png",
+  "Scale": 0.6667,
+  "PlayerAnimationsId": "Arrakis_Dew_Reaper",
+  "Utility": {
+    "Usable": true
+  },
+  "Interactions": {
+    "Secondary": "Arrakis_Root_Dew_Reaper"
+  },
+  "ItemSoundSetId": "ISS_Items_Metal"
+}

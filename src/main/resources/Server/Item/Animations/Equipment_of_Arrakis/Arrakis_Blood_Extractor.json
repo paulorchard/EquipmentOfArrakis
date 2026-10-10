@@ -1,0 +1,13 @@
+{
+  "$Comment": "The vanilla off-hand torch set (locomotion, pitch following the look direction) plus a hold-out pose: straight from the idle stance to the final pose of the torch Interact animation, no swing (tools/assets/make_blood_extractor_animation.js). The last keyframe is held.",
+  "Parent": "Torch",
+  "Animations": {
+    "Arrakis_Hold_Out": {
+      "ThirdPerson": "Characters/Animations/Items/Equipment_of_Arrakis/Blood_Extractor_Hold.blockyanim",
+      "FirstPerson": "Characters/Animations/Items/Equipment_of_Arrakis/Blood_Extractor_Hold_FPS.blockyanim",
+      "Speed": 1,
+      "BlendingDuration": 0.1,
+      "Looping": false
+    }
+  }
+}

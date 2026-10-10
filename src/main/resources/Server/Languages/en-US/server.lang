@@ -1,0 +1,12 @@
+items.Arrakis_Blood_Extractor.name = Blood Extractor
+items.Arrakis_Blood_Extractor.description = An off-hand tool. Place it in a utility slot, pick it with Z, and hold the right mouse button to hold it out in front of you.
+items.Arrakis_Dew_Reaper.name = Dew Reaper
+items.Arrakis_Dew_Reaper.description = An off-hand tool. Place it in a utility slot, pick it with Z, and click the right mouse button for a slow swing.
+items.Arrakis_Compactor.name = Compactor
+items.Arrakis_Compactor.description = An off-hand tool. Place it in a utility slot, pick it with Z, and hold the right mouse button to point it where you look.
+items.Arrakis_Cutter_Ray.name = Cutter Ray
+items.Arrakis_Cutter_Ray.description = A two-handed tool. Hold the left mouse button for a beam that cuts the block you are looking at, up to 5 blocks away. Costs 1 power per second.
+commands.arrakis.desc = Debug commands for the equipment of Arrakis: arrakis power fill|set <n> [player] (operators only)
+commands.arrakis.power.desc = Debug commands for the Arrakis_Power stat: arrakis power fill|set <n> [player]
+commands.arrakis.power.fill.desc = Fill power to its maximum: arrakis power fill [player]
+commands.arrakis.power.set.desc = Set power (0-100): arrakis power set <n> [player]

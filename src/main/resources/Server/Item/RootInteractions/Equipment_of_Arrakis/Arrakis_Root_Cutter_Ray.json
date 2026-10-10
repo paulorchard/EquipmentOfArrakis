@@ -1,0 +1,6 @@
+{
+  "$Comment": "Primary on the Cutter Ray: no RequireNewClick, so the beam keeps ticking while the button is held.",
+  "Interactions": [
+    "Arrakis_Cutter_Beam"
+  ]
+}
