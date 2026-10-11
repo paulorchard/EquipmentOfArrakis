@@ -1,0 +1,21 @@
+{
+  "$Comment": "Cutter Ray trigger pulled with no block in range, heard by the shooter (no attenuation): the first 0.27 s of Portal_Zap_02 (tools/assets/make_fizzle.js).",
+  "AudioCategory": "AudioCat_Weapons",
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Fizzle.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": -1,
+        "MaxPitch": 1,
+        "MinVolume": -1,
+        "MaxVolume": 0
+      },
+      "Volume": -4
+    }
+  ],
+  "Volume": 0,
+  "MaxInstance": 2,
+  "PreventSoundInterruption": true
+}

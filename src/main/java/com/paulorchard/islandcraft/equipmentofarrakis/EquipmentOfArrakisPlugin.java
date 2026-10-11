@@ -5,6 +5,7 @@ import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.util.Config;
 
 import java.util.logging.Level;
 
@@ -17,6 +18,9 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
 
     private static EquipmentOfArrakisPlugin instance;
 
+    // Must be created before setup(); the server loads it from disk in between (the on-screen display settings).
+    private final Config<HudSettings> hudConfig = withConfig(HudSettings.FILE_NAME, HudSettings.CODEC);
+
     public EquipmentOfArrakisPlugin(JavaPluginInit init) {
         super(init);
         instance = this;
@@ -28,32 +32,29 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
 
     @Override
     protected void setup() {
-        getCodecRegistry(Interaction.CODEC).register(CutterBeamInteraction.TYPE, CutterBeamInteraction.class,
-                CutterBeamInteraction.CODEC);
-        getCodecRegistry(Interaction.CODEC).register(CutterMk2GateInteraction.TYPE, CutterMk2GateInteraction.class,
-                CutterMk2GateInteraction.CODEC);
+        getCodecRegistry(Interaction.CODEC).register(CutterRayGateInteraction.TYPE, CutterRayGateInteraction.class,
+                CutterRayGateInteraction.CODEC);
         getCodecRegistry(Interaction.CODEC).register(CompactorInteraction.TYPE, CompactorInteraction.class,
                 CompactorInteraction.CODEC);
-        getCommandRegistry().registerCommand(PowerCommands.build());
+        getCommandRegistry().registerCommand(PowerCommands.build(() -> hudConfig.get()));
         getEntityStoreRegistry().registerSystem(new PowerRechargeSystem());
-        // No codec: the laser segments are never saved (they also carry NonSerialized).
-        BeamSegment.register(getEntityStoreRegistry().registerComponent(BeamSegment.class, BeamSegment::new));
-        getEntityStoreRegistry().registerSystem(new MoltenTrailSystem());
-        getEntityStoreRegistry().registerSystem(new BeamSegmentSystem());
         getEntityStoreRegistry().registerSystem(new CompactorSystem());
+        getEntityStoreRegistry().registerSystem(new HudSystem(() -> hudConfig.get()));
         getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, event -> {
             ArrakisPower.forget(event.getPlayerRef().getUuid());
-            MoltenTrail.forget(event.getPlayerRef().getUuid());
             CompactorTrail.forget(event.getPlayerRef().getUuid());
+            HudSystem.forget(event.getPlayerRef().getUuid());
         });
     }
 
     /** Assets are loaded by now: say which of this mod's assets this game has. */
     @Override
     protected void start() {
+        // Writes the file with every setting (the defaults for any that were missing), so there is something to edit.
+        hudConfig.save();
         StringBuilder missing = new StringBuilder();
         for (String id : new String[] {"Arrakis_Blood_Extractor", "Arrakis_Dew_Reaper", "Arrakis_Compactor",
-                "Arrakis_Cutter_Ray", "Arrakis_Cutter_Ray_Mk2"}) {
+                "Arrakis_Cutter_Ray"}) {
             if (Item.getAssetMap().getAsset(id) == null) {
                 missing.append(' ').append(id);
             }
@@ -62,8 +63,6 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
             missing.append(' ').append(ArrakisPower.STAT_ID);
         }
         getLogger().at(Level.INFO).log("Missing:%s", missing.length() == 0 ? " nothing" : missing);
-        getLogger().at(Level.INFO).log("Pickaxes Tool_Pickaxe_Mithril does not match or beat in every gather type:%s",
-                StrongestPickaxe.notDominated("Tool_Pickaxe_Mithril"));
         for (String line : AssetSelfCheck.run()) {
             if (line.contains("PROBLEM")) {
                 getLogger().at(Level.WARNING).log("%s", line);

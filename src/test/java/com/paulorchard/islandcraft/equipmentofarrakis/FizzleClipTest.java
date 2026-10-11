@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The trimmed Portal_Zap_02 clip (tools/assets/make_fizzle.js) and the sound events of the Cutter Ray Mk2, read from the jar's resources. */
+/** The trimmed Portal_Zap_02 clip (tools/assets/make_fizzle.js) and the sound events of the Cutter Ray, read from the jar's resources. */
 class FizzleClipTest {
 
     private static byte[] resource(String path) throws IOException {
@@ -37,7 +37,7 @@ class FizzleClipTest {
         return c;
     }
 
-    private static final String SOUNDS = "/Common/Sounds/Equipment_of_Arrakis/Arrakis_Cutter_Mk2_";
+    private static final String SOUNDS = "/Common/Sounds/Equipment_of_Arrakis/Arrakis_Cutter_Ray_";
 
     /** Parses a trimmed clip page by page and returns its sample rate; asserts CRCs, sequence, one stream, flags and the last granule. */
     private static int checkClip(String name, double seconds) throws IOException {
@@ -104,7 +104,7 @@ class FizzleClipTest {
         String dir = "/Server/Audio/SoundEvents/Equipment_of_Arrakis/";
         for (String suffix : new String[] {"", "_Local"}) {
             for (String id : new String[] {"Firing", "Firing_End"}) {
-                String text = new String(resource(dir + "SFX_Arrakis_Cutter_Mk2_" + id + suffix + ".json"), StandardCharsets.UTF_8);
+                String text = new String(resource(dir + "SFX_Arrakis_Cutter_Ray_" + id + suffix + ".json"), StandardCharsets.UTF_8);
                 int a = text.indexOf("Portal_Zap_01.ogg");
                 int b = text.indexOf("Portal_Zap_03.ogg");
                 int c = text.indexOf("Portal_Zap_04.ogg");
@@ -113,28 +113,28 @@ class FizzleClipTest {
                 assertTrue(text.contains("\"RoundRobinHistorySize\": 2"));
                 assertEquals(id.equals("Firing") ? 2 : 0, text.split("\"Looping\": true", -1).length - 1, id + " loop layers");
             }
-            String impact = new String(resource(dir + "SFX_Arrakis_Cutter_Mk2_Impact" + suffix + ".json"), StandardCharsets.UTF_8);
-            assertTrue(impact.contains("Arrakis_Cutter_Mk2_Impact_Stone.ogg") && impact.contains("Arrakis_Cutter_Mk2_Impact_Burn.ogg"));
-            String fizzle = new String(resource(dir + "SFX_Arrakis_Cutter_Mk2_Fizzle" + suffix + ".json"), StandardCharsets.UTF_8);
-            assertTrue(fizzle.contains("Sounds/Equipment_of_Arrakis/Arrakis_Cutter_Mk2_Fizzle.ogg"));
+            String impact = new String(resource(dir + "SFX_Arrakis_Cutter_Ray_Impact" + suffix + ".json"), StandardCharsets.UTF_8);
+            assertTrue(impact.contains("Arrakis_Cutter_Ray_Impact_Stone.ogg") && impact.contains("Arrakis_Cutter_Ray_Impact_Burn.ogg"));
+            String fizzle = new String(resource(dir + "SFX_Arrakis_Cutter_Ray_Fizzle" + suffix + ".json"), StandardCharsets.UTF_8);
+            assertTrue(fizzle.contains("Sounds/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Fizzle.ogg"));
             assertFalse(fizzle.contains("\"Looping\""));
             // The per-shot fire sound of the first version is gone.
-            assertTrue(FizzleClipTest.class.getResource(dir + "SFX_Arrakis_Cutter_Mk2_Fire" + suffix + ".json") == null);
+            assertTrue(FizzleClipTest.class.getResource(dir + "SFX_Arrakis_Cutter_Ray_Fire" + suffix + ".json") == null);
         }
     }
 
     @Test
     void theFiringEffectKeepsTheLoopRunningWithoutReplayingTheStart() throws IOException {
-        String effect = new String(resource("/Server/Entity/Effects/Equipment_of_Arrakis/Arrakis_Cutter_Mk2_Firing.json"),
+        String effect = new String(resource("/Server/Entity/Effects/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Firing.json"),
                 StandardCharsets.UTF_8);
         assertTrue(effect.contains("\"OverlapBehavior\": \"Overwrite\""));
         assertTrue(effect.contains("\"Infinite\": false"));
         assertTrue(effect.contains("\"Duration\": 0.25"));
-        String primary = new String(resource("/Server/Item/RootInteractions/Equipment_of_Arrakis/Arrakis_Cutter_Mk2_Primary.json"),
+        String primary = new String(resource("/Server/Item/RootInteractions/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Primary.json"),
                 StandardCharsets.UTF_8);
-        int gate = primary.indexOf("Arrakis_Cutter_Mk2_Gate");
-        int firing = primary.indexOf("Arrakis_Cutter_Mk2_Firing");
-        int shoot = primary.indexOf("Arrakis_Cutter_Mk2_Shoot");
+        int gate = primary.indexOf("Arrakis_Cutter_Ray_Gate");
+        int firing = primary.indexOf("Arrakis_Cutter_Ray_Firing");
+        int shoot = primary.indexOf("Arrakis_Cutter_Ray_Shoot");
         assertTrue(gate > 0 && gate < firing && firing < shoot, "gate, then the effect, then the shot");
     }
 }

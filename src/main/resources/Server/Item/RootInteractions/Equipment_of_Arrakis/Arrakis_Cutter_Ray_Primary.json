@@ -1,0 +1,13 @@
+{
+  "$Comment": "Primary of the Cutter Ray: the range gate, then the held-fire effect (start, loop and end sound), then the vanilla shot.",
+  "Interactions": [
+    "Arrakis_Cutter_Ray_Gate",
+    "Arrakis_Cutter_Ray_Firing",
+    "Arrakis_Cutter_Ray_Shoot"
+  ],
+  "Tags": {
+    "Attack": [
+      "Ranged"
+    ]
+  }
+}

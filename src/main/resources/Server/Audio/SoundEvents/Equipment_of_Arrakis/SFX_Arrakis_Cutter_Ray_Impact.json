@@ -1,0 +1,34 @@
+{
+  "$Comment": "Cutter Ray block hit: the first 0.1 s of Stone_Hit_03 and of Entity_Effect_Burn_05 together (tools/assets/make_cutter_ray_sounds.js). Heard by the others, positional.",
+  "AudioCategory": "AudioCat_Weapons",
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Impact_Stone.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": -1,
+        "MaxPitch": 1,
+        "MinVolume": -1,
+        "MaxVolume": 0
+      },
+      "Volume": 0
+    },
+    {
+      "Files": [
+        "Sounds/Equipment_of_Arrakis/Arrakis_Cutter_Ray_Impact_Burn.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": -2,
+        "MaxPitch": 2,
+        "MinVolume": -1,
+        "MaxVolume": 0
+      },
+      "Volume": -4
+    }
+  ],
+  "Volume": 0,
+  "MaxInstance": 2,
+  "PreventSoundInterruption": true,
+  "Parent": "SFX_Attn_Loud"
+}

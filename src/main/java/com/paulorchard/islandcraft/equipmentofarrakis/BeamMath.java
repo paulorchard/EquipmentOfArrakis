@@ -3,10 +3,7 @@ package com.paulorchard.islandcraft.equipmentofarrakis;
 import org.joml.Vector3d;
 import org.joml.Vector3i;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/** The geometry of the Cutter Ray, kept free of engine classes so it can be tested on its own. */
+/** The geometry of the Cutter Ray and the Compactor (where a look ray meets a block), kept free of engine classes so it can be tested on its own. */
 final class BeamMath {
 
     private BeamMath() {
@@ -69,62 +66,5 @@ final class BeamMath {
     static Vector3d offFace(Entry entry, double clearance) {
         return new Vector3d(entry.faceCenter()).fma(clearance, new Vector3d(entry.normal().x, entry.normal().y,
                 entry.normal().z));
-    }
-
-    /**
-     * Where the barrel of a rifle held at the shoulder is, relative to the eye: {@code forward} along the look
-     * direction, {@code right} to the player's right and {@code down} below the eye, all measured in the player's own
-     * view frame (so it follows the pitch).
-     */
-    static Vector3d hand(Vector3d eye, Vector3d dir, double forward, double right, double down) {
-        Vector3d look = new Vector3d(dir).normalize();
-        Vector3d side = new Vector3d(look).cross(0, 1, 0);
-        if (side.lengthSquared() < 1e-9) {
-            // Looking straight up or down: any horizontal direction will do, so the hand does not flip about.
-            side.set(1, 0, 0);
-        }
-        side.normalize();
-        Vector3d up = new Vector3d(side).cross(look).normalize();
-        return new Vector3d(eye).fma(forward, look).fma(right, side).fma(-down, up);
-    }
-
-    /** One piece of the tapering line: where its middle is, how wide it is and how long. */
-    record Piece(Vector3d center, double width, double length) {
-    }
-
-    /**
-     * Lays out a line from {@code start} to {@code end} that is {@code widthStart} wide at the start and
-     * {@code widthEnd} at the end, as pieces whose length is always {@code lengthPerWidth} times their width (an
-     * entity can only be scaled evenly, so a piece that is thinner is also shorter). Each piece starts
-     * {@code advance} (below 1, so that they overlap) of a length after the one before, and the last is cut short to end
-     * exactly at {@code end}. Empty when the line is shorter than {@code minimum}; never more than {@code max} pieces.
-     */
-    static List<Piece> pieces(Vector3d start, Vector3d end, double widthStart, double widthEnd, double lengthPerWidth,
-                              double advance, double minimum, int max) {
-        List<Piece> pieces = new ArrayList<>();
-        double total = start.distance(end);
-        if (total < minimum) {
-            return pieces;
-        }
-        Vector3d dir = new Vector3d(end).sub(start).div(total);
-        double at = 0;
-        while (pieces.size() < max) {
-            double width = widthStart + (widthEnd - widthStart) * Math.min(1, at / total);
-            double length = lengthPerWidth * width;
-            double next = at + advance * length;
-            if (at + length >= total || pieces.size() == max - 1) {
-                length = total - at;
-                width = length / lengthPerWidth;
-                next = total;
-            }
-            if (length > 1e-6) {
-                pieces.add(new Piece(new Vector3d(start).fma(at + length / 2, dir), width, length));
-            }
-            if (next >= total) {
-                break;
-            }
-            at = next;
-        }
-        return pieces;
     }
 }

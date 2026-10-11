@@ -26,12 +26,11 @@ import java.util.UUID;
 final class PowerCommands {
 
     private static final String LANG = "server.commands.arrakis.";
-    private static final UUID DEBUG_OWNER = new UUID(0, 1);
 
     private PowerCommands() {
     }
 
-    static AbstractCommandCollection build() {
+    static AbstractCommandCollection build(java.util.function.Supplier<HudSettings> hudSettings) {
         AbstractCommandCollection arrakis = new AbstractCommandCollection("arrakis", LANG + "desc") {
         };
         AbstractCommandCollection power = new AbstractCommandCollection("power", LANG + "power.desc") {
@@ -56,64 +55,6 @@ final class PowerCommands {
             }
         }, "amount", "player"));
         arrakis.addSubCommand(power);
-        AbstractCommandCollection laser = new AbstractCommandCollection("laser", LANG + "laser.desc") {
-        };
-        laser.addSubCommand(WorldPositional.build("rig", LANG + "laser.rig.desc", (ctx, world, store, args) -> {
-            // Three thin rods 1.5 blocks long, 3 blocks ahead of the player, to see which way a piece of the laser model lies:
-            // one pointing away from the player, one straight up, one to the player's right. They stay until "laser clear".
-            if (!ctx.isPlayer() || ctx.senderAsPlayerRef() == null) {
-                say(ctx, "Run this as a player.");
-                return;
-            }
-            Ref<EntityStore> player = ctx.senderAsPlayerRef();
-            com.hypixel.hytale.math.vector.Transform look = com.hypixel.hytale.server.core.util.TargetUtil.getLook(player, store);
-            Vector3d eye = look.getPosition();
-            Vector3d ahead = new Vector3d(look.getDirection().x, 0, look.getDirection().z).normalize();
-            Vector3d right = BeamMath.hand(new Vector3d(), ahead, 0, 1, 0);
-            Vector3d base = new Vector3d(eye).fma(3, ahead);
-            Vector3d[] centres = {new Vector3d(base), new Vector3d(base).fma(1.5, right), new Vector3d(base).fma(-1.5, right)};
-            Vector3d[] directions = {ahead, new Vector3d(0, 1, 0), right};
-            for (int i = 0; i < 3; i++) {
-                Ref<EntityStore> ref = CutterLaser.debugSpawn(store, DEBUG_OWNER, centres[i], directions[i], 0.5f);
-                if (ref == null) {
-                    say(ctx, "The laser model assets are missing");
-                    return;
-                }
-                MoltenTrail.debugOwn(DEBUG_OWNER, ref);
-            }
-            say(ctx, "Rods: the middle one should point away from you, the one on your right straight up, the one on your left to your right.");
-        }));
-        laser.addSubCommand(WorldPositional.build("clear", LANG + "laser.clear.desc", (ctx, world, store, args) -> {
-            MoltenTrail.forget(DEBUG_OWNER);
-            say(ctx, "Debug rods will be removed.");
-        }));
-        laser.addSubCommand(WorldPositional.build("spawn", LANG + "laser.spawn.desc", (ctx, world, store, args) -> {
-            // "keep" makes a debug owner own it, so the sweeper leaves it alone; without it the sweeper removes it.
-            boolean keep = args.length > 0 && args[0].equals("keep");
-            Vector3d at = args.length >= 4
-                    ? new Vector3d(Double.parseDouble(args[1]), Double.parseDouble(args[2]), Double.parseDouble(args[3]))
-                    : new Vector3d(0, 100, 0);
-            // The chunk has to be loaded, or the engine drops the entity (no player is near it on a headless server).
-            world.getChunkAsync(com.hypixel.hytale.math.util.ChunkUtil.indexChunkFromBlock(at.x, at.z))
-                    .thenAccept(chunk -> world.execute(() -> {
-                        chunk.resetKeepAlive();
-                        Ref<EntityStore> ref = CutterLaser.debugSpawn(store, DEBUG_OWNER, at, new Vector3d(1, 0, 0), 1f);
-                        if (ref == null) {
-                            say(ctx, "Could not add the piece (model assets missing)");
-                            return;
-                        }
-                        if (keep) {
-                            MoltenTrail.debugOwn(DEBUG_OWNER, ref);
-                        }
-                        say(ctx, "Spawned one laser piece at " + at + (keep ? " (kept)" : " (unowned)"));
-                    }));
-        }, "keep", "x", "y", "z"));
-        laser.addSubCommand(WorldPositional.build("count", LANG + "laser.count.desc", (ctx, world, store, args) -> {
-            say(ctx, "Laser segments: " + store.getEntityCountFor(
-                    com.hypixel.hytale.component.Archetype.of(BeamSegment.getComponentType()))
-                    + ", entities in all: " + store.getEntityCount());
-        }));
-        arrakis.addSubCommand(laser);
         AbstractCommandCollection compactor = new AbstractCommandCollection("compactor", LANG + "compactor.desc") {
         };
         compactor.addSubCommand(WorldPositional.build("selftest", LANG + "compactor.selftest.desc", (ctx, world, store, args) -> {
@@ -127,6 +68,53 @@ final class PowerCommands {
                     }));
         }));
         arrakis.addSubCommand(compactor);
+        AbstractCommandCollection hud = new AbstractCommandCollection("hud", LANG + "hud.desc") {
+        };
+        hud.addSubCommand(WorldPositional.build("tune", LANG + "hud.tune.desc", (ctx, world, store, args) -> {
+            // Live, not saved: with no argument it lists the values; with a name and a value it sets one and the displays are rebuilt.
+            if (args.length == 0) {
+                for (String line : hudSettings.get().listing()) {
+                    say(ctx, line);
+                }
+            } else if (args.length == 1) {
+                say(ctx, "Give a value too: arrakis hud tune <name> <value>");
+            } else if (hudSettings.get().tune(args[0], args[1])) {
+                say(ctx, args[0] + " is now " + args[1] + " (not saved)");
+            } else {
+                say(ctx, "No such setting, or the value does not fit: " + args[0] + " " + args[1] + " (arrakis hud tune lists them)");
+            }
+        }, "name", "value"));
+        hud.addSubCommand(WorldPositional.build("rig", LANG + "hud.rig.desc", (ctx, world, store, args) -> {
+            // "rig [tool]" shows the tool panel for a few seconds; "rig ammo <n>" shows a test number in AMMO for a few seconds.
+            if (!ctx.isPlayer() || ctx.senderAsPlayerRef() == null) {
+                say(ctx, "Run this as a player.");
+                return;
+            }
+            PlayerRef self = store.getComponent(ctx.senderAsPlayerRef(), PlayerRef.getComponentType());
+            if (args.length >= 1 && args[0].equalsIgnoreCase("ammo")) {
+                try {
+                    AmmoReadout.rig(self.getUuid(), Integer.parseInt(args.length > 1 ? args[1] : "117"), 5);
+                    say(ctx, "AMMO shows the test number for 5 seconds.");
+                } catch (NumberFormatException e) {
+                    say(ctx, "Not a whole number: " + args[1]);
+                }
+                return;
+            }
+            String wanted = args.length >= 1 ? args[0] : "Arrakis_Compactor";
+            String tool = null;
+            for (String id : hudSettings.get().getToolItems()) {
+                if (id.equalsIgnoreCase(wanted) || id.toLowerCase().endsWith("_" + wanted.toLowerCase())) {
+                    tool = id;
+                }
+            }
+            if (tool == null) {
+                say(ctx, "Not one of the tool panel items: " + String.join(", ", hudSettings.get().getToolItems()));
+                return;
+            }
+            HudSystem.rigTool(self.getUuid(), tool, 5);
+            say(ctx, "The tool panel shows " + tool + " for 5 seconds.");
+        }, "what", "value"));
+        arrakis.addSubCommand(hud);
         return arrakis;
     }
 

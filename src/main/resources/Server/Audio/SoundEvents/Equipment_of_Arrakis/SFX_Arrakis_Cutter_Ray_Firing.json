@@ -1,0 +1,60 @@
+{
+  "$Comment": "Cutter Ray held fire, started by the effect Arrakis_Cutter_Ray_Firing: a one-shot zap, then two staggered looping layers of the same zaps (a random clip each pass) for a dense crackle. Heard by the others, positional.",
+  "AudioCategory": "AudioCat_Weapons",
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Items/Portal/Textures/Portal_Zap_01.ogg",
+        "Sounds/Items/Portal/Textures/Portal_Zap_03.ogg",
+        "Sounds/Items/Portal/Textures/Portal_Zap_04.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": -1,
+        "MaxPitch": 1,
+        "MinVolume": -1,
+        "MaxVolume": 0
+      },
+      "RoundRobinHistorySize": 2,
+      "StartDelay": 0,
+      "Volume": 0
+    },
+    {
+      "Files": [
+        "Sounds/Items/Portal/Textures/Portal_Zap_01.ogg",
+        "Sounds/Items/Portal/Textures/Portal_Zap_03.ogg",
+        "Sounds/Items/Portal/Textures/Portal_Zap_04.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": -1,
+        "MaxPitch": 1,
+        "MinVolume": -1,
+        "MaxVolume": 0
+      },
+      "RoundRobinHistorySize": 2,
+      "StartDelay": 0.3,
+      "Looping": true,
+      "Volume": -7
+    },
+    {
+      "Files": [
+        "Sounds/Items/Portal/Textures/Portal_Zap_01.ogg",
+        "Sounds/Items/Portal/Textures/Portal_Zap_03.ogg",
+        "Sounds/Items/Portal/Textures/Portal_Zap_04.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": -1,
+        "MaxPitch": 1,
+        "MinVolume": -2,
+        "MaxVolume": 0
+      },
+      "RoundRobinHistorySize": 2,
+      "StartDelay": 1,
+      "Looping": true,
+      "Volume": -9
+    }
+  ],
+  "Volume": 0,
+  "MaxInstance": 2,
+  "PreventSoundInterruption": false,
+  "Parent": "SFX_Attn_Loud"
+}

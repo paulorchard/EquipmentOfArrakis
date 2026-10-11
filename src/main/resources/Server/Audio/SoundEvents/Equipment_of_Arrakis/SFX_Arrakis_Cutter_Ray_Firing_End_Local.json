@@ -1,0 +1,26 @@
+{
+  "$Comment": "Cutter Ray release (the effect Arrakis_Cutter_Ray_Firing lapsing): a quieter zap, pitched down 3 (event Pitch -3, then a spread of -1..+1) from the same clips. Shooter's copy: no attenuation Parent (as the vanilla _Local events).",
+  "AudioCategory": "AudioCat_Weapons",
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Items/Portal/Textures/Portal_Zap_01.ogg",
+        "Sounds/Items/Portal/Textures/Portal_Zap_03.ogg",
+        "Sounds/Items/Portal/Textures/Portal_Zap_04.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": -1,
+        "MaxPitch": 1,
+        "MinVolume": -1,
+        "MaxVolume": 0
+      },
+      "RoundRobinHistorySize": 2,
+      "StartDelay": 0,
+      "Volume": -4
+    }
+  ],
+  "Volume": 0,
+  "Pitch": -3,
+  "MaxInstance": 2,
+  "PreventSoundInterruption": true
+}

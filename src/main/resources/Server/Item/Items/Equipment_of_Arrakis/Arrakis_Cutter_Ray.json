@@ -1,5 +1,4 @@
 {
-  "$Comment": "Main-hand, two-handed. Model: the Pulse Rifle of Weapon_Gun, unchanged. No projectile, no muzzle flash, no recoil animation, no beam in the model; while Primary is held the Arrakis_Cutter_Beam interaction locks onto the block under the crosshair, draws a red laser line (entities, see CutterLaser) from the barrel to the middle of the locked face, and throws molten globs from there. Two-handed because there is no Utility.Compatible and a Secondary interaction exists: the interaction context then gives both clicks to this item, never to the off-hand tool. The priorities below make that explicit.",
   "TranslationProperties": {
     "Name": "server.items.Arrakis_Cutter_Ray.name",
     "Description": "server.items.Arrakis_Cutter_Ray.description"
@@ -7,9 +6,56 @@
   "Categories": [
     "Items.Tools"
   ],
-  "Quality": "Rare",
-  "MaxStack": 1,
   "Icon": "Icons/ItemsGenerated/Weapon_Gun.png",
+  "Model": "Items/Hypixel/Minigames/Space_Swarm/Weapons/Pulse_Rifle.blockymodel",
+  "Texture": "Items/Hypixel/Minigames/Space_Swarm/Weapons/Pulse_Rifle_Texture.png",
+  "PlayerAnimationsId": "Arrakis_Cutter_Ray",
+  "Interactions": {
+    "Primary": "Arrakis_Cutter_Ray_Primary",
+    "Secondary": "Arrakis_Cutter_Ray_Attack"
+  },
+  "InteractionVars": {
+    "Arrakis_Cutter_Ray_Swing_Left_Effect": {
+      "Interactions": [
+        {
+          "Parent": "Arrakis_Cutter_Ray_Swing_Left_Effect",
+          "Effects": {
+            "Trails": [
+              {
+                "TrailId": "Small_Default",
+                "TargetNodeName": "Handle",
+                "TargetEntityPart": "PrimaryItem",
+                "PositionOffset": {
+                  "X": 0.4,
+                  "Y": -0.05,
+                  "Z": 0
+                },
+                "RotationOffset": {
+                  "Yaw": 0,
+                  "Pitch": 0,
+                  "Roll": -45
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "Arrakis_Cutter_Ray_Swing_Left_Damage": {
+      "Interactions": [
+        {
+          "Parent": "Arrakis_Cutter_Ray_Swing_Left_Damage",
+          "DamageCalculator": {
+            "Type": "Dps",
+            "BaseDamage": {
+              "Physical": 5
+            },
+            "RandomPercentageModifier": 0.1
+          }
+        }
+      ]
+    }
+  },
   "IconProperties": {
     "Scale": 0.37,
     "Translation": [
@@ -22,9 +68,14 @@
       0
     ]
   },
-  "Model": "Items/Hypixel/Minigames/Space_Swarm/Weapons/Pulse_Rifle.blockymodel",
-  "Texture": "Items/Hypixel/Minigames/Space_Swarm/Weapons/Pulse_Rifle_Texture.png",
-  "PlayerAnimationsId": "Rifle",
+  "Quality": "Technical",
+  "Tags": {
+    "Type": [
+      "Weapon"
+    ]
+  },
+  "Weapon": {},
+  "$Comment": "The vanilla Weapon_Gun (same model, texture, icon, quality, tags, animations, Primary at RunTime 0.05 and the Secondary swing), with the Cutter Ray changes: no casing, recoil at 20%, no sound, sparks at the crosshair, white globs, block damage, range 5 (tools/assets/make_cutter_ray.js). Two-handed as the vanilla gun is: no Utility.Compatible and a Secondary, so both clicks stay with it; the priorities are written out as on the Cutter Ray.",
   "InteractionConfig": {
     "Priorities": {
       "Primary": {
@@ -34,9 +85,5 @@
         "MainHand": 10
       }
     }
-  },
-  "Interactions": {
-    "Primary": "Arrakis_Root_Cutter_Ray",
-    "Secondary": "Arrakis_Root_Cutter_Ray_Secondary"
   }
 }

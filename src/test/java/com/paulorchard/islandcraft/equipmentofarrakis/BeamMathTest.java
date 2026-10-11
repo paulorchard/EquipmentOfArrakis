@@ -4,8 +4,6 @@ import org.joml.Vector3d;
 import org.joml.Vector3i;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -77,59 +75,5 @@ class BeamMathTest {
     void theGlobPointIsClearOfTheFace() {
         BeamMath.Entry e = BeamMath.entry(new Vector3d(0.5, 5.0, 0.5), new Vector3d(0, -1, 0), new Vector3i(0, 2, 0));
         assertEquals(new Vector3d(0.5, 3.08, 0.5), BeamMath.offFace(e, 0.08));
-    }
-
-    @Test
-    void theHandIsInFrontBelowAndToTheRightOfTheEye() {
-        // Looking along +x, the hand is 0.9 ahead and 0.3 below the eye, and 0.2 to one side.
-        Vector3d hand = BeamMath.hand(new Vector3d(0, 1.6, 0), new Vector3d(1, 0, 0), 0.9, 0.2, 0.3);
-        assertEquals(0.9, hand.x, 1e-9);
-        assertEquals(1.3, hand.y, 1e-9);
-        assertEquals(0.2, Math.abs(hand.z), 1e-9);
-        // To the right: looking along -z (north in Hytale), right is +x.
-        Vector3d north = BeamMath.hand(new Vector3d(0, 0, 0), new Vector3d(0, 0, -1), 1, 0.2, 0);
-        assertTrue(north.x > 0.19 && north.x < 0.21);
-        assertEquals(-1.0, north.z, 1e-9);
-    }
-
-    @Test
-    void theHandFollowsThePitchAndSurvivesALookStraightDown() {
-        Vector3d eye = new Vector3d(0, 1.6, 0);
-        Vector3d down = BeamMath.hand(eye, new Vector3d(0, -1, 0), 0.9, 0.2, 0.3);
-        assertEquals(0.7, down.y, 1e-9);
-        assertTrue(Double.isFinite(down.x) && Double.isFinite(down.z));
-    }
-
-    @Test
-    void thePiecesCoverTheLineWithoutGapsAndTaper() {
-        Vector3d start = new Vector3d(0, 0, 0);
-        Vector3d end = new Vector3d(5, 0, 0);
-        List<BeamMath.Piece> pieces = BeamMath.pieces(start, end, 0.012, 0.003, 96, 0.85, 0.15, 24);
-        assertTrue(pieces.size() > 3 && pieces.size() < 24);
-        double covered = 0;
-        double lastWidth = Double.MAX_VALUE;
-        for (BeamMath.Piece p : pieces) {
-            double from = p.center().x - p.length() / 2;
-            double to = p.center().x + p.length() / 2;
-            assertTrue(from <= covered + 1e-9, "gap before " + from + " (covered up to " + covered + ")");
-            covered = Math.max(covered, to);
-            assertTrue(p.width() <= lastWidth + 1e-12, "the line gets thinner");
-            lastWidth = p.width();
-            assertEquals(96 * p.width(), p.length(), 1e-9);
-        }
-        assertEquals(5.0, covered, 1e-9);
-        assertEquals(0.012, pieces.get(0).width(), 1e-9);
-        assertTrue(pieces.get(pieces.size() - 1).width() < 0.005);
-    }
-
-    @Test
-    void thePiecesNeverRunPastTheEndAndAShortLineIsOnePiece() {
-        List<BeamMath.Piece> one = BeamMath.pieces(new Vector3d(0, 0, 0), new Vector3d(0, 0, 0.5), 0.012, 0.003, 96, 0.85,
-                0.15, 24);
-        assertEquals(1, one.size());
-        assertEquals(0.5, one.get(0).length(), 1e-9);
-        assertEquals(0.25, one.get(0).center().z, 1e-9);
-        assertTrue(BeamMath.pieces(new Vector3d(), new Vector3d(0.05, 0, 0), 0.012, 0.003, 96, 0.85, 0.15, 24).isEmpty());
-        assertEquals(4, BeamMath.pieces(new Vector3d(), new Vector3d(50, 0, 0), 0.012, 0.003, 96, 0.85, 0.15, 4).size());
     }
 }

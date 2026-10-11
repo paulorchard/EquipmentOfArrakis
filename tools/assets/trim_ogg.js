@@ -1,4 +1,4 @@
-// Shared by make_fizzle.js and make_mk2_sounds.js: cuts an Ogg Vorbis clip at packet level, without re-encoding, and reads a file out of
+// Shared by make_fizzle.js and make_cutter_ray_sounds.js: cuts an Ogg Vorbis clip at packet level, without re-encoding, and reads a file out of
 // the game's Assets.zip. The vanilla clips are never stored in the repo; only the cut results are.
 //
 // An Ogg Vorbis file is pages of packets: three header packets (identification, comment, setup) and then audio packets. An audio packet

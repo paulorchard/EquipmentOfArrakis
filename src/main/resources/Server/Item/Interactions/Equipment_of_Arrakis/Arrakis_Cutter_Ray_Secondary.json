@@ -1,4 +1,0 @@
-{
-  "$Comment": "The Cutter Ray does nothing on right click. It has to have a Secondary all the same: a main-hand item without one lets the off-hand tool take the click, and the Cutter Ray is two-handed.",
-  "Type": "Simple"
-}
