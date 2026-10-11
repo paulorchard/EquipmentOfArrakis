@@ -99,7 +99,7 @@ class HoltzmanRulesTest {
             assertTrue(effect.contains(text), text);
         }
         String sound = resource("/Server/Audio/SoundEvents/Equipment_of_Arrakis/SFX_Arrakis_Holtzman_Field_Local.json");
-        assertTrue(sound.contains("Void_Static_Loop_Stereo_01.ogg") && sound.contains("\"Looping\": true") && sound.contains("\"Volume\": -12"));
+        assertTrue(sound.contains("Void_Static_Loop_Stereo_01.ogg") && sound.contains("\"Looping\": true") && sound.contains("\"Volume\": -8.5") && sound.contains("DuckingRules") && sound.contains("\"BypassDucking\": true"));
         String breakSound = resource("/Server/Audio/SoundEvents/Equipment_of_Arrakis/SFX_Arrakis_Holtzman_Break.json");
         assertTrue(breakSound.contains("Crystal_Break_Layer_01.ogg"));
     }

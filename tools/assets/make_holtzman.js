@@ -25,6 +25,13 @@ const POST_COLOR = '#ffb02e';        // ModelVFX PostColor
 const POST_COLOR_OPACITY = 0.12;     // how much of the body is washed with it
 const SHIMMER_SECONDS = 2.5;         // ModelVFX AnimationDuration: one sweep of the shimmer (it mirrors back, so a full cycle is twice this)
 
+// A2. the impact flash: when the field absorbs a hit, the shimmer sweeps over the body very fast, once
+const IMPACT_SECONDS = 0.1;          // ModelVFX AnimationDuration: one quick sweep (the effect lasts a little longer so the sweep always finishes)
+const IMPACT_EFFECT_SECONDS = 0.15;  // Duration of the effect that carries it
+const IMPACT_COLOR = '#ffe9a8';       // the brighter, whiter amber of the flash
+const IMPACT_THICKNESS = 4.5;        // outline thickness during the flash
+const IMPACT_POST_OPACITY = 0.3;     // wash opacity during the flash
+
 // B. the bubble (third person: what other players see)
 const BUBBLE_NODE = 'Belly';         // the player model node it is attached to: Belly is the middle of the torso (Pelvis is just under it)
 const BUBBLE_OFFSET_Y = 0.0;         // blocks up from that node
@@ -153,6 +160,34 @@ writeJson('Server/Entity/ModelVFX/Equipment_of_Arrakis/Arrakis_Holtzman_Field.js
     PostColorOpacity: POST_COLOR_OPACITY,
     UseProgessiveHighlight: false,
     AnimationRange: { Y: 0.6 },
+});
+
+// ---- the impact flash: the same shimmer, once, in 0.1 s, brighter (a short entity effect the damage system applies on every absorbed hit)
+writeJson('Server/Entity/ModelVFX/Equipment_of_Arrakis/Arrakis_Holtzman_Impact.json', {
+    $Comment: 'The Holtzman field taking a hit (tools/assets/make_holtzman.js): the golden shimmer sweeps up the body once, fast, brighter and thicker than the steady one.',
+    SwitchTo: 'PostColor',
+    EffectDirection: 'BottomUp',
+    AnimationDuration: IMPACT_SECONDS,
+    CurveType: 'QuartOut',
+    LoopOption: 'PlayOnce',
+    HighlightColor: IMPACT_COLOR,
+    HighlightThickness: IMPACT_THICKNESS,
+    UseBloomOnHighlight: true,
+    NoiseScale: { X: 1.0, Y: 5.0 },
+    PostColor: IMPACT_COLOR,
+    PostColorOpacity: IMPACT_POST_OPACITY,
+    UseProgessiveHighlight: false,
+    AnimationRange: { Y: 1.0 },
+});
+writeJson('Server/Entity/Effects/Equipment_of_Arrakis/Arrakis_Holtzman_Impact.json', {
+    $Comment: 'Carries the impact ModelVFX for a moment when the Holtzman field absorbs a hit (applied by the damage system). Short Duration so it is over before the next hit; Overwrite so a hit during it renews it.',
+    ApplicationEffects: {
+        ModelVFXId: 'Arrakis_Holtzman_Impact',
+    },
+    OverlapBehavior: 'Overwrite',
+    Infinite: false,
+    Duration: IMPACT_EFFECT_SECONDS,
+    Debuff: false,
 });
 
 // ---- particle spawners

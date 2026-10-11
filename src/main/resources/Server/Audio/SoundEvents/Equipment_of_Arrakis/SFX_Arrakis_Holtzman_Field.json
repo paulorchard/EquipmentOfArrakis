@@ -1,5 +1,5 @@
 {
-  "$Comment": "The Holtzman field hum, heard by the other players (positional). The world sound of an entity effect must be mono, and the requested Void_Static_Loop_Stereo_01 is stereo (the effect would not load), so this one uses the vanilla mono loop Portal_Void_LOOP_2 (a Void loop, 29 s); the owner hears Void_Static_Loop_Stereo_01 in the _Local event. Applied and stopped by the entity effect Arrakis_Holtzman_Field.",
+  "$Comment": "The Holtzman field hum, heard by the other players (positional). The world sound of an entity effect must be mono, and the requested Void_Static_Loop_Stereo_01 is stereo (the effect would not load), so this one uses the vanilla mono loop Portal_Void_LOOP_2 (a Void loop, 29 s); the owner hears Void_Static_Loop_Stereo_01 in the _Local event. Applied and stopped by the entity effect Arrakis_Holtzman_Field. Volume -8.5 dB (it was -12: 50% more amplitude, +3.5 dB).",
   "AudioCategory": "AudioCat_Weapons",
   "Layers": [
     {
@@ -8,11 +8,12 @@
       ],
       "Looping": true,
       "StartDelay": 0,
-      "Volume": -12
+      "Volume": -8.5
     }
   ],
   "Volume": 0,
   "MaxInstance": 4,
   "PreventSoundInterruption": false,
-  "Parent": "SFX_Attn_Loud"
+  "Parent": "SFX_Attn_Loud",
+  "BypassDucking": true
 }

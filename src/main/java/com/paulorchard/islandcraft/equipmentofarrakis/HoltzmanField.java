@@ -63,6 +63,15 @@ final class HoltzmanField {
         }
     }
 
+    /** The quick shimmer over the body: a short effect carrying the impact ModelVFX (0.1 s sweep). */
+    static void impact(ComponentAccessor<EntityStore> accessor, Ref<EntityStore> ref, HoltzmanSettings settings) {
+        EffectControllerComponent controller = accessor.getComponent(ref, EffectControllerComponent.getComponentType());
+        EntityEffect effect = EntityEffect.getAssetMap().getAsset(settings.getImpactEffectId());
+        if (controller != null && effect != null) {
+            controller.addEffect(ref, effect, accessor);
+        }
+    }
+
     /** The flash where a hit met the field. */
     static void hitFlash(ComponentAccessor<EntityStore> accessor, Vector3d at) {
         ParticleUtil.spawnParticleEffect(HIT_PARTICLES, at, accessor);

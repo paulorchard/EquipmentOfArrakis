@@ -104,6 +104,9 @@ final class HoltzmanDamageSystem extends DamageEventSystem {
         HoltzmanField.hitFlash(commandBuffer, new Vector3d(point[0], point[1], point[2]));
         if (result.broken()) {
             HoltzmanField.breakShield(commandBuffer, ref, cfg, new Vector3d(centre[0], centre[1], centre[2]));
+        } else {
+            // The shimmer over the body runs once, fast, as the impact.
+            HoltzmanField.impact(commandBuffer, ref, cfg);
         }
     }
 }

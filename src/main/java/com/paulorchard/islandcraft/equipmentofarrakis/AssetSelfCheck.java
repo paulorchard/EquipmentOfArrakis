@@ -206,6 +206,9 @@ final class AssetSelfCheck {
                 com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect.getAssetMap().getAsset("Arrakis_Holtzman_Field");
         lines.add("  effect Arrakis_Holtzman_Field: " + (field == null ? "PROBLEM MISSING" : "ok, infinite=" + field.isInfinite()
                 + " overlap=" + field.getOverlapBehavior()));
+        com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect impact =
+                com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect.getAssetMap().getAsset("Arrakis_Holtzman_Impact");
+        lines.add("  effect Arrakis_Holtzman_Impact: " + (impact == null ? "PROBLEM MISSING" : "ok, duration=" + impact.getDuration()));
         for (String id : new String[] {"Arrakis_Holtzman_Bubble", "Arrakis_Holtzman_Bubble_FP", "Arrakis_Holtzman_Hit", "Arrakis_Holtzman_Shatter"}) {
             lines.add("  particle system " + id + ": " + (ParticleSystem.getAssetMap().getAsset(id) == null ? "PROBLEM MISSING" : "ok"));
         }
