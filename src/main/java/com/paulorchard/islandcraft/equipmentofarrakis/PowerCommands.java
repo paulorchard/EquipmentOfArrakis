@@ -114,6 +114,19 @@ final class PowerCommands {
                     + ", entities in all: " + store.getEntityCount());
         }));
         arrakis.addSubCommand(laser);
+        AbstractCommandCollection compactor = new AbstractCommandCollection("compactor", LANG + "compactor.desc") {
+        };
+        compactor.addSubCommand(WorldPositional.build("selftest", LANG + "compactor.selftest.desc", (ctx, world, store, args) -> {
+            // Development: puts a sand block high in the air at 0, 200, 0 and runs the Compactor's engine calls on it.
+            world.getChunkAsync(com.hypixel.hytale.math.util.ChunkUtil.indexChunkFromBlock(0, 0))
+                    .thenAccept(chunk -> world.execute(() -> {
+                        chunk.resetKeepAlive();
+                        for (String line : CompactorSelfTest.run(world)) {
+                            say(ctx, line);
+                        }
+                    }));
+        }));
+        arrakis.addSubCommand(compactor);
         return arrakis;
     }
 

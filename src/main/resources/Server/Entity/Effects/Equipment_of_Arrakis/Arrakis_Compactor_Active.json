@@ -1,0 +1,10 @@
+{
+  "$Comment": "The Compactor's hum. Applied by the compacting tick (not by an idle aim tick); OVERWRITE resets the time left to Duration without making a new effect, so a refresh does not restart the loop, and about Duration after the compacting stops the effect lapses and the engine stops the loop. Same structure as Arrakis_Cutter_Mk2_Firing, without the start and end sounds.",
+  "ApplicationEffects": {
+    "WorldSoundEventId": "SFX_Arrakis_Compactor_Active",
+    "LocalSoundEventId": "SFX_Arrakis_Compactor_Active_Local"
+  },
+  "OverlapBehavior": "Overwrite",
+  "Infinite": false,
+  "Duration": 0.25
+}

@@ -103,6 +103,7 @@ final class AssetSelfCheck {
                     + (ParticleSystem.getAssetMap().getAsset(id) == null ? "PROBLEM MISSING" : "ok"));
         }
         lines.addAll(mk2());
+        lines.addAll(compactor());
         return lines;
     }
 
@@ -161,6 +162,28 @@ final class AssetSelfCheck {
                     != null;
             lines.add("  clip " + clip + " in the jar: " + (there ? "ok" : "PROBLEM MISSING"));
         }
+        return lines;
+    }
+
+    /** The Compactor: the compacting interaction type, the hum effect and its sound events and loop clip. */
+    private static List<String> compactor() {
+        List<String> lines = new ArrayList<>();
+        Interaction aim = Interaction.getAssetMap().getAsset("Arrakis_Compactor_Aim");
+        lines.add("Compactor aim/compact interaction: " + (aim instanceof CompactorInteraction ? "ok (CompactorInteraction)"
+                : "PROBLEM missing or of the wrong type: " + aim));
+        com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect hum =
+                com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect.getAssetMap()
+                        .getAsset("Arrakis_Compactor_Active");
+        lines.add("  effect Arrakis_Compactor_Active: " + (hum == null ? "PROBLEM MISSING" : "ok, duration=" + hum.getDuration()
+                + " overlap=" + hum.getOverlapBehavior() + " infinite=" + hum.isInfinite()));
+        for (String id : new String[] {"SFX_Arrakis_Compactor_Active", "SFX_Arrakis_Compactor_Active_Local"}) {
+            com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent sound =
+                    com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent.getAssetMap().getAsset(id);
+            lines.add("  sound event " + id + ": " + (sound == null ? "PROBLEM MISSING" : "ok, layers=" + sound.getLayers().length
+                    + " maxInstance=" + sound.getMaxInstance()));
+        }
+        lines.add("  particle system Arrakis_Compactor_Dust: "
+                + (ParticleSystem.getAssetMap().getAsset("Arrakis_Compactor_Dust") == null ? "PROBLEM MISSING" : "ok"));
         return lines;
     }
 }
