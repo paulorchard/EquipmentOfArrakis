@@ -1,0 +1,10 @@
+{
+  "$Comment": "The hum of the Dew Reaper's swing: the same sound events as the Compactor's hum (Arrakis_Compactor_Active, no new audio). Applied when an accepted swing starts and long enough to cover it (the swing is 2.08333 s); the Finish interaction takes it off at the end of the swing and the Dew Reaper system takes it off at once when the swing is cut short. OVERWRITE as the other held effects.",
+  "ApplicationEffects": {
+    "WorldSoundEventId": "SFX_Arrakis_Compactor_Active",
+    "LocalSoundEventId": "SFX_Arrakis_Compactor_Active_Local"
+  },
+  "OverlapBehavior": "Overwrite",
+  "Infinite": false,
+  "Duration": 2.1
+}

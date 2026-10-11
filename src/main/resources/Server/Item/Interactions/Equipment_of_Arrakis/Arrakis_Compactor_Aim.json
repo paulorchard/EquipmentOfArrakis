@@ -6,7 +6,7 @@
   "Range": 3,
   "CompactSeconds": 1,
   "DropsPerCycle": 1,
-  "PowerPerSecond": 1,
+  "PowerPerSecond": 10,
   "MaxCrack": 0.9,
   "AllowedGroups": ["Sand"],
   "ExcludedBlocks": ["Arrakis_Sand"],

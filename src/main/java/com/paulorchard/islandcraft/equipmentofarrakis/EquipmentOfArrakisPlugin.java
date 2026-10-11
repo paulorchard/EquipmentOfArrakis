@@ -34,16 +34,22 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
     protected void setup() {
         getCodecRegistry(Interaction.CODEC).register(CutterRayGateInteraction.TYPE, CutterRayGateInteraction.class,
                 CutterRayGateInteraction.CODEC);
+        getCodecRegistry(Interaction.CODEC).register(DewReaperGateInteraction.TYPE, DewReaperGateInteraction.class,
+                DewReaperGateInteraction.CODEC);
+        getCodecRegistry(Interaction.CODEC).register(DewReaperFinishInteraction.TYPE, DewReaperFinishInteraction.class,
+                DewReaperFinishInteraction.CODEC);
         getCodecRegistry(Interaction.CODEC).register(CompactorInteraction.TYPE, CompactorInteraction.class,
                 CompactorInteraction.CODEC);
         getCommandRegistry().registerCommand(PowerCommands.build(() -> hudConfig.get()));
         getEntityStoreRegistry().registerSystem(new PowerRechargeSystem());
         getEntityStoreRegistry().registerSystem(new CompactorSystem());
+        getEntityStoreRegistry().registerSystem(new DewReaperSystem());
         getEntityStoreRegistry().registerSystem(new HudSystem(() -> hudConfig.get()));
         getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, event -> {
             ArrakisPower.forget(event.getPlayerRef().getUuid());
             CompactorTrail.forget(event.getPlayerRef().getUuid());
             HudSystem.forget(event.getPlayerRef().getUuid());
+            DewReaperState.forget(event.getPlayerRef().getUuid());
         });
     }
 

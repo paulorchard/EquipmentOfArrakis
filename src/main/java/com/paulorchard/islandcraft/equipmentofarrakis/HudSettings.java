@@ -29,6 +29,10 @@ public final class HudSettings {
     private double numberSize = 48;
     /** The alpha of the black outline round the text: 0.6 is 60% black. */
     private double outlineStrength = 0.6;
+    /** How far the big numbers are raised above where they would sit under their labels (the labels do not move). */
+    private double numberRaise = 5;
+    /** What AMMO shows while no gun reports a number; a negative number shows the placeholder instead. */
+    private double ammoDefault = 100;
     /** From the centre of the screen to the right end of the POWER readout (just left of the Z slot). */
     private double powerOffset = 465;
     /** From the centre of the screen to the left end of the AMMO readout (just right of hotbar slot 9). */
@@ -80,6 +84,8 @@ public final class HudSettings {
         num("LabelSize", s -> s.labelSize, (s, v) -> s.labelSize = v);
         num("NumberSize", s -> s.numberSize, (s, v) -> s.numberSize = v);
         num("OutlineStrength", s -> s.outlineStrength, (s, v) -> s.outlineStrength = v);
+        num("NumberRaise", s -> s.numberRaise, (s, v) -> s.numberRaise = v);
+        num("AmmoDefault", s -> s.ammoDefault, (s, v) -> s.ammoDefault = v);
         num("PowerOffset", s -> s.powerOffset, (s, v) -> s.powerOffset = v);
         num("AmmoOffset", s -> s.ammoOffset, (s, v) -> s.ammoOffset = v);
         num("BottomMargin", s -> s.bottomMargin, (s, v) -> s.bottomMargin = v);
@@ -155,6 +161,8 @@ public final class HudSettings {
     public double getLabelSize() { return labelSize; }
     public double getNumberSize() { return numberSize; }
     public double getOutlineStrength() { return outlineStrength; }
+    public double getNumberRaise() { return numberRaise; }
+    public double getAmmoDefault() { return ammoDefault; }
     public double getPowerOffset() { return powerOffset; }
     public double getAmmoOffset() { return ammoOffset; }
     public double getBottomMargin() { return bottomMargin; }

@@ -68,6 +68,27 @@ final class PowerCommands {
                     }));
         }));
         arrakis.addSubCommand(compactor);
+        AbstractCommandCollection dewReaper = new AbstractCommandCollection("dewreaper", LANG + "dewreaper.desc") {
+        };
+        dewReaper.addSubCommand(WorldPositional.build("selftest", LANG + "dewreaper.selftest.desc", (ctx, world, store, args) -> {
+            // Development: says whether Water of Arrakis is linked and runs its flask functions on a made-up stack.
+            say(ctx, WaterLink.status());
+            WaterApi water = WaterLink.api();
+            if (water == null) {
+                return;
+            }
+            com.hypixel.hytale.server.core.inventory.ItemStack flask = new com.hypixel.hytale.server.core.inventory.ItemStack(
+                    "Arrakis_Litrejon", 1);
+            say(ctx, "capacity " + water.capacity() + ", is a flask: " + water.isLitrejon(flask)
+                    + ", amount of a new flask " + water.amount(flask));
+            com.hypixel.hytale.server.core.inventory.ItemStack half = water.withAmount(flask, 250);
+            say(ctx, "withAmount 250 -> amount " + water.amount(half) + ", durability " + half.getDurability() + " of "
+                    + half.getMaxDurability());
+            com.hypixel.hytale.server.core.inventory.ItemStack more = water.withAmount(half, DewReaperRules.filled(water.amount(half), 1,
+                    water.capacity()));
+            say(ctx, "+1 -> amount " + water.amount(more) + ", durability " + more.getDurability());
+        }));
+        arrakis.addSubCommand(dewReaper);
         AbstractCommandCollection hud = new AbstractCommandCollection("hud", LANG + "hud.desc") {
         };
         hud.addSubCommand(WorldPositional.build("tune", LANG + "hud.tune.desc", (ctx, world, store, args) -> {

@@ -118,6 +118,9 @@ final class HudSystem extends EntityTickingSystem<EntityStore> {
         // Power is sent at most PowerUpdatesPerSecond times a second; the first send of a new document is always due.
         boolean powerDue = HudMath.due(state.lastPowerSend, now, cfg.getPowerUpdatesPerSecond());
         OptionalInt ammo = AmmoReadout.read(playerRef.getUuid(), now);
+        if (ammo.isEmpty() && cfg.getAmmoDefault() >= 0) {
+            ammo = OptionalInt.of((int) Math.round(cfg.getAmmoDefault()));
+        }
         String tool = state.rigTool != null && now < state.rigUntil ? state.rigTool : toolInUse(store, ref, cfg);
         if (state.rigTool != null && now >= state.rigUntil) {
             state.rigTool = null;

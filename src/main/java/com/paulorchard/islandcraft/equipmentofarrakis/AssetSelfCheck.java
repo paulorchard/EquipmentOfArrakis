@@ -75,6 +75,7 @@ final class AssetSelfCheck {
 
         lines.addAll(mk2());
         lines.addAll(compactor());
+        lines.addAll(dewReaper());
         lines.addAll(hud());
         return lines;
     }
@@ -170,6 +171,22 @@ final class AssetSelfCheck {
             lines.add("  tool panel item " + id + ": " + (item == null ? "PROBLEM no such item" : root == null
                     ? "PROBLEM no Secondary root" : "ok, Secondary root " + root));
         }
+        return lines;
+    }
+
+    /** The Dew Reaper: the two interaction types, the hum effect, and whether Water of Arrakis can be used. */
+    private static List<String> dewReaper() {
+        List<String> lines = new ArrayList<>();
+        Interaction gate = Interaction.getAssetMap().getAsset("Arrakis_Dew_Reaper_Gate");
+        Interaction finish = Interaction.getAssetMap().getAsset("Arrakis_Dew_Reaper_Finish");
+        lines.add("Dew Reaper gate: " + (gate instanceof DewReaperGateInteraction ? "ok" : "PROBLEM missing or of the wrong type")
+                + ", finish: " + (finish instanceof DewReaperFinishInteraction ? "ok" : "PROBLEM missing or of the wrong type"));
+        com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect hum =
+                com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect.getAssetMap()
+                        .getAsset("Arrakis_Dew_Reaper_Active");
+        lines.add("  effect Arrakis_Dew_Reaper_Active: " + (hum == null ? "PROBLEM MISSING" : "ok, duration=" + hum.getDuration()
+                + " overlap=" + hum.getOverlapBehavior()));
+        lines.add("  " + WaterLink.status());
         return lines;
     }
 }

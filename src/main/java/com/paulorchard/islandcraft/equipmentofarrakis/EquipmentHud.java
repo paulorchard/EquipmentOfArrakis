@@ -53,6 +53,7 @@ final class EquipmentHud extends CustomUIHud {
         int rowHeight = (int) Math.ceil(label * 1.4 + number * 1.3);
         int bottom = px(settings.getBottomMargin());
         int readout = px(settings.getReadoutWidth());
+        int raise = px(settings.getNumberRaise());
 
         ui.setObject("#EquipRow.Anchor", anchor(0, 0, bottom, rowHeight));
         ui.setObject("#PowerReadout.Anchor", width(readout));
@@ -62,10 +63,10 @@ final class EquipmentHud extends CustomUIHud {
 
         String outline = HudMath.outline(settings.getOutlineStrength());
         String color = settings.getTextColor();
-        ui.appendInline("#PowerReadout", text("PowerLabel", "POWER", label, color, outline, "End", false));
-        ui.appendInline("#PowerReadout", text("PowerNumber", "0", number, color, outline, "End", true));
-        ui.appendInline("#AmmoReadout", text("AmmoLabel", "AMMO", label, color, outline, "Start", false));
-        ui.appendInline("#AmmoReadout", text("AmmoNumber", settings.getAmmoPlaceholder(), number, color, outline, "Start", true));
+        ui.appendInline("#PowerReadout", text("PowerLabel", "POWER", label, color, outline, "End", false, 0));
+        ui.appendInline("#PowerReadout", text("PowerNumber", "0", number, color, outline, "End", true, raise));
+        ui.appendInline("#AmmoReadout", text("AmmoLabel", "AMMO", label, color, outline, "Start", false, 0));
+        ui.appendInline("#AmmoReadout", text("AmmoNumber", settings.getAmmoPlaceholder(), number, color, outline, "Start", true, raise));
 
         // The tool panel: a row above the readouts, right-aligned to the same offset as POWER.
         int icon = px(settings.getToolIconSize());
@@ -85,8 +86,11 @@ final class EquipmentHud extends CustomUIHud {
     }
 
     /** One text element, as inline .ui text. */
-    private static String text(String id, String content, int size, String color, String outline, String align, boolean bold) {
-        return "Label #" + id + " { Text: \"" + content + "\"; Style: (FontSize: " + size + ", TextColor: " + color
+    private static String text(String id, String content, int size, String color, String outline, String align, boolean bold,
+            int raise) {
+        // A raised element is the last in its readout, so a negative Top offset moves only it: the number goes up, the label stays.
+        String anchor = raise == 0 ? "" : "Anchor: (Top: " + (-raise) + "); ";
+        return "Label #" + id + " { " + anchor + "Text: \"" + content + "\"; Style: (FontSize: " + size + ", TextColor: " + color
                 + ", OutlineColor: " + outline + ", RenderBold: " + bold + ", HorizontalAlignment: " + align + "); }";
     }
 

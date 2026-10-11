@@ -41,7 +41,7 @@ import java.util.List;
  * back and resets the cycle.
  *
  * <pre>
- * {"Type": "Arrakis_Compactor_Compact", "Range": 3, "CompactSeconds": 1, "DropsPerCycle": 1, "PowerPerSecond": 1, "MaxCrack": 0.9,
+ * {"Type": "Arrakis_Compactor_Compact", "Range": 3, "CompactSeconds": 1, "DropsPerCycle": 1, "PowerPerSecond": 10, "MaxCrack": 0.9,
  *  "AllowedGroups": ["Sand"], "ExcludedBlocks": ["Arrakis_Sand"],
  *  "ExcludedPrefixes": ["Arrakis_Worm_Ripple_Layer_", "Arrakis_Worm_Sunk_"], "HumEffectId": "Arrakis_Compactor_Active", ...Charging fields}
  * </pre>
@@ -82,7 +82,7 @@ public class CompactorInteraction extends ChargingInteraction {
     private float range = 3f;
     private float compactSeconds = 1f;
     private int dropsPerCycle = 1;
-    private float powerPerSecond = 1f;
+    private float powerPerSecond = 10f;
     /** The share of its health the block shows cracked at the end of a cycle (at most 0.9: it can never be broken by this). */
     private float maxCrack = 0.9f;
     private List<String> allowedGroups = List.of("Sand");
