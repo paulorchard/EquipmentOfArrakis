@@ -1,0 +1,107 @@
+{
+  "$Comment": "The flash of the break: a big amber glow that fades at once.",
+  "RenderMode": "BlendAdd",
+  "EmitOffset": {
+    "X": {
+      "Min": 0,
+      "Max": 0
+    },
+    "Y": {
+      "Min": 0,
+      "Max": 0
+    },
+    "Z": {
+      "Min": 0,
+      "Max": 0
+    }
+  },
+  "ParticleRotationInfluence": "Billboard",
+  "LinearFiltering": true,
+  "LightInfluence": 0,
+  "ParticleRotateWithSpawner": false,
+  "MaxConcurrentParticles": 2,
+  "ParticleLifeSpan": {
+    "Min": 0.3,
+    "Max": 0.3
+  },
+  "SpawnRate": {
+    "Min": 500,
+    "Max": 500
+  },
+  "TotalParticles": {
+    "Min": 1,
+    "Max": 1
+  },
+  "InitialVelocity": {},
+  "Particle": {
+    "Texture": "Particles/Textures/Basic/Glow.png",
+    "FrameSize": {
+      "Width": 32,
+      "Height": 32
+    },
+    "ScaleRatioConstraint": "OneToOne",
+    "Animation": {
+      "0": {
+        "Opacity": 0.8,
+        "Color": "#fff1d0",
+        "Scale": {
+          "X": {
+            "Min": 1.56,
+            "Max": 1.56
+          },
+          "Y": {
+            "Min": 1.56,
+            "Max": 1.56
+          }
+        }
+      },
+      "100": {
+        "Opacity": 0,
+        "Color": "#ffb02e",
+        "Scale": {
+          "X": {
+            "Min": 2.6,
+            "Max": 2.6
+          },
+          "Y": {
+            "Min": 2.6,
+            "Max": 2.6
+          }
+        }
+      }
+    },
+    "InitialAnimationFrame": {
+      "Rotation": {
+        "X": {
+          "Min": 0,
+          "Max": 0
+        },
+        "Y": {
+          "Min": 0,
+          "Max": 0
+        },
+        "Z": {
+          "Min": 0,
+          "Max": 0
+        }
+      },
+      "Scale": {
+        "X": {
+          "Min": 1.56,
+          "Max": 1.56
+        },
+        "Y": {
+          "Min": 1.56,
+          "Max": 1.56
+        }
+      },
+      "Color": "#ffb02e",
+      "Opacity": 0,
+      "FrameIndex": {
+        "Min": 0,
+        "Max": 0
+      }
+    },
+    "SoftParticles": "Disable"
+  }
+}

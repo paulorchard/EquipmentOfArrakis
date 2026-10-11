@@ -1,0 +1,17 @@
+{
+  "$Comment": "The Holtzman field's hum, heard by the owner (no attenuation): the vanilla Void_Static_Loop_Stereo_01 as a looping layer, low in the mix. Applied and stopped by the entity effect Arrakis_Holtzman_Field.",
+  "AudioCategory": "AudioCat_Weapons",
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Environments/Void/Void_Static_Loop_Stereo_01.ogg"
+      ],
+      "Looping": true,
+      "StartDelay": 0,
+      "Volume": -12
+    }
+  ],
+  "Volume": 0,
+  "MaxInstance": 4,
+  "PreventSoundInterruption": false
+}

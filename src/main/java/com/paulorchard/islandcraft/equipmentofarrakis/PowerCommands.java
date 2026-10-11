@@ -30,7 +30,8 @@ final class PowerCommands {
     private PowerCommands() {
     }
 
-    static AbstractCommandCollection build(java.util.function.Supplier<HudSettings> hudSettings) {
+    static AbstractCommandCollection build(java.util.function.Supplier<HudSettings> hudSettings,
+            java.util.function.Supplier<HoltzmanSettings> shieldSettings) {
         AbstractCommandCollection arrakis = new AbstractCommandCollection("arrakis", LANG + "desc") {
         };
         AbstractCommandCollection power = new AbstractCommandCollection("power", LANG + "power.desc") {
@@ -89,6 +90,48 @@ final class PowerCommands {
             say(ctx, "+1 -> amount " + water.amount(more) + ", durability " + more.getDurability());
         }));
         arrakis.addSubCommand(dewReaper);
+        AbstractCommandCollection shield = new AbstractCommandCollection("shield", LANG + "shield.desc") {
+        };
+        shield.addSubCommand(WorldPositional.build("hit", LANG + "shield.hit.desc", (ctx, world, store, args) -> {
+            // Hits you with a projectile-sourced damage event through the real damage pipeline (the same path an arrow takes).
+            if (!ctx.isPlayer() || ctx.senderAsPlayerRef() == null) {
+                say(ctx, "Run this as a player.");
+                return;
+            }
+            float amount;
+            try {
+                amount = Float.parseFloat(args[0]);
+            } catch (NumberFormatException e) {
+                say(ctx, "Not a number: " + args[0]);
+                return;
+            }
+            Ref<EntityStore> self = ctx.senderAsPlayerRef();
+            com.hypixel.hytale.server.core.modules.entity.damage.Damage damage = new com.hypixel.hytale.server.core.modules.entity.damage.Damage(
+                    new com.hypixel.hytale.server.core.modules.entity.damage.Damage.ProjectileSource(self, self),
+                    com.hypixel.hytale.server.core.modules.entity.damage.DamageCause.PROJECTILE, amount);
+            // A hit location one block in front of the eyes, so the flash has somewhere to go.
+            com.hypixel.hytale.math.vector.Transform look = com.hypixel.hytale.server.core.util.TargetUtil.getLook(self, store);
+            Vector3d at = new Vector3d(look.getPosition()).fma(1.0, new Vector3d(look.getDirection()).normalize());
+            damage.putMetaObject(com.hypixel.hytale.server.core.modules.entity.damage.Damage.HIT_LOCATION,
+                    new org.joml.Vector4d(at.x, at.y, at.z, 1.0));
+            float before = ArrakisPower.get(store, self);
+            com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems.executeDamage(self, store, damage);
+            say(ctx, "Sent " + amount + " projectile damage (power was " + before + "). See arrakis shield state.");
+        }, "damage"));
+        shield.addSubCommand(WorldPositional.build("state", LANG + "shield.state.desc", (ctx, world, store, args) -> {
+            if (!ctx.isPlayer() || ctx.senderAsPlayerRef() == null) {
+                say(ctx, "Run this as a player.");
+                return;
+            }
+            Ref<EntityStore> self = ctx.senderAsPlayerRef();
+            HoltzmanSettings cfg = shieldSettings.get();
+            boolean selected = HoltzmanField.selected(store, self, cfg);
+            float have = ArrakisPower.get(store, self);
+            boolean alive = store.getComponent(self, com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent.getComponentType()) == null;
+            say(ctx, "selected " + selected + ", power " + have + ", should be up " + HoltzmanRules.raised(selected, alive, have)
+                    + ", field effect on " + HoltzmanField.hasField(store, self, cfg) + ", PowerPerDamage " + cfg.getPowerPerDamage());
+        }));
+        arrakis.addSubCommand(shield);
         AbstractCommandCollection hud = new AbstractCommandCollection("hud", LANG + "hud.desc") {
         };
         hud.addSubCommand(WorldPositional.build("tune", LANG + "hud.tune.desc", (ctx, world, store, args) -> {

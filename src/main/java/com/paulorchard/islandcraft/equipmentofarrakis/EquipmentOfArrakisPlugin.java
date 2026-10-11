@@ -20,6 +20,7 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
 
     // Must be created before setup(); the server loads it from disk in between (the on-screen display settings).
     private final Config<HudSettings> hudConfig = withConfig(HudSettings.FILE_NAME, HudSettings.CODEC);
+    private final Config<HoltzmanSettings> shieldConfig = withConfig(HoltzmanSettings.FILE_NAME, HoltzmanSettings.CODEC);
 
     public EquipmentOfArrakisPlugin(JavaPluginInit init) {
         super(init);
@@ -40,10 +41,12 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
                 DewReaperFinishInteraction.CODEC);
         getCodecRegistry(Interaction.CODEC).register(CompactorInteraction.TYPE, CompactorInteraction.class,
                 CompactorInteraction.CODEC);
-        getCommandRegistry().registerCommand(PowerCommands.build(() -> hudConfig.get()));
+        getCommandRegistry().registerCommand(PowerCommands.build(() -> hudConfig.get(), () -> shieldConfig.get()));
         getEntityStoreRegistry().registerSystem(new PowerRechargeSystem());
         getEntityStoreRegistry().registerSystem(new CompactorSystem());
         getEntityStoreRegistry().registerSystem(new DewReaperSystem());
+        getEntityStoreRegistry().registerSystem(new HoltzmanSystem(() -> shieldConfig.get()));
+        getEntityStoreRegistry().registerSystem(new HoltzmanDamageSystem(() -> shieldConfig.get()));
         getEntityStoreRegistry().registerSystem(new HudSystem(() -> hudConfig.get()));
         getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, event -> {
             ArrakisPower.forget(event.getPlayerRef().getUuid());
@@ -58,9 +61,10 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
     protected void start() {
         // Writes the file with every setting (the defaults for any that were missing), so there is something to edit.
         hudConfig.save();
+        shieldConfig.save();
         StringBuilder missing = new StringBuilder();
         for (String id : new String[] {"Arrakis_Blood_Extractor", "Arrakis_Dew_Reaper", "Arrakis_Compactor",
-                "Arrakis_Cutter_Ray"}) {
+                "Arrakis_Cutter_Ray", "Arrakis_Holtzman_Shield"}) {
             if (Item.getAssetMap().getAsset(id) == null) {
                 missing.append(' ').append(id);
             }

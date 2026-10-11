@@ -76,6 +76,7 @@ final class AssetSelfCheck {
         lines.addAll(mk2());
         lines.addAll(compactor());
         lines.addAll(dewReaper());
+        lines.addAll(holtzman());
         lines.addAll(hud());
         return lines;
     }
@@ -187,6 +188,32 @@ final class AssetSelfCheck {
         lines.add("  effect Arrakis_Dew_Reaper_Active: " + (hum == null ? "PROBLEM MISSING" : "ok, duration=" + hum.getDuration()
                 + " overlap=" + hum.getOverlapBehavior()));
         lines.add("  " + WaterLink.status());
+        return lines;
+    }
+
+    /** The Holtzman Shield: the item, the effect, the ModelVFX, the particle systems and the sound events. */
+    private static List<String> holtzman() {
+        List<String> lines = new ArrayList<>();
+        Item item = Item.getAssetMap().getAsset("Arrakis_Holtzman_Shield");
+        lines.add("Arrakis_Holtzman_Shield: " + (item == null ? "PROBLEM MISSING" : String.format(
+                "usable=%s compatible=%s animations=%s primary=%s secondary=%s weapon=%s model=%s off-hand priority primary/secondary %d/%d",
+                item.getUtility() != null && item.getUtility().isUsable(), item.getUtility() != null && item.getUtility().isCompatible(),
+                item.getPlayerAnimationsId(), item.getInteractions().get(InteractionType.Primary),
+                item.getInteractions().get(InteractionType.Secondary), item.getWeapon() != null, item.getModel(),
+                item.getInteractionConfig().getPriorityFor(InteractionType.Primary, PrioritySlot.OffHand),
+                item.getInteractionConfig().getPriorityFor(InteractionType.Secondary, PrioritySlot.OffHand))));
+        com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect field =
+                com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect.getAssetMap().getAsset("Arrakis_Holtzman_Field");
+        lines.add("  effect Arrakis_Holtzman_Field: " + (field == null ? "PROBLEM MISSING" : "ok, infinite=" + field.isInfinite()
+                + " overlap=" + field.getOverlapBehavior()));
+        for (String id : new String[] {"Arrakis_Holtzman_Bubble", "Arrakis_Holtzman_Bubble_FP", "Arrakis_Holtzman_Hit", "Arrakis_Holtzman_Shatter"}) {
+            lines.add("  particle system " + id + ": " + (ParticleSystem.getAssetMap().getAsset(id) == null ? "PROBLEM MISSING" : "ok"));
+        }
+        for (String id : new String[] {"SFX_Arrakis_Holtzman_Field", "SFX_Arrakis_Holtzman_Field_Local", "SFX_Arrakis_Holtzman_Break",
+                "SFX_Arrakis_Holtzman_Break_Local"}) {
+            lines.add("  sound event " + id + ": " + (com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent.getAssetMap()
+                    .getAsset(id) == null ? "PROBLEM MISSING" : "ok"));
+        }
         return lines;
     }
 }

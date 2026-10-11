@@ -1,0 +1,21 @@
+{
+  "$Comment": "The Holtzman shield breaking, heard by the owner (no attenuation): the vanilla Crystal_Break_Layer_01, a little pitch variation. Played by the code when a hit takes the power to 0.",
+  "AudioCategory": "AudioCat_Weapons",
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Blocks/Crystal/Crystal_Break_Layer_01.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": -2,
+        "MaxPitch": 2,
+        "MinVolume": -1,
+        "MaxVolume": 0
+      },
+      "Volume": 0
+    }
+  ],
+  "Volume": 0,
+  "MaxInstance": 4,
+  "PreventSoundInterruption": true
+}
