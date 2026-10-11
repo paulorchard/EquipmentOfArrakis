@@ -25,6 +25,14 @@ public final class HoltzmanSettings {
     private double fieldRadius = 1.1;
     /** Height of the bubble's centre above the player's feet, in blocks. */
     private double fieldCenterHeight = 1.0;
+    /** Seconds the field stays down after the last projectile the player launched; the base value, see {@link ShieldCooldown}. */
+    private double cooldownSeconds = 1.0;
+    /** Whether to log (once per root) a Ranged-tagged interaction that finished without a projectile; see {@link RangedWatch}. */
+    private boolean rangedDiagnostic = true;
+    /** Root interactions the Ranged check skips: charge-up and reload roots that legitimately launch nothing. */
+    private String[] ignoredRoots = {"Bow_Combat_Shoot_Charging", "Bow_Ricochet_Shoot_Charging", "Bow_Shoot_Charging", "Bow_Vamp_Shoot_Charging",
+            "Shortbow_Shoot_Charging", "Root_Weapon_Crossbow_Primary_Reload", "Root_Weapon_Crossbow_Primary_Overcharge",
+            "Root_Common_Guard_Entry_StaminaCondition"};
 
     public static final BuilderCodec<HoltzmanSettings> CODEC = BuilderCodec.builder(HoltzmanSettings.class, HoltzmanSettings::new)
             .documentation("The Holtzman Shield: which item, which effect, and what a hit costs.")
@@ -40,6 +48,12 @@ public final class HoltzmanSettings {
             .documentation("Radius of the bubble in blocks (where the hit flash is placed).").add()
             .append(new KeyedCodec<>("FieldCenterHeight", Codec.DOUBLE, false), (s, v) -> s.fieldCenterHeight = v, s -> s.fieldCenterHeight)
             .documentation("Height of the bubble's centre above the feet, in blocks.").add()
+            .append(new KeyedCodec<>("CooldownSeconds", Codec.DOUBLE, false), (s, v) -> s.cooldownSeconds = v, s -> s.cooldownSeconds)
+            .documentation("Seconds the field stays down after the last projectile the player launched.").add()
+            .append(new KeyedCodec<>("RangedDiagnostic", Codec.BOOLEAN, false), (s, v) -> s.rangedDiagnostic = v, s -> s.rangedDiagnostic)
+            .documentation("Log a warning, once per root, for a Ranged-tagged interaction that finished without launching a projectile.").add()
+            .append(new KeyedCodec<>("IgnoredRoots", Codec.STRING_ARRAY, false), (s, v) -> s.ignoredRoots = v, s -> s.ignoredRoots)
+            .documentation("Root interactions the Ranged check skips (charge-up and reload roots).").add()
             .build();
 
     public String getItemId() { return itemId; }
@@ -48,4 +62,7 @@ public final class HoltzmanSettings {
     public double getPowerPerDamage() { return powerPerDamage; }
     public double getFieldRadius() { return fieldRadius; }
     public double getFieldCenterHeight() { return fieldCenterHeight; }
+    public double getCooldownSeconds() { return cooldownSeconds; }
+    public boolean isRangedDiagnostic() { return rangedDiagnostic; }
+    public String[] getIgnoredRoots() { return ignoredRoots; }
 }

@@ -10,6 +10,7 @@ import com.hypixel.hytale.component.dependency.Dependency;
 import com.hypixel.hytale.component.dependency.Order;
 import com.hypixel.hytale.component.dependency.SystemDependency;
 import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
@@ -84,8 +85,12 @@ final class HoltzmanDamageSystem extends DamageEventSystem {
         Ref<EntityStore> ref = chunk.getReferenceTo(index);
         boolean alive = store.getComponent(ref, DeathComponent.getComponentType()) == null;
         float power = ArrakisPower.get(store, ref);
-        // Decided from the state itself, not from the effect, so a hit in the tick the shield was selected is already covered.
-        if (!HoltzmanRules.raised(HoltzmanField.selected(store, ref, cfg), alive, power)) {
+        // Decided from the state itself, not from the effect, so a hit in the tick the shield was selected (or the tick after a shot) is
+        // already covered; while the cooldown after the owner's last projectile runs the field is down and absorbs nothing.
+        UUIDComponent id = store.getComponent(ref, UUIDComponent.getComponentType());
+        HoltzmanState state = id == null ? null : HoltzmanState.peek(id.getUuid());
+        boolean cooling = state != null && state.cooling(id.getUuid(), System.nanoTime());
+        if (!HoltzmanRules.raised(HoltzmanField.selected(store, ref, cfg), alive, power, cooling)) {
             return;
         }
         HoltzmanRules.Absorption result = HoltzmanRules.absorb(damage.getAmount(), power, (float) cfg.getPowerPerDamage());

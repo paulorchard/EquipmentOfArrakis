@@ -6,9 +6,11 @@ import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.protocol.packets.inventory.SetActiveSlot;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
@@ -21,6 +23,8 @@ final class HoltzmanField {
     static final String HIT_PARTICLES = "Arrakis_Holtzman_Hit";
     static final String SHATTER_PARTICLES = "Arrakis_Holtzman_Shatter";
     static final String BREAK_SOUND = "SFX_Arrakis_Holtzman_Break";
+    static final String ON_SOUND = "SFX_Arrakis_Holtzman_On";
+    static final String OFF_SOUND = "SFX_Arrakis_Holtzman_Off";
 
     private HoltzmanField() {
     }
@@ -90,18 +94,39 @@ final class HoltzmanField {
         ParticleUtil.spawnParticleEffect(HIT_PARTICLES, at, accessor);
     }
 
-    /** The shield breaks: the field comes off, the off hand is emptied, the shatter burst and the break sound at the player. */
-    static void breakShield(ComponentAccessor<EntityStore> accessor, Ref<EntityStore> ref, HoltzmanSettings settings, Vector3d centre) {
-        lower(accessor, ref, settings);
-        putAway(accessor, ref);
-        ParticleUtil.spawnParticleEffect(SHATTER_PARTICLES, centre, accessor);
-        int world = SoundEvent.getAssetMap().getIndex(BREAK_SOUND);
-        int local = SoundEvent.getAssetMap().getIndex(BREAK_SOUND + "_Local");
+    /** The centre of the field: the player's feet plus the configured height. */
+    static Vector3d centre(ComponentAccessor<EntityStore> accessor, Ref<EntityStore> ref, HoltzmanSettings settings) {
+        TransformComponent transform = accessor.getComponent(ref, TransformComponent.getComponentType());
+        Vector3d feet = transform == null ? new Vector3d() : transform.getPosition();
+        return new Vector3d(feet.x, feet.y + settings.getFieldCenterHeight(), feet.z);
+    }
+
+    /**
+     * Plays a sound event pair: {@code id} to the other players, positional and attenuated (the owner left out), and {@code id_Local} to
+     * the owner alone, not attenuated. The engine's sound utility on the world thread, as for the break; the hum is different, it is the
+     * entity effect's own sound field and needs no call.
+     */
+    static void playPair(ComponentAccessor<EntityStore> accessor, Ref<EntityStore> ref, String id, Vector3d at) {
+        int world = SoundEvent.getAssetMap().getIndex(id);
+        int local = SoundEvent.getAssetMap().getIndex(id + "_Local");
         if (world > 0) {
-            SoundUtil.playSoundEvent3d(ref, world, centre, true, accessor);
+            SoundUtil.playSoundEvent3d(ref, world, at, true, accessor);
         }
         if (local > 0) {
             SoundUtil.playSoundEvent2d(ref, local, SoundCategory.SFX, accessor);
         }
+    }
+
+    /** The shield breaks: the field comes off, the off hand is emptied, the cooldown forgotten, the shatter burst and the break sound at the player. */
+    static void breakShield(ComponentAccessor<EntityStore> accessor, Ref<EntityStore> ref, HoltzmanSettings settings, Vector3d centre) {
+        lower(accessor, ref, settings);
+        putAway(accessor, ref);
+        UUIDComponent id = accessor.getComponent(ref, UUIDComponent.getComponentType());
+        HoltzmanState state = id == null ? null : HoltzmanState.peek(id.getUuid());
+        if (state != null) {
+            state.clearCooldown();
+        }
+        ParticleUtil.spawnParticleEffect(SHATTER_PARTICLES, centre, accessor);
+        playPair(accessor, ref, BREAK_SOUND, centre);
     }
 }

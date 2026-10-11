@@ -53,6 +53,10 @@ public class DartAmmoGateInteraction extends SimpleInstantInteraction {
         CommandBuffer<EntityStore> buffer = context.getCommandBuffer();
         Ref<EntityStore> ref = context.getEntity();
         if (buffer == null || ref == null || !ArrakisAmmo.spend(buffer, ref, ammoPerShot)) {
+            if (buffer != null) {
+                // Tells the Ranged check that this chain was a refused shot, not a gun that launched nothing.
+                RangedWatch.noteRefusal(buffer, ref);
+            }
             context.getState().state = InteractionState.Failed;
         }
     }

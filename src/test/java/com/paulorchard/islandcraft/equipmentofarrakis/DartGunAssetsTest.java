@@ -47,6 +47,15 @@ class DartGunAssetsTest {
     }
 
     @Test
+    void ourPrimaryRootsCarryTheRangedTagSoTheHoltzmanCheckSeesThem() throws IOException {
+        for (String id : new String[] {"Arrakis_Maula_Primary", "Arrakis_Dartgun_Primary", "Arrakis_Cutter_Ray_Primary"}) {
+            JsonObject root = json(SERVER + "Item/RootInteractions/Equipment_of_Arrakis/" + id + ".json");
+            JsonArray ranged = root.getAsJsonObject("Tags").getAsJsonArray("Attack");
+            assertTrue(ranged.contains(com.google.gson.JsonParser.parseString("\"Ranged\"")), id);
+        }
+    }
+
+    @Test
     void theGateTakesOneAmmoAndFallsBackToTheVanillaDryClick() throws IOException {
         for (String key : KEYS) {
             JsonObject gate = json(SERVER + "Item/Interactions/Equipment_of_Arrakis/Arrakis_" + key + "_Gate.json");

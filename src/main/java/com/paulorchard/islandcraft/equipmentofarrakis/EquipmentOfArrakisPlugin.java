@@ -46,6 +46,7 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
                 DartAmmoGateInteraction.CODEC);
         DartFlight.type = getEntityStoreRegistry().registerComponent(DartFlight.class, DartFlight::new);
         ArrakisAmmo.bind(() -> dartConfig.get());
+        ShieldCooldown.bind(() -> shieldConfig.get());
         getCommandRegistry().registerCommand(PowerCommands.build(() -> hudConfig.get(), () -> shieldConfig.get(), () -> dartConfig.get()));
         getEntityStoreRegistry().registerSystem(new PowerRechargeSystem());
         getEntityStoreRegistry().registerSystem(new AmmoRechargeSystem());
@@ -56,10 +57,15 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new DewReaperSystem());
         getEntityStoreRegistry().registerSystem(new HoltzmanSystem(() -> shieldConfig.get()));
         getEntityStoreRegistry().registerSystem(new HoltzmanDamageSystem(() -> shieldConfig.get()));
+        getEntityStoreRegistry().registerSystem(new ShieldShotLegacySystem());
+        getEntityStoreRegistry().registerSystem(new ShieldShotSystem());
+        getEntityStoreRegistry().registerSystem(new RangedWatch(() -> shieldConfig.get()));
+        getEntityStoreRegistry().registerSystem(new DevInjectSystem());
         getEntityStoreRegistry().registerSystem(new HudSystem(() -> hudConfig.get()));
         getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, event -> {
             ArrakisPower.forget(event.getPlayerRef().getUuid());
             ArrakisAmmo.forget(event.getPlayerRef().getUuid());
+            HoltzmanState.forget(event.getPlayerRef().getUuid());
             CompactorTrail.forget(event.getPlayerRef().getUuid());
             HudSystem.forget(event.getPlayerRef().getUuid());
             DewReaperState.forget(event.getPlayerRef().getUuid());

@@ -160,8 +160,55 @@ final class PowerCommands {
             boolean selected = HoltzmanField.selected(store, self, cfg);
             float have = ArrakisPower.get(store, self);
             boolean alive = store.getComponent(self, com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent.getComponentType()) == null;
-            say(ctx, "selected " + selected + ", power " + have + ", should be up " + HoltzmanRules.raised(selected, alive, have)
-                    + ", field effect on " + HoltzmanField.hasField(store, self, cfg) + ", PowerPerDamage " + cfg.getPowerPerDamage());
+            java.util.UUID id = store.getComponent(self, com.hypixel.hytale.server.core.entity.UUIDComponent.getComponentType()).getUuid();
+            HoltzmanState state = HoltzmanState.of(id);
+            long now = System.nanoTime();
+            boolean cooling = state.cooling(id, now);
+            say(ctx, "field " + (HoltzmanField.hasField(store, self, cfg) ? "UP" : "down") + ", should be up " + HoltzmanRules.raised(selected, alive, have, cooling)
+                    + "; Holtzman selected off-hand item " + selected + ", power " + have + ", PowerPerDamage " + cfg.getPowerPerDamage());
+            say(ctx, String.format(Locale.ROOT, "cooldown %.2f s (base %.2f, %d modifiers), remaining %.2f s; last shot %s; projectiles of yours seen %d, refused shots %d",
+                    ShieldCooldown.secondsFor(id), ShieldCooldown.baseSeconds(), ShieldCooldown.modifierCount(), state.remaining(id, now),
+                    state.lastShot == ShieldCooldown.NONE ? "never (or cleared)" : String.format(Locale.ROOT, "%.2f s ago", (now - state.lastShot) / 1e9),
+                    state.projectiles, state.refusals));
+        }));
+        shield.addSubCommand(WorldPositional.build("shot", LANG + "shield.shot.desc", (ctx, world, store, args) -> {
+            // Counts as a projectile launched by you, by the same call the projectile hooks make, without a gun.
+            if (!ctx.isPlayer() || ctx.senderAsPlayerRef() == null) {
+                say(ctx, "Run this as a player.");
+                return;
+            }
+            java.util.UUID id = store.getComponent(ctx.senderAsPlayerRef(), com.hypixel.hytale.server.core.entity.UUIDComponent.getComponentType()).getUuid();
+            ShieldShots.shotBy(id);
+            say(ctx, "Counted as a shot: the field drops and the cooldown (" + ShieldCooldown.secondsFor(id) + " s) starts.");
+        }));
+        shield.addSubCommand(WorldPositional.build("cooldown", LANG + "shield.cooldown.desc", (ctx, world, store, args) -> {
+            if (args.length == 0) {
+                say(ctx, "Cooldown base " + ShieldCooldown.baseSeconds() + " s (data file " + shieldSettings.get().getCooldownSeconds() + "), "
+                        + ShieldCooldown.modifierCount() + " modifiers registered.");
+                return;
+            }
+            try {
+                double seconds = Double.parseDouble(args[0]);
+                if (seconds < 0) {
+                    throw new NumberFormatException();
+                }
+                ShieldCooldown.setOverride(seconds);
+                say(ctx, "Cooldown is now " + seconds + " s (not saved; a restart goes back to " + shieldSettings.get().getCooldownSeconds() + ").");
+            } catch (NumberFormatException e) {
+                say(ctx, "Not a number of seconds: " + args[0]);
+            }
+        }, "seconds"));
+        shield.addSubCommand(WorldPositional.build("diag", LANG + "shield.diag.desc", (ctx, world, store, args) -> {
+            java.util.Map<String, Integer> warnings = RangedWatch.warnings();
+            say(ctx, "Ranged check " + (shieldSettings.get().isRangedDiagnostic() ? "on" : "OFF") + "; " + warnings.size() + " root(s) seen ending with no player projectile:");
+            for (java.util.Map.Entry<String, Integer> w : warnings.entrySet()) {
+                say(ctx, "  " + w.getKey() + " x" + w.getValue());
+            }
+            say(ctx, "Ignored roots: " + String.join(", ", shieldSettings.get().getIgnoredRoots()));
+        }));
+        shield.addSubCommand(WorldPositional.build("hooktest", LANG + "shield.hooktest.desc", (ctx, world, store, args) -> {
+            // Development: fires darts and a vanilla arrow with dummies as the shooters and reports whether the hooks saw a player shot.
+            ShieldHookSelfTest.run(world, line -> say(ctx, line));
         }));
         arrakis.addSubCommand(shield);
         AbstractCommandCollection hud = new AbstractCommandCollection("hud", LANG + "hud.desc") {

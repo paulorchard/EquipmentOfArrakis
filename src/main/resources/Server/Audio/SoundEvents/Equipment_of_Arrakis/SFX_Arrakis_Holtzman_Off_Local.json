@@ -1,0 +1,21 @@
+{
+  "$Comment": "The Holtzman field going down, heard by the owner (no attenuation): the vanilla Avatar_Powers_Disable_Alt_Stereo_01 (1.68 s). Played by HoltzmanSystem when the field really drops (a shot, or the shield put away while the field is up); not for a break, which has its own sound.",
+  "AudioCategory": "AudioCat_Weapons",
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Magic/Avatar/Avatar_Powers_Disable_Alt_Stereo_01.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": -1,
+        "MaxPitch": 1,
+        "MinVolume": -1,
+        "MaxVolume": 0
+      },
+      "Volume": 0
+    }
+  ],
+  "Volume": 0,
+  "MaxInstance": 4,
+  "PreventSoundInterruption": true
+}

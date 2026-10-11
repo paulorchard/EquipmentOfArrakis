@@ -35,3 +35,7 @@ commands.arrakis.ammo.fill.desc = Fill ammo to its maximum: arrakis ammo fill [p
 commands.arrakis.ammo.set.desc = Set ammo (0-100): arrakis ammo set <n> [player]
 commands.arrakis.dart.desc = Spring gun development commands.
 commands.arrakis.dart.selftest.desc = Flies real darts around 0, 200, 0 and reports damage by distance, drop, range and the entity count.
+commands.arrakis.shield.shot.desc = Count as a projectile you launched, without a gun: the Holtzman field drops and the cooldown starts: arrakis shield shot
+commands.arrakis.shield.cooldown.desc = Show, or set live (not saved), the seconds the field stays down after a shot: arrakis shield cooldown [seconds]
+commands.arrakis.shield.diag.desc = List the Ranged-tagged interactions seen ending with no player projectile, and the ignore list: arrakis shield diag
+commands.arrakis.shield.hooktest.desc = Fire darts and an arrow with dummies as shooters and report whether the projectile hooks saw a player shot: arrakis shield hooktest

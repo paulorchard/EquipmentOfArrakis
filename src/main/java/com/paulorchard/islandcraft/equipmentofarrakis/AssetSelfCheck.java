@@ -291,6 +291,32 @@ final class AssetSelfCheck {
         for (String id : new String[] {"Arrakis_Holtzman_Bubble", "Arrakis_Holtzman_Bubble_FP", "Arrakis_Holtzman_Hit", "Arrakis_Holtzman_Shatter"}) {
             lines.add("  particle system " + id + ": " + (ParticleSystem.getAssetMap().getAsset(id) == null ? "PROBLEM MISSING" : "ok"));
         }
+        for (String id : new String[] {"SFX_Arrakis_Holtzman_On", "SFX_Arrakis_Holtzman_On_Local", "SFX_Arrakis_Holtzman_Off", "SFX_Arrakis_Holtzman_Off_Local"}) {
+            com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent sound =
+                    com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent.getAssetMap().getAsset(id);
+            if (sound == null) {
+                lines.add("PROBLEM sound event " + id + " is missing");
+                continue;
+            }
+            StringBuilder layers = new StringBuilder();
+            for (var layer : sound.getLayers()) {
+                String file = layer.getFiles()[0];
+                boolean there = AssetSelfCheck.class.getResource("/Common/" + file) != null;
+                layers.append(String.format(" [%s startDelay=%.2f s volume=%.2f looping=%s%s]", file.substring(file.lastIndexOf('/') + 1), layer.getStartDelay(),
+                        layer.getVolume(), layer.isLooping(), there ? " IN THE JAR (unexpected)" : ""));
+            }
+            lines.add("  sound event " + id + ": " + sound.getLayers().length + " layer(s)" + layers + " maxInstance=" + sound.getMaxInstance());
+        }
+        for (String id : new String[] {"Arrakis_Cutter_Ray_Primary", "Arrakis_Maula_Primary", "Arrakis_Dartgun_Primary", "Gun_Shoot", "Item_Throw", "Root_Weapon_Shortbow_Primary_Shoot", "Bow_Shoot_Charging", "Gun_Swing_Left"}) {
+            RootInteraction root = RootInteraction.getAssetMap().getAsset(id);
+            lines.add("  root " + id + ": " + (root == null ? "not loaded" : "tags " + (root.getData() == null ? "none" : root.getData().getRawTags().keySet() + " Attack="
+                    + java.util.Arrays.toString(root.getData().getRawTags().get("Attack"))) + " -> Ranged check says " + RangedWatch.isRanged(root)));
+            if (root == null && id.startsWith("Arrakis_")) {
+                lines.add("PROBLEM no root " + id);
+            } else if (id.startsWith("Arrakis_") && !RangedWatch.isRanged(root)) {
+                lines.add("PROBLEM root " + id + " does not carry Attack: Ranged");
+            }
+        }
         for (String id : new String[] {"SFX_Arrakis_Holtzman_Field", "SFX_Arrakis_Holtzman_Field_Local", "SFX_Arrakis_Holtzman_Break",
                 "SFX_Arrakis_Holtzman_Break_Local"}) {
             lines.add("  sound event " + id + ": " + (com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent.getAssetMap()

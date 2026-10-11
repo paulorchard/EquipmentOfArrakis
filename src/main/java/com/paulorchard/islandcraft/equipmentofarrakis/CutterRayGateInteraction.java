@@ -112,25 +112,25 @@ public class CutterRayGateInteraction extends SimpleInstantInteraction {
         CommandBuffer<EntityStore> buffer = context.getCommandBuffer();
         Ref<EntityStore> ref = context.getEntity();
         if (buffer == null || ref == null) {
-            context.getState().state = InteractionState.Failed;
+            refuse(context, buffer, ref);
             return;
         }
         float cost = powerPerShot;
         if (ArrakisPower.get(buffer, ref) <= 0f) {
             // Trying with an empty pack counts as use, so that holding the button does not recharge it.
             ArrakisPower.spend(buffer, ref, cost);
-            context.getState().state = InteractionState.Failed;
+            refuse(context, buffer, ref);
             return;
         }
         Vector3i target = TargetUtil.getTargetBlock(ref, range, buffer);
         if (target == null) {
             // Power is left but nothing is in reach: the fizzle, and nothing else.
             playOnce(lastFizzle, fizzleMinInterval, "SFX_Arrakis_Cutter_Ray_Fizzle", ref, TargetUtil.getLook(ref, buffer).getPosition(), buffer);
-            context.getState().state = InteractionState.Failed;
+            refuse(context, buffer, ref);
             return;
         }
         if (!ArrakisPower.spend(buffer, ref, cost)) {
-            context.getState().state = InteractionState.Failed;
+            refuse(context, buffer, ref);
             return;
         }
         Transform look = TargetUtil.getLook(ref, buffer);
@@ -141,6 +141,14 @@ public class CutterRayGateInteraction extends SimpleInstantInteraction {
         ParticleUtil.spawnParticleEffect(sparksId, hit, buffer);
         playOnce(lastImpact, impactSoundMinInterval, "SFX_Arrakis_Cutter_Ray_Impact", ref, hit, buffer);
         damage(buffer.getExternalData().getWorld(), buffer, ref, target);
+    }
+
+    /** Ends the shot as Failed and tells the Ranged check that this chain was a refused shot. */
+    private static void refuse(InteractionContext context, CommandBuffer<EntityStore> buffer, Ref<EntityStore> ref) {
+        if (buffer != null) {
+            RangedWatch.noteRefusal(buffer, ref);
+        }
+        context.getState().state = InteractionState.Failed;
     }
 
     /** Plays {id} at {at} to the others and {id}_Local to the shooter, unless the shooter heard it less than minInterval seconds ago. */
