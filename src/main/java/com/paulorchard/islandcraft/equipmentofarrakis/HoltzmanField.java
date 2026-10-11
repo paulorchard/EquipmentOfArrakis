@@ -3,11 +3,13 @@ package com.paulorchard.islandcraft.equipmentofarrakis;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.protocol.SoundCategory;
+import com.hypixel.hytale.protocol.packets.inventory.SetActiveSlot;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -55,11 +57,22 @@ final class HoltzmanField {
         }
     }
 
-    /** Switches the off hand to empty: the utility section's active slot becomes "none", which sends the change to the client. */
+    /**
+     * Switches the off hand to empty, on the server and on the client. {@code setActiveSlot} only changes the server's slot (and tells
+     * the other players through the equipment update); the owner's own client is not told, so it would go on showing the shield as
+     * selected. Then selecting "empty" in the radial sends the server a request for the slot it already has, and the server drops the
+     * player with "Attempted to set hotbar slot to already selected hotbar slot!". So the client is told too, with the same
+     * {@code SetActiveSlot} packet the engine itself sends when it forces a slot change.
+     */
     static void putAway(ComponentAccessor<EntityStore> accessor, Ref<EntityStore> ref) {
         InventoryComponent.Utility utility = accessor.getComponent(ref, InventoryComponent.Utility.getComponentType());
-        if (utility != null && utility.getActiveSlot() != InventoryComponent.INACTIVE_SLOT_INDEX) {
-            utility.setActiveSlot(InventoryComponent.INACTIVE_SLOT_INDEX, ref, accessor);
+        if (utility == null || utility.getActiveSlot() == InventoryComponent.INACTIVE_SLOT_INDEX) {
+            return;
+        }
+        utility.setActiveSlot(InventoryComponent.INACTIVE_SLOT_INDEX, ref, accessor);
+        PlayerRef player = accessor.getComponent(ref, PlayerRef.getComponentType());
+        if (player != null) {
+            player.getPacketHandler().write(new SetActiveSlot(utility.getSectionId(), InventoryComponent.INACTIVE_SLOT_INDEX));
         }
     }
 
