@@ -1,0 +1,19 @@
+{
+  "Spawners": [
+    {
+      "SpawnerId": "Rifle_Smoke",
+      "PositionOffset": {
+        "X": 0,
+        "Y": 0.3,
+        "Z": -0.08
+      },
+      "RotationOffset": {
+        "Yaw": 0,
+        "Pitch": 0,
+        "Roll": 0
+      }
+    }
+  ],
+  "IsImportant": true,
+  "LifeSpan": 1
+}

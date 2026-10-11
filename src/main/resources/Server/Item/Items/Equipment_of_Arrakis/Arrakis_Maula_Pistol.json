@@ -1,0 +1,15 @@
+{
+  "$Comment": "The vanilla Weapon_Handgun by Parent: model, texture, icon, animations, categories, quality, tags, the Secondary bash and the swing InteractionVars are the vanilla ones. Changed: the name, the Primary (one dart a click, 1 ammo from Arrakis_Ammo, no inventory item) and Utility.Compatible false (tools/assets/make_dart_guns.js).",
+  "Parent": "Weapon_Handgun",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Maula_Pistol.name",
+    "Description": "server.items.Arrakis_Maula_Pistol.description"
+  },
+  "Interactions": {
+    "Primary": "Arrakis_Maula_Primary",
+    "Secondary": "Gun_Attack"
+  },
+  "Utility": {
+    "Compatible": false
+  }
+}

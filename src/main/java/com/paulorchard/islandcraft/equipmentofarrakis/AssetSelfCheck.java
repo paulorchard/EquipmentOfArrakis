@@ -77,6 +77,7 @@ final class AssetSelfCheck {
         lines.addAll(compactor());
         lines.addAll(dewReaper());
         lines.addAll(holtzman());
+        lines.addAll(darts());
         lines.addAll(hud());
         return lines;
     }
@@ -189,6 +190,84 @@ final class AssetSelfCheck {
                 + " overlap=" + hum.getOverlapBehavior()));
         lines.add("  " + WaterLink.status());
         return lines;
+    }
+
+    /**
+     * The two spring guns: each item (did Parent bring the vanilla model, icon, animations, categories, Secondary and swing vars; is it kept
+     * out of the off-hand rules), its Primary root (RequireNewClick, the Shoot cooldown), the gate and shot interactions, the dart, the
+     * smoke, the four sound events with the volume of the Transient layer, and the ammo stat.
+     */
+    private static List<String> darts() {
+        List<String> lines = new ArrayList<>();
+        lines.add("Arrakis_Ammo stat: " + (ArrakisAmmo.statIndex() == Integer.MIN_VALUE ? "PROBLEM MISSING" : "ok, index " + ArrakisAmmo.statIndex()));
+        lines.add("Arrakis_Dart_Shot particle system: " + (ParticleSystem.getAssetMap().getAsset("Arrakis_Dart_Shot") == null ? "PROBLEM MISSING" : "ok"));
+        String[][] guns = {{"Arrakis_Maula_Pistol", "Arrakis_Maula", "Weapon_Handgun", "SFX_Handgun_Fire"},
+                {"Arrakis_Dartgun", "Arrakis_Dartgun", "Weapon_Assault_Rifle", "SFX_Rifle_Fire"}};
+        for (String[] gun : guns) {
+            Item item = Item.getAssetMap().getAsset(gun[0]);
+            Item vanilla = Item.getAssetMap().getAsset(gun[2]);
+            if (item == null || vanilla == null) {
+                lines.add("PROBLEM no item " + (item == null ? gun[0] : gun[2]));
+                continue;
+            }
+            lines.add(String.format("%s: categories=%s model=%s texture=%s icon=%s animations=%s weapon=%s usable=%s compatible=%s (vanilla %s usable=%s compatible=%s)",
+                    gun[0], String.join(",", item.getCategories()), item.getModel(), item.getTexture(), item.getIcon(), item.getPlayerAnimationsId(),
+                    item.getWeapon() != null, item.getUtility() != null && item.getUtility().isUsable(),
+                    item.getUtility() != null && item.getUtility().isCompatible(), gun[2], vanilla.getUtility() != null && vanilla.getUtility().isUsable(),
+                    vanilla.getUtility() != null && vanilla.getUtility().isCompatible()));
+            lines.add(String.format("  name %s; primary=%s secondary=%s (vanilla %s); %d interaction vars (vanilla %d); priority primary/secondary main hand %d/%d",
+                    item.getTranslationProperties(), item.getInteractions().get(InteractionType.Primary),
+                    item.getInteractions().get(InteractionType.Secondary), vanilla.getInteractions().get(InteractionType.Secondary),
+                    item.getInteractionVars().size(), vanilla.getInteractionVars().size(),
+                    item.getInteractionConfig().getPriorityFor(InteractionType.Primary, PrioritySlot.MainHand),
+                    item.getInteractionConfig().getPriorityFor(InteractionType.Secondary, PrioritySlot.MainHand)));
+            if (!java.util.Objects.equals(item.getModel(), vanilla.getModel()) || !java.util.Objects.equals(item.getIcon(), vanilla.getIcon())
+                    || !java.util.Objects.equals(item.getPlayerAnimationsId(), vanilla.getPlayerAnimationsId())) {
+                lines.add("PROBLEM " + gun[0] + " does not have the vanilla model, icon and animations");
+            }
+            if (!java.util.Objects.equals(item.getInteractions().get(InteractionType.Secondary), vanilla.getInteractions().get(InteractionType.Secondary))
+                    || item.getInteractionVars().size() != vanilla.getInteractionVars().size()) {
+                lines.add("PROBLEM " + gun[0] + " lost the vanilla Secondary or the swing interaction vars");
+            }
+            RootInteraction root = RootInteraction.getAssetMap().getAsset(item.getInteractions().get(InteractionType.Primary));
+            if (root == null) {
+                lines.add("PROBLEM no Primary root for " + gun[0]);
+            } else {
+                com.hypixel.hytale.protocol.RootInteraction packet = root.toPacket();
+                lines.add(String.format("  primary root %s: requireNewClick=%s clickQueuingTimeout=%s cooldown=%s %s, interactions=%s", root.getId(), packet.requireNewClick,
+                        packet.clickQueuingTimeout,
+                        packet.cooldown == null ? null : packet.cooldown.cooldownId, packet.cooldown == null ? null : packet.cooldown.cooldown,
+                        String.join(",", root.getInteractionIds())));
+            }
+            Interaction gate = Interaction.getAssetMap().getAsset(gun[1] + "_Gate");
+            lines.add("  gate " + gun[1] + "_Gate: " + (gate instanceof DartAmmoGateInteraction ? "ok (" + gate + ")" : "PROBLEM missing or of the wrong type"));
+            Interaction shot = Interaction.getAssetMap().getAsset(gun[1] + "_Shoot");
+            lines.add("  shot " + gun[1] + "_Shoot: " + (shot == null ? "PROBLEM MISSING" : shot.getClass().getSimpleName() + " runTime=" + shot.getRunTime()));
+            com.hypixel.hytale.server.core.asset.type.projectile.config.Projectile dart =
+                    com.hypixel.hytale.server.core.asset.type.projectile.config.Projectile.getAssetMap().getAsset(gun[1] + "_Dart");
+            lines.add("  dart " + gun[1] + "_Dart: " + (dart == null ? "PROBLEM MISSING" : String.format(
+                    "damage=%d muzzle=%.0f terminal=%.0f gravity=%.1f sticksVertically=%s deadTime=%.2f deadTimeMiss=%.2f appearance=%s deathSound=%s radius=%.2f",
+                    dart.getDamage(), dart.getMuzzleVelocity(), dart.getTerminalVelocity(), dart.getGravity(), dart.isSticksVertically(),
+                    dart.getDeadTime(), dart.getDeadTimeMiss(), dart.getAppearance(), dart.getDeathSoundEventId(), dart.getRadius())));
+            for (String suffix : new String[] {"", "_Local"}) {
+                com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent sound =
+                        com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent.getAssetMap().getAsset("SFX_" + gun[1] + "_Fire" + suffix);
+                com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent original =
+                        com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent.getAssetMap().getAsset(gun[3] + suffix);
+                lines.add("  sound event SFX_" + gun[1] + "_Fire" + suffix + ": " + (sound == null || original == null ? "PROBLEM MISSING" : String.format(
+                        "%d layers, Transient %.1f dB (vanilla %.1f), the others %s (vanilla %s), maxInstance=%d", sound.getLayers().length,
+                        sound.getLayers()[0].getVolume(), original.getLayers()[0].getVolume(), volumes(sound), volumes(original), sound.getMaxInstance())));
+            }
+        }
+        return lines;
+    }
+
+    private static String volumes(com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent sound) {
+        StringBuilder out = new StringBuilder();
+        for (int i = 1; i < sound.getLayers().length; i++) {
+            out.append(i > 1 ? "/" : "").append(sound.getLayers()[i].getVolume());
+        }
+        return out.toString();
     }
 
     /** The Holtzman Shield: the item, the effect, the ModelVFX, the particle systems and the sound events. */

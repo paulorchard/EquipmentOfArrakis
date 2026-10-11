@@ -6,10 +6,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The hook that feeds the AMMO readout. Nothing feeds it yet: a gun mod (or a later gun prompt of this one) calls
+ * The hook that feeds the AMMO readout. The spring guns do not use it: the HUD reads the player's {@code Arrakis_Ammo} stat itself (the hook is
+ * given only a player id, and the stat needs the world's store), whenever this hook has nothing. Another mod can still call
  * {@link #setSource} once with a function from a player's id to the ammunition they have, or an empty value when the held item
- * reports none; the HUD shows the number, and "--" while the answer is empty. The function is called on the world thread, once per
- * world tick per player, so it must be cheap.
+ * reports none; the HUD shows that number, and the player's Arrakis_Ammo while the answer is empty (and "--" only if the player has no such
+ * stat). The function is called on the world thread, once per world tick per player, so it must be cheap.
  */
 public final class AmmoReadout {
 

@@ -1,0 +1,8 @@
+{
+  "$Comment": "Ammo for the spring guns (Maula Pistol, Dartgun). Like Arrakis_Power: every living entity gets every stat asset when its stat map is set up, with this InitialValue, so new characters and old saves both start full. No Regenerating rule of its own: AmmoRechargeSystem refills it while the player is not shooting, which a stat rule cannot tell apart from firing. A placeholder until real ammo handling (clips, reloading) comes.",
+  "InitialValue": 100,
+  "Min": 0,
+  "Max": 100,
+  "Shared": false,
+  "ResetType": "MaxValue"
+}

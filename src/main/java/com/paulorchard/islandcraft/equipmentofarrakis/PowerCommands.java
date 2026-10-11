@@ -21,6 +21,9 @@ import java.util.UUID;
  * <pre>
  * /arrakis power fill [player]
  * /arrakis power set &lt;n&gt; [player]
+ * /arrakis ammo fill [player]
+ * /arrakis ammo set &lt;n&gt; [player]
+ * /arrakis dart selftest
  * </pre>
  */
 final class PowerCommands {
@@ -31,7 +34,7 @@ final class PowerCommands {
     }
 
     static AbstractCommandCollection build(java.util.function.Supplier<HudSettings> hudSettings,
-            java.util.function.Supplier<HoltzmanSettings> shieldSettings) {
+            java.util.function.Supplier<HoltzmanSettings> shieldSettings, java.util.function.Supplier<DartSettings> dartSettings) {
         AbstractCommandCollection arrakis = new AbstractCommandCollection("arrakis", LANG + "desc") {
         };
         AbstractCommandCollection power = new AbstractCommandCollection("power", LANG + "power.desc") {
@@ -56,6 +59,35 @@ final class PowerCommands {
             }
         }, "amount", "player"));
         arrakis.addSubCommand(power);
+        AbstractCommandCollection ammo = new AbstractCommandCollection("ammo", LANG + "ammo.desc") {
+        };
+        ammo.addSubCommand(WorldPositional.build("fill", LANG + "ammo.fill.desc", (ctx, world, store, args) -> {
+            PlayerRef target = resolve(ctx, store, args, 0);
+            if (target != null) {
+                reportAmmo(ctx, target, ArrakisAmmo.fill(store, target.getReference()));
+            }
+        }, "player"));
+        ammo.addSubCommand(WorldPositional.build("set", LANG + "ammo.set.desc", (ctx, world, store, args) -> {
+            double amount;
+            try {
+                amount = Double.parseDouble(args[0]);
+            } catch (NumberFormatException e) {
+                say(ctx, "Not a number: " + args[0]);
+                return;
+            }
+            PlayerRef target = resolve(ctx, store, args, 1);
+            if (target != null) {
+                reportAmmo(ctx, target, ArrakisAmmo.set(store, target.getReference(), (float) amount));
+            }
+        }, "amount", "player"));
+        arrakis.addSubCommand(ammo);
+        AbstractCommandCollection dart = new AbstractCommandCollection("dart", LANG + "dart.desc") {
+        };
+        dart.addSubCommand(WorldPositional.build("selftest", LANG + "dart.selftest.desc", (ctx, world, store, args) -> {
+            // Development: flies real darts around 0, 200, 0 and reports damage by distance, drop, range and the entity count.
+            DartSelfTest.run(world, line -> say(ctx, line));
+        }));
+        arrakis.addSubCommand(dart);
         AbstractCommandCollection compactor = new AbstractCommandCollection("compactor", LANG + "compactor.desc") {
         };
         compactor.addSubCommand(WorldPositional.build("selftest", LANG + "compactor.selftest.desc", (ctx, world, store, args) -> {
@@ -187,6 +219,14 @@ final class PowerCommands {
             say(ctx, target.getUsername() + " has no Arrakis_Power stat (is the asset pack loaded?)");
         } else {
             say(ctx, String.format(Locale.ROOT, "%s power is now %.2f", target.getUsername(), now));
+        }
+    }
+
+    private static void reportAmmo(CommandContext ctx, PlayerRef target, float now) {
+        if (now < 0) {
+            say(ctx, target.getUsername() + " has no Arrakis_Ammo stat (is the asset pack loaded?)");
+        } else {
+            say(ctx, String.format(Locale.ROOT, "%s ammo is now %.2f", target.getUsername(), now));
         }
     }
 

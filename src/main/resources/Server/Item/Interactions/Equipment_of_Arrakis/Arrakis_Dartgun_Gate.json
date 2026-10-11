@@ -1,0 +1,7 @@
+{
+  "$Comment": "First and only interaction of the Primary root. With ammo it takes AmmoPerShot and runs Next, the shot. With none it ends as Failed and runs the vanilla Gun_Shoot_Fail (the dry click): no projectile, no smoke, no ammo change.",
+  "Type": "Arrakis_Dart_Ammo_Gate",
+  "AmmoPerShot": 1,
+  "Next": "Arrakis_Dartgun_Shoot",
+  "Failed": "Gun_Shoot_Fail"
+}

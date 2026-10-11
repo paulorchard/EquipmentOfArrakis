@@ -117,7 +117,14 @@ final class HudSystem extends EntityTickingSystem<EntityStore> {
         boolean low = HudMath.isLow(shown, cfg.getLowPowerThreshold());
         // Power is sent at most PowerUpdatesPerSecond times a second; the first send of a new document is always due.
         boolean powerDue = HudMath.due(state.lastPowerSend, now, cfg.getPowerUpdatesPerSecond());
+        // A test number from /arrakis hud rig ammo wins, then a source another mod set; otherwise the player's own Arrakis_Ammo, always.
         OptionalInt ammo = AmmoReadout.read(playerRef.getUuid(), now);
+        if (ammo.isEmpty()) {
+            float stat = ArrakisAmmo.get(store, ref);
+            if (stat >= 0f) {
+                ammo = OptionalInt.of(AmmoMath.display(stat));
+            }
+        }
         if (ammo.isEmpty() && cfg.getAmmoDefault() >= 0) {
             ammo = OptionalInt.of((int) Math.round(cfg.getAmmoDefault()));
         }

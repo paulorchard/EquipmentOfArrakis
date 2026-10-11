@@ -10,8 +10,8 @@ import com.hypixel.hytale.server.core.util.Config;
 import java.util.logging.Level;
 
 /**
- * IslandCraft - Equipment of Arrakis. Stage one: the four tools (Blood Extractor, Dew Reaper, Compactor, Cutter Ray),
- * the Arrakis_Power stat and the debug commands. The tools' models, animations and interactions are asset data;
+ * IslandCraft - Equipment of Arrakis. Stage one: the four tools (Blood Extractor, Dew Reaper, Compactor, Cutter Ray), the Holtzman
+ * Shield, the two spring guns (Maula Pistol, Dartgun), the Arrakis_Power and Arrakis_Ammo stats and the debug commands. The tools' models, animations and interactions are asset data;
  * the code here is the stat, the commands and the beam.
  */
 public class EquipmentOfArrakisPlugin extends JavaPlugin {
@@ -21,6 +21,7 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
     // Must be created before setup(); the server loads it from disk in between (the on-screen display settings).
     private final Config<HudSettings> hudConfig = withConfig(HudSettings.FILE_NAME, HudSettings.CODEC);
     private final Config<HoltzmanSettings> shieldConfig = withConfig(HoltzmanSettings.FILE_NAME, HoltzmanSettings.CODEC);
+    private final Config<DartSettings> dartConfig = withConfig(DartSettings.FILE_NAME, DartSettings.CODEC);
 
     public EquipmentOfArrakisPlugin(JavaPluginInit init) {
         super(init);
@@ -41,8 +42,16 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
                 DewReaperFinishInteraction.CODEC);
         getCodecRegistry(Interaction.CODEC).register(CompactorInteraction.TYPE, CompactorInteraction.class,
                 CompactorInteraction.CODEC);
-        getCommandRegistry().registerCommand(PowerCommands.build(() -> hudConfig.get(), () -> shieldConfig.get()));
+        getCodecRegistry(Interaction.CODEC).register(DartAmmoGateInteraction.TYPE, DartAmmoGateInteraction.class,
+                DartAmmoGateInteraction.CODEC);
+        DartFlight.type = getEntityStoreRegistry().registerComponent(DartFlight.class, DartFlight::new);
+        ArrakisAmmo.bind(() -> dartConfig.get());
+        getCommandRegistry().registerCommand(PowerCommands.build(() -> hudConfig.get(), () -> shieldConfig.get(), () -> dartConfig.get()));
         getEntityStoreRegistry().registerSystem(new PowerRechargeSystem());
+        getEntityStoreRegistry().registerSystem(new AmmoRechargeSystem());
+        getEntityStoreRegistry().registerSystem(new DartFlightSystem(() -> dartConfig.get()));
+        getEntityStoreRegistry().registerSystem(new DartRangeSystem(() -> dartConfig.get()));
+        getEntityStoreRegistry().registerSystem(new DartRangeDamageSystem(() -> dartConfig.get()));
         getEntityStoreRegistry().registerSystem(new CompactorSystem());
         getEntityStoreRegistry().registerSystem(new DewReaperSystem());
         getEntityStoreRegistry().registerSystem(new HoltzmanSystem(() -> shieldConfig.get()));
@@ -50,6 +59,7 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new HudSystem(() -> hudConfig.get()));
         getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, event -> {
             ArrakisPower.forget(event.getPlayerRef().getUuid());
+            ArrakisAmmo.forget(event.getPlayerRef().getUuid());
             CompactorTrail.forget(event.getPlayerRef().getUuid());
             HudSystem.forget(event.getPlayerRef().getUuid());
             DewReaperState.forget(event.getPlayerRef().getUuid());
@@ -62,15 +72,19 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
         // Writes the file with every setting (the defaults for any that were missing), so there is something to edit.
         hudConfig.save();
         shieldConfig.save();
+        dartConfig.save();
         StringBuilder missing = new StringBuilder();
         for (String id : new String[] {"Arrakis_Blood_Extractor", "Arrakis_Dew_Reaper", "Arrakis_Compactor",
-                "Arrakis_Cutter_Ray", "Arrakis_Holtzman_Shield"}) {
+                "Arrakis_Cutter_Ray", "Arrakis_Holtzman_Shield", "Arrakis_Maula_Pistol", "Arrakis_Dartgun"}) {
             if (Item.getAssetMap().getAsset(id) == null) {
                 missing.append(' ').append(id);
             }
         }
         if (ArrakisPower.statIndex() == Integer.MIN_VALUE) {
             missing.append(' ').append(ArrakisPower.STAT_ID);
+        }
+        if (ArrakisAmmo.statIndex() == Integer.MIN_VALUE) {
+            missing.append(' ').append(ArrakisAmmo.STAT_ID);
         }
         getLogger().at(Level.INFO).log("Missing:%s", missing.length() == 0 ? " nothing" : missing);
         for (String line : AssetSelfCheck.run()) {
