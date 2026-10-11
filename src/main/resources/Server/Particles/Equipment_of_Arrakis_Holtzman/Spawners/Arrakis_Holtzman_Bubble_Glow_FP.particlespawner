@@ -52,7 +52,7 @@
         }
       },
       "50": {
-        "Opacity": 0.05,
+        "Opacity": 0.1,
         "Color": "#ffb02e",
         "Scale": {
           "X": {

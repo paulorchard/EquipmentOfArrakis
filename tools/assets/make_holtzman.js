@@ -22,7 +22,7 @@ const TINT_TOP = '#ffc24a';          // EntityTopTint (at the head end): keep bo
 const OUTLINE_COLOR = '#ffb02e';     // ModelVFX HighlightColor
 const OUTLINE_THICKNESS = 3.0;       // ModelVFX HighlightThickness
 const POST_COLOR = '#ffb02e';        // ModelVFX PostColor
-const POST_COLOR_OPACITY = 0.12;     // how much of the body is washed with it
+const POST_COLOR_OPACITY = 0.22;     // how much of the body is washed with it
 const SHIMMER_SECONDS = 2.5;         // ModelVFX AnimationDuration: one sweep of the shimmer (it mirrors back, so a full cycle is twice this)
 
 // A2. the impact flash: when the field absorbs a hit, the shimmer sweeps over the body very fast, once
@@ -38,8 +38,8 @@ const BUBBLE_OFFSET_Y = 0.0;         // blocks up from that node
 const BUBBLE_DIAMETER = 2.2;         // blocks across
 const BUBBLE_PULSE = 0.08;           // the size pulses by this fraction either way (0.08 = +-8%)
 const BUBBLE_PULSE_SECONDS = 3.0;    // one fade in and out; two overlap, so the glow never drops to nothing
-const BUBBLE_OPACITY = 0.26;         // peak opacity of the soft glow (additive, so it brightens what is behind)
-const RIM_OPACITY = 0.30;            // peak opacity of the faint ring at the edge
+const BUBBLE_OPACITY = 0.36;         // peak opacity of the soft glow (additive, so it brightens what is behind)
+const RIM_OPACITY = 0.40;            // peak opacity of the faint ring at the edge
 const MOTE_RATE = 8;                 // fine amber specks drifting inside it, per second
 const MOTE_MAX = 18;
 const MOTE_SIZE = [0.04, 0.07];      // blocks
@@ -48,7 +48,7 @@ const BUBBLE_CULL_DISTANCE = 64;     // blocks: beyond this the bubble is not dr
 const BUBBLE_BOUNDING_RADIUS = 3;    // must be well above the bubble radius, or a large sprite is culled close to the camera / at the screen edge
 
 // B2. what the owner sees (first person): a gentle version, so the view stays readable
-const BUBBLE_FP_OPACITY = 0.05;
+const BUBBLE_FP_OPACITY = 0.10;
 const MOTE_FP_RATE = 3;
 
 // hit flash, where a projectile met the field
