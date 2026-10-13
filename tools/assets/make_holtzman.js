@@ -132,7 +132,7 @@ const scale = (a, b) => ({ X: range(a, b), Y: range(a, b) });
         const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(body));
         return Buffer.concat([len, body, crc]);
     };
-    const SIZE = 16;
+    const SIZE = 32; // the client needs a texture width/height that is a multiple of 32 and at least 32x32 (0.7.0)
     const color = [0xff, 0xb0, 0x2e, 0xff];
     const header = Buffer.alloc(13);
     header.writeUInt32BE(SIZE, 0); header.writeUInt32BE(SIZE, 4); header[8] = 8; header[9] = 6;

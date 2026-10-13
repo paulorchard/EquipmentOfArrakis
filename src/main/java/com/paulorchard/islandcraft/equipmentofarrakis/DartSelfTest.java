@@ -5,7 +5,6 @@ import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
@@ -69,33 +68,34 @@ final class DartSelfTest {
 
     static void run(World world, Consumer<String> say) {
         DartRangeDamageSystem.trace = true;
-        List<CompletableFuture<?>> loads = new ArrayList<>();
-        for (int bx = -32; bx <= 80; bx += 16) {
-            for (int bz = -48; bz <= 64; bz += 16) {
-                loads.add(world.getChunkAsync(ChunkUtil.indexChunkFromBlock(bx, bz)).thenAccept(chunk -> chunk.resetKeepAlive()));
-            }
-        }
-        CompletableFuture.allOf(loads.toArray(new CompletableFuture[0])).whenComplete((v, error) -> world.execute(() -> {
+        // The columns, and the sky sections the floor at y 199 lies in (they may not exist yet), held loaded for the test.
+        WorldAccess.loadTestArea(world, -32, 80, -48, 64, 199).whenCompleteAsync((held, error) -> {
             try {
                 if (error != null) {
                     say.accept("chunks did not load: " + error);
                     return;
                 }
-                stage1(world, say);
+                say.accept("sky sections at y 199 and 200 loaded and held: " + held.loaded() + " of " + held.wanted);
+                stage1(world, say, held);
             } catch (RuntimeException e) {
                 say.accept("self-test failed: " + e);
             }
-        }));
+        }, world);
         say.accept("loading the chunks, then the test runs for about 12 seconds; the lines follow");
     }
 
-    private static void stage1(World world, Consumer<String> say) {
+    private static void stage1(World world, Consumer<String> say, WorldAccess.Held held) {
         Store<EntityStore> store = world.getEntityStore().getStore();
+        WorldAccess access = new WorldAccess(world);
+        int missed = 0;
         for (int x = -4; x <= 60; x++) {
             for (int z = -4; z <= 40; z++) {
-                world.setBlock(x, 199, z, "Rock_Stone");
+                if (!access.setBlock(x, 199, z, "Rock_Stone", 0)) {
+                    missed++;
+                }
             }
         }
+        say.accept("floor of Rock_Stone at y 199: " + (missed == 0 ? "all blocks set" : missed + " blocks NOT set (section not loaded)"));
         Pair<Ref<EntityStore>, ?> shooter = NPCPlugin.get().spawnNPC(store, "Test_Dummy_Stationary", null, new Vector3d(-2, FEET_Y, -2),
                 new Rotation3f());
         List<Ref<EntityStore>> targets = new ArrayList<>();
@@ -106,14 +106,15 @@ final class DartSelfTest {
         }
         if (shooter == null || targets.contains(null)) {
             say.accept("could not spawn the Test_Dummy_Stationary role");
+            held.release();
             return;
         }
         say.accept("spawned a shooter and " + targets.size() + " dummies; waiting for them to settle");
-        later(world, 2500, () -> stage2(world, store, say, shooter.left(), targets));
+        later(world, 2500, () -> stage2(world, store, say, shooter.left(), targets, held));
     }
 
     private static void stage2(World world, Store<EntityStore> store, Consumer<String> say, Ref<EntityStore> shooter,
-            List<Ref<EntityStore>> targets) {
+            List<Ref<EntityStore>> targets, WorldAccess.Held held) {
         UUID creator = store.getComponent(shooter, UUIDComponent.getComponentType()).getUuid();
         ammoChecks(store, shooter, say);
         float yaw = yawTowardPlusX();
@@ -151,7 +152,7 @@ final class DartSelfTest {
         later(world, 3500, () -> {
             sampler.shutdownNow();
             report(say, store, targets, before, tracks);
-            stage3(world, store, say, creator, yaw, baseline, baselineProjectiles);
+            stage3(world, store, say, creator, yaw, baseline, baselineProjectiles, held);
         });
     }
 
@@ -242,7 +243,7 @@ final class DartSelfTest {
     }
 
     private static void stage3(World world, Store<EntityStore> store, Consumer<String> say, UUID creator, float yaw, int baseline,
-            int baselineProjectiles) {
+            int baselineProjectiles, WorldAccess.Held held) {
         say.accept("---- entity count after the first volleys (7 s on): " + store.getEntityCount() + " entities (" + baseline + " before any dart), "
                 + projectiles(store) + " projectiles (" + baselineProjectiles + " before)");
         int fired = 0;
@@ -260,6 +261,7 @@ final class DartSelfTest {
         }
         later(world, 6000, () -> {
             DartRangeDamageSystem.trace = false;
+            held.release();
             say.accept("  6 s after the burst: " + store.getEntityCount() + " entities (" + baseline + " before any dart), "
                 + projectiles(store) + " projectiles (" + baselineProjectiles + " before)");
         });

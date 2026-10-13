@@ -4,7 +4,6 @@ import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.entities.ProjectileComponent;
@@ -36,33 +35,39 @@ final class ShieldHookSelfTest {
     }
 
     static void run(World world, Consumer<String> say) {
-        List<CompletableFuture<?>> loads = new ArrayList<>();
-        for (int bx = -16; bx <= 16; bx += 16) {
-            for (int bz = -16; bz <= 16; bz += 16) {
-                loads.add(world.getChunkAsync(ChunkUtil.indexChunkFromBlock(bx, bz)).thenAccept(chunk -> chunk.resetKeepAlive()));
-            }
-        }
-        CompletableFuture.allOf(loads.toArray(new CompletableFuture[0])).whenComplete((v, error) -> world.execute(() -> {
+        // The columns, and the sky sections the floor at y 199 lies in (they may not exist yet), held loaded for the test.
+        WorldAccess.loadTestArea(world, -16, 16, -16, 16, 199).whenCompleteAsync((held, error) -> {
             try {
-                stage1(world, say);
+                if (error != null) {
+                    say.accept("chunks did not load: " + error);
+                    return;
+                }
+                say.accept("sky sections at y 199 and 200 loaded and held: " + held.loaded() + " of " + held.wanted);
+                stage1(world, say, held);
             } catch (RuntimeException e) {
                 say.accept("hook test failed: " + e);
             }
-        }));
+        }, world);
         say.accept("loading the chunks; the hook test takes about 6 seconds");
     }
 
-    private static void stage1(World world, Consumer<String> say) {
+    private static void stage1(World world, Consumer<String> say, WorldAccess.Held held) {
         Store<EntityStore> store = world.getEntityStore().getStore();
+        WorldAccess access = new WorldAccess(world);
+        int missed = 0;
         for (int x = -4; x <= 12; x++) {
             for (int z = -4; z <= 8; z++) {
-                world.setBlock(x, 199, z, "Rock_Stone");
+                if (!access.setBlock(x, 199, z, "Rock_Stone", 0)) {
+                    missed++;
+                }
             }
         }
+        say.accept("floor of Rock_Stone at y 199: " + (missed == 0 ? "all blocks set" : missed + " blocks NOT set (section not loaded)"));
         Pair<Ref<EntityStore>, ?> a = NPCPlugin.get().spawnNPC(store, "Test_Dummy_Stationary", null, new Vector3d(0, 200, 0), new Rotation3f());
         Pair<Ref<EntityStore>, ?> b = NPCPlugin.get().spawnNPC(store, "Test_Dummy_Stationary", null, new Vector3d(0, 200, 6), new Rotation3f());
         if (a == null || b == null) {
             say.accept("could not spawn the Test_Dummy_Stationary role");
+            held.release();
             return;
         }
         UUID playerLike = store.getComponent(a.left(), UUIDComponent.getComponentType()).getUuid();
@@ -70,11 +75,11 @@ final class ShieldHookSelfTest {
         ShieldShots.testPlayer = playerLike;
         ShieldShots.trace = true;
         say.accept("shooter A (counts as a player) " + playerLike + ", shooter B (a mob) " + other);
-        later(world, 1500, () -> stage2(world, store, say, a.left(), b.left(), playerLike, other));
+        later(world, 1500, () -> stage2(world, store, say, a.left(), b.left(), playerLike, other, held));
     }
 
     private static void stage2(World world, Store<EntityStore> store, Consumer<String> say, Ref<EntityStore> refA, Ref<EntityStore> refB,
-            UUID playerLike, UUID other) {
+            UUID playerLike, UUID other, WorldAccess.Held held) {
         HoltzmanState stateA = HoltzmanState.of(playerLike);
         HoltzmanState stateB = HoltzmanState.of(other);
         long a0 = stateA.projectiles;
@@ -109,6 +114,7 @@ final class ShieldHookSelfTest {
                         say.accept("3. a volley of 3 darts: " + (stateA.projectiles - a2) + " stamps, one cooldown with " + String.format("%.2f", stateA.remaining(playerLike, System.nanoTime())) + " s left");
                         later(world, 1200, () -> {
                             say.accept("4. 1.2 s after the volley the cooldown is over: " + !stateA.cooling(playerLike, System.nanoTime()) + " (expect true)");
+                            held.release();
                             ShieldShots.testPlayer = null;
                             ShieldShots.trace = false;
                             HoltzmanState.forget(playerLike);

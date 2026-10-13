@@ -70,7 +70,7 @@ public class DewReaperFinishInteraction extends SimpleInstantInteraction {
 
     private static boolean primroseStillThere(CommandBuffer<EntityStore> buffer, DewReaperState.Pending pending) {
         Vector3i at = pending.primrose();
-        BlockType block = at == null ? null : buffer.getExternalData().getWorld().getBlockType(at);
+        BlockType block = at == null ? null : new WorldAccess(buffer.getExternalData().getWorld()).blockType(at.x, at.y, at.z);
         return block != null && pending.primroseBlockId().equals(block.getId());
     }
 }

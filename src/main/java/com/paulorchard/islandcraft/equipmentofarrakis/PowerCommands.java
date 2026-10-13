@@ -92,13 +92,21 @@ final class PowerCommands {
         };
         compactor.addSubCommand(WorldPositional.build("selftest", LANG + "compactor.selftest.desc", (ctx, world, store, args) -> {
             // Development: puts a sand block high in the air at 0, 200, 0 and runs the Compactor's engine calls on it.
-            world.getChunkAsync(com.hypixel.hytale.math.util.ChunkUtil.indexChunkFromBlock(0, 0))
-                    .thenAccept(chunk -> world.execute(() -> {
-                        chunk.resetKeepAlive();
-                        for (String line : CompactorSelfTest.run(world)) {
-                            say(ctx, line);
-                        }
-                    }));
+            // The column, and the sky section at y 200 (it may not exist yet), held loaded while the test runs.
+            WorldAccess.loadTestArea(world, 0, 0, 0, 0, 200).whenCompleteAsync((held, error) -> {
+                if (error != null) {
+                    say(ctx, "chunks did not load: " + error);
+                    return;
+                }
+                try {
+                    say(ctx, "sky section at y 200 loaded and held: " + held.loaded() + " of " + held.wanted);
+                    for (String line : CompactorSelfTest.run(world)) {
+                        say(ctx, line);
+                    }
+                } finally {
+                    held.release();
+                }
+            }, world);
         }));
         arrakis.addSubCommand(compactor);
         AbstractCommandCollection dewReaper = new AbstractCommandCollection("dewreaper", LANG + "dewreaper.desc") {

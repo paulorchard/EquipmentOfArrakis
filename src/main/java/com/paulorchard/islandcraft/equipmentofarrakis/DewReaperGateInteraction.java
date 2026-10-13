@@ -81,7 +81,7 @@ public class DewReaperGateInteraction extends SimpleInstantInteraction {
         }
         World world = buffer.getExternalData().getWorld();
         Vector3i target = TargetUtil.getTargetBlock(ref, range, buffer);
-        BlockType block = target == null ? null : world.getBlockType(target);
+        BlockType block = target == null ? null : new WorldAccess(world).blockType(target.x, target.y, target.z);
         DewReaperRules.Mode mode = DewReaperRules.mode(block == null ? null : block.getId(), primroseBlockId);
 
         WaterApi water = WaterLink.api();

@@ -6,6 +6,7 @@ import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockBreakingDropType;
@@ -16,15 +17,16 @@ import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffec
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthChunk;
-import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthModule;
+import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthSection;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
+import com.hypixel.hytale.server.core.modules.time.TimeResource;
+import com.hypixel.hytale.protocol.BlockPosition;
+import com.hypixel.hytale.protocol.packets.world.UpdateBlockDamage;
 import com.hypixel.hytale.server.core.modules.interaction.BlockHarvestUtils;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkSection;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 import org.joml.Vector3d;
@@ -40,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The state of every compacting Compactor, and the parts of compacting that touch the engine: the crack on the block, the drop and
  * the hum. The tick itself is {@link CompactorInteraction}; {@link CompactorSystem} ends a compacting whose ticks have stopped.
  *
- * <p>The crack is the engine's own block health ({@link BlockHealthChunk}), which the client draws as the crack, but it is never set
+ * <p>The crack is the engine's own block health ({@link BlockHealthSection}), which the client draws as the crack, but it is never set
  * through {@code BlockHarvestUtils.performBlockDamage}, the call that breaks a block when its health reaches 0. Here the health is
  * only ever lowered to {@code 1 - MaxCrack * progress} (MaxCrack at most 0.9), never further, and only by the part not already
  * taken, so no number of ticks, lag spikes or compacting players can bring it below 0.1 by this tool; and nothing in this class
@@ -103,34 +105,28 @@ final class CompactorTrail {
 
     // ---- the block health ----
 
-    static BlockHealthChunk healthChunk(World world, Vector3i block) {
-        ChunkStore chunks = world.getChunkStore();
-        Ref<ChunkStore> section = chunks.getChunkSectionReferenceAtBlock(block.x, block.y, block.z);
-        if (section == null || !section.isValid()) {
-            return null;
-        }
-        ChunkSection chunkSection = chunks.getStore().getComponent(section, ChunkSection.getComponentType());
-        if (chunkSection == null) {
-            return null;
-        }
-        return chunks.getStore().getComponent(chunkSection.getChunkColumnReference(),
-                BlockHealthModule.get().getBlockHealthChunkComponentType());
+    /** The game clock the engine's own regeneration compares damage times with (not wall time). */
+    private static Instant gameNow(World world) {
+        return world.getEntityStore().getStore().getResource(TimeResource.getResourceType()).getNow();
     }
 
     /**
      * Shows the block cracked to {@code targetHealth}: lowers its health to that if it is higher, never if it is lower already, and
-     * never below {@code floor}. Remembers what was taken.
+     * never below {@code floor}. Remembers what was taken. The engine's ReplicateChanges system sends the crack to the players.
      */
     static void showCrack(State state, float targetHealth, float floor) {
-        BlockHealthChunk health = healthChunk(state.world, state.target);
+        Vector3i at = state.target;
+        WorldAccess access = new WorldAccess(state.world);
+        BlockHealthSection health = access.healthSection(at.x, at.y, at.z);
         if (health == null) {
             return;
         }
-        float now = health.getBlockHealth(state.target);
+        float now = health.getHealth(at.x, at.y, at.z);
         float wanted = Math.max(targetHealth, floor);
         float delta = now - wanted;
         if (delta > 0.0005f) {
-            health.damageBlock(Instant.now(), state.world, state.target, delta);
+            health.damage(at.x, at.y, at.z, delta, gameNow(state.world));
+            markSaving(access, at);
             state.taken += delta;
         }
     }
@@ -139,16 +135,22 @@ final class CompactorTrail {
     static void release(State state) {
         if (state.target != null && state.world != null && state.taken > 0f) {
             try {
-                BlockHealthChunk health = healthChunk(state.world, state.target);
+                Vector3i at = state.target;
+                WorldAccess access = new WorldAccess(state.world);
+                BlockHealthSection health = access.healthSection(at.x, at.y, at.z);
                 if (health != null) {
-                    // repairBlock drops the whole damage record whatever the amount (measured), so a partial give-back is a
-                    // negative damage; when everything taken comes back the block is simply made whole.
-                    float now = health.getBlockHealth(state.target);
-                    if (now + state.taken >= 0.999f) {
-                        health.removeBlock(state.world, state.target);
-                    } else {
-                        health.damageBlock(Instant.now(), state.world, state.target, -state.taken);
+                    // Healing is a negative damage, which also deletes the record when the health is back at 1 or more. That
+                    // deletion queues no change for the client, so the clearing update is sent here (and a record left a hair
+                    // below 1 by float rounding is cleared the same way).
+                    float healed = state.taken;
+                    float now = health.damage(at.x, at.y, at.z, -healed, gameNow(state.world));
+                    if (now >= 0.999f) {
+                        if (now < 1f) {
+                            health.clearHealth(ChunkUtil.indexBlock(at.x & 31, at.y & 31, at.z & 31));
+                        }
+                        sendCleared(state.world, at, healed);
                     }
+                    markSaving(access, at);
                 }
             } catch (RuntimeException e) {
                 EquipmentOfArrakisPlugin.get().getLogger().atWarning().log("Compactor: could not repair %s: %s", state.target, e);
@@ -157,6 +159,26 @@ final class CompactorTrail {
         state.taken = 0f;
         state.target = null;
         state.cycle = null;
+    }
+
+    private static void markSaving(WorldAccess access, Vector3i at) {
+        ChunkSection section = access.chunkSection(at.x, at.y, at.z);
+        if (section != null) {
+            section.markNeedsSaving();
+        }
+    }
+
+    /** Tells the players who have the section loaded that the crack is gone, the way the engine's ReplicateChanges does. */
+    private static void sendCleared(World world, Vector3i at, float healed) {
+        int sx = ChunkUtil.chunkCoordinate(at.x);
+        int sy = ChunkUtil.chunkCoordinate(at.y);
+        int sz = ChunkUtil.chunkCoordinate(at.z);
+        UpdateBlockDamage packet = new UpdateBlockDamage(new BlockPosition(at.x, at.y, at.z), 1.0f, healed);
+        for (PlayerRef player : world.getPlayerRefs()) {
+            if (player.getChunkTracker().isLoaded(sx, sy, sz)) {
+                player.getPacketHandler().writeNoCache(packet);
+            }
+        }
     }
 
     /** True while the player is alive, valid and holds the Compactor in either hand (utility slot or hotbar). */

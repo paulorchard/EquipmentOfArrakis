@@ -151,13 +151,14 @@ public class CompactorInteraction extends ChargingInteraction {
             dt = 0;
         }
         Vector3i target = TargetUtil.getTargetBlock(ref, range, buffer);
-        BlockType block = target == null ? null : world.getBlockType(target);
+        // Unloaded reads as air, so as no block.
+        int blockId = target == null ? 0 : new WorldAccess(world).block(target.x, target.y, target.z);
+        BlockType block = WorldAccess.blockTypeOf(blockId);
         if (block == null || !CompactMath.allowed(block.getGroup(), block.getId(), allowedGroups, excludedBlocks, excludedPrefixes)) {
             CompactorTrail.release(state);
             state.lastTick = 0;
             return;
         }
-        int blockId = world.getBlock(target.x, target.y, target.z);
         if (state.target == null || !state.target.equals(target) || state.blockId != blockId) {
             CompactorTrail.release(state);
             state.target = new Vector3i(target);

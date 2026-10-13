@@ -2,7 +2,7 @@ package com.paulorchard.islandcraft.equipmentofarrakis;
 
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthChunk;
+import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthSection;
 import com.hypixel.hytale.server.core.universe.world.World;
 import org.joml.Vector3i;
 
@@ -23,9 +23,11 @@ final class CompactorSelfTest {
     static List<String> run(World world) {
         List<String> out = new ArrayList<>();
         Vector3i pos = new Vector3i(0, 200, 0);
-        world.setBlock(pos.x, pos.y, pos.z, "Soil_Sand");
-        int sandId = world.getBlock(pos.x, pos.y, pos.z);
-        BlockType type = world.getBlockType(pos);
+        WorldAccess access = new WorldAccess(world);
+        boolean placed = access.setBlock(pos.x, pos.y, pos.z, "Soil_Sand", 0);
+        out.add("sand placed at " + pos + (placed ? "" : ": NOT placed, its section is not loaded"));
+        int sandId = access.block(pos.x, pos.y, pos.z);
+        BlockType type = access.blockType(pos.x, pos.y, pos.z);
         out.add("block at " + pos + ": id " + (type == null ? null : type.getId()) + " group " + (type == null ? null : type.getGroup())
                 + " allowed by default rule: " + (type != null && CompactMath.allowed(type.getGroup(), type.getId(),
                 List.of("Sand"), List.of("Arrakis_Sand"), List.of("Arrakis_Worm_Ripple_Layer_", "Arrakis_Worm_Sunk_"))));
@@ -50,13 +52,13 @@ final class CompactorSelfTest {
             CompactorTrail.showCrack(two, CompactMath.healthAt(5, 0.9), floor);
         }
         out.add("1000 ticks pushing far past the end (expect 0.1, never 0 or below): " + health(world, pos));
-        out.add("the block is still there: " + (world.getBlock(pos.x, pos.y, pos.z) == sandId));
+        out.add("the block is still there: " + (access.block(pos.x, pos.y, pos.z) == sandId));
         out.add("taken before letting go: one " + one.taken + " two " + two.taken);
         CompactorTrail.release(one);
         out.add("player one let go (expect 0.1 + 0.45 = 0.55): " + health(world, pos));
         CompactorTrail.release(two);
         out.add("player two let go (expect 1.0, the record removed): " + health(world, pos) + ", block still there: "
-                + (world.getBlock(pos.x, pos.y, pos.z) == sandId));
+                + (access.block(pos.x, pos.y, pos.z) == sandId));
         if (type != null) {
             List<ItemStack> drops = CompactorTrail.dropsOf(type);
             StringBuilder names = new StringBuilder();
@@ -65,12 +67,12 @@ final class CompactorSelfTest {
             }
             out.add("drops of the block: " + names);
         }
-        world.setBlock(pos.x, pos.y, pos.z, "Empty");
+        access.setBlock(pos.x, pos.y, pos.z, "Empty", 0);
         return out;
     }
 
     private static float health(World world, Vector3i pos) {
-        BlockHealthChunk health = CompactorTrail.healthChunk(world, pos);
-        return health == null ? Float.NaN : health.getBlockHealth(pos);
+        BlockHealthSection health = new WorldAccess(world).healthSection(pos.x, pos.y, pos.z);
+        return health == null ? Float.NaN : health.getHealth(pos.x, pos.y, pos.z);
     }
 }
