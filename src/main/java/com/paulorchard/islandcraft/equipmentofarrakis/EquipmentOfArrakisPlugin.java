@@ -56,6 +56,7 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
         EquipmentOfArrakisConfig settings = config.get();
         context = new ModuleContext(this, root, settings::section);
         List<EquipmentModule> all = List.of(new CoreModule(modules), new PowerModule(), new CatalogModule());
+        all = java.util.stream.Stream.concat(all.stream(), java.util.stream.Stream.of(new com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsModule(this))).toList(); // EXPERIMENT: remove with the experiments module
         modules.setupAll(all, settings.enabledModules(), context);
         getCommandRegistry().registerCommand(root.command());
     }

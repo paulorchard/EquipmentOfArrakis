@@ -27,3 +27,8 @@ ui.itemcategory.islandcraft.weapons = Weapons
 ui.itemcategory.islandcraft.armor = Armor
 ui.itemcategory.islandcraft.resources = Resources
 items.Arrakis_Dev_Marker.name = Dev Marker
+
+# EXPERIMENT BEGIN
+items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter
+items.Arrakis_Exp_Flame_Cutter.description = EXPERIMENT. A flamethrower turned into a rock-cutting beam: no fire, no damage to creatures; hold Primary to cut. Costs Mana.
+# EXPERIMENT END

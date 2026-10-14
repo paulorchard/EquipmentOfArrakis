@@ -1,0 +1,11 @@
+{
+  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). One tick of the Flame Cutter beam every RunTime seconds while Primary is held: costs ManaPerSecond * RunTime (refused silently when the player cannot pay), and damages the block under the crosshair within Range like a ToolItemId pickaxe (DamageScale 0.24 per 0.1 s is one full pickaxe swing per 0.4167 s); Creative breaks it at once and pays nothing.",
+  "Type": "Arrakis_Exp_Cutter_Tick",
+  "RunTime": 0.1,
+  "Range": 5,
+  "ManaPerSecond": 3.3,
+  "DamageScale": 0.24,
+  "ToolItemId": "Tool_Pickaxe_Mithril",
+  "SpendWithoutTarget": false,
+  "Silent": true
+}

@@ -1,0 +1,12 @@
+{
+  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). Primary of the Flame Cutter: the tick first (it refuses the whole chain when there is no Mana, so nothing below it starts), then the burn animation and the focusing beam. No fire, no damage, no sound.",
+  "Interactions": [
+    "Arrakis_Exp_Cutter_Tick",
+    "Arrakis_Exp_Flame_Burn"
+  ],
+  "Tags": {
+    "Attack": [
+      "Ranged"
+    ]
+  }
+}
