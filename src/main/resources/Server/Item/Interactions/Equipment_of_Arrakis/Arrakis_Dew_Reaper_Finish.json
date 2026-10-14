@@ -1,4 +1,0 @@
-{
-  "$Comment": "Last in the Dew Reaper's right click, after the slow swing: only reached when the swing ran to its end. Gives the water (see Arrakis_Dew_Reaper_Gate) and takes the hum off. Charges nothing.",
-  "Type": "Arrakis_Dew_Reaper_Finish"
-}

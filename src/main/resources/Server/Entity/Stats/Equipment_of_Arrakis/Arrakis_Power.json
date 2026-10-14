@@ -1,8 +1,0 @@
-{
-  "$Comment": "Power for the equipment of Arrakis. Every living entity gets every stat asset when its stat map is set up, with this InitialValue, so new characters and old saves both start full. It has no Regenerating rule of its own: PowerRechargeSystem adds 10 a second while the player is not using power, which a stat rule cannot tell apart from firing.",
-  "InitialValue": 100,
-  "Min": 0,
-  "Max": 100,
-  "Shared": false,
-  "ResetType": "MaxValue"
-}

@@ -1,9 +1,0 @@
-{
-  "$Comment": "Right click of the Dew Reaper: the gate (refusals, payment, hum), the slow swing as it was, then the finish (the water).",
-  "RequireNewClick": true,
-  "Interactions": [
-    "Arrakis_Dew_Reaper_Gate",
-    "Arrakis_Dew_Reaper_Swing",
-    "Arrakis_Dew_Reaper_Finish"
-  ]
-}

@@ -1,0 +1,30 @@
+{
+  "$Comment": "Development only: gives the IslandCraft tab something to show. A minimal item that borrows the vanilla Ingredient_Stick model, texture and icon by path. Delete this file (and its translation keys) when the first real item lands in the tab.",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Dev_Marker.name"
+  },
+  "Icon": "Icons/ItemsGenerated/Ingredient_Stick.png",
+  "Categories": [
+    "IslandCraft.Tools"
+  ],
+  "Model": "Items/Ingredients/Stick.blockymodel",
+  "Texture": "Items/Ingredients/Stick_Texture.png",
+  "PlayerAnimationsId": "Item",
+  "MaxStack": 1,
+  "IconProperties": {
+    "Scale": 1.21,
+    "Rotation": [
+      67,
+      330,
+      0
+    ],
+    "Translation": [
+      1.3,
+      -1
+    ]
+  },
+  "ItemEntity": {
+    "ParticleSystemId": null
+  },
+  "ItemSoundSetId": "ISS_Items_Foliage"
+}

@@ -1,8 +1,8 @@
 {
   "Group": "IslandCraft",
   "Name": "IslandCraft - Equipment of Arrakis",
-  "Version": "0.1.0",
-  "Description": "Equipment for survival on Arrakis: the Blood Extractor, Dew Reaper, Compactor, Cutter Ray, Holtzman Shield and the Maula Pistol and Dartgun.",
+  "Version": "0.2.0",
+  "Description": "Equipment for survival on Arrakis, built as small modules on the vanilla Mana stat. This version is the foundation: the module system, power (Mana) and the IslandCraft creative-menu tab.",
   "Authors": [
     {
       "Name": "paulo"
@@ -12,9 +12,6 @@
   "Main": "com.paulorchard.islandcraft.equipmentofarrakis.EquipmentOfArrakisPlugin",
   "Dependencies": {
     "Hytale:EntityModule": "*"
-  },
-  "OptionalDependencies": {
-    "IslandCraft:IslandCraft - Water of Arrakis": "*"
   },
   "DisabledByDefault": false,
   "IncludesAssetPack": true

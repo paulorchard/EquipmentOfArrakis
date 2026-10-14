@@ -1,0 +1,26 @@
+{
+  "Icon": "Icons/ItemCategories/Arrakis.png",
+  "Order": 4,
+  "Children": [
+    {
+      "Id": "Tools",
+      "Name": "server.ui.itemcategory.islandcraft.tools",
+      "Icon": "Icons/ItemCategories/Items-Tools.png"
+    },
+    {
+      "Id": "Weapons",
+      "Name": "server.ui.itemcategory.islandcraft.weapons",
+      "Icon": "Icons/ItemCategories/Items-Weapons.png"
+    },
+    {
+      "Id": "Armor",
+      "Name": "server.ui.itemcategory.islandcraft.armor",
+      "Icon": "Icons/ItemCategories/Items-Armor.png"
+    },
+    {
+      "Id": "Resources",
+      "Name": "server.ui.itemcategory.islandcraft.resources",
+      "Icon": "Icons/ItemCategories/Items-Potion.png"
+    }
+  ]
+}

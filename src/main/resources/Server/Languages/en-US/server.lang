@@ -1,41 +1,29 @@
-items.Arrakis_Blood_Extractor.name = Blood Extractor
-items.Arrakis_Blood_Extractor.description = An off-hand tool. Place it in a utility slot, pick it with Z, and hold the right mouse button to hold it out in front of you.
-items.Arrakis_Dew_Reaper.name = Dew Reaper
-items.Arrakis_Dew_Reaper.description = An off-hand tool. Place it in a utility slot, pick it with Z, and click the right mouse button for a slow swing. Needs the Water of Arrakis mod and 100 power. Swung at a Primrose it collects 50 water; swung anywhere else it collects 1. The water goes into a Litrejon you carry (never into you); with no Litrejon that has room it is lost.
-items.Arrakis_Compactor.name = Compactor
-items.Arrakis_Compactor.description = An off-hand tool. Place it in a utility slot, pick it with Z, and hold the right mouse button to point it where you look. Aimed at sand within 3 blocks it compacts it: the block cracks, then gives one drop and heals, again and again, and is never broken. It costs 10 Arrakis power per second.
-commands.arrakis.desc = Debug commands for the equipment of Arrakis: arrakis power fill|set <n> [player] (operators only)
-commands.arrakis.power.desc = Debug commands for the Arrakis_Power stat: arrakis power fill|set <n> [player]
-commands.arrakis.power.fill.desc = Fill power to its maximum: arrakis power fill [player]
-commands.arrakis.power.set.desc = Set power (0-100): arrakis power set <n> [player]
-items.Arrakis_Cutter_Ray.name = Cutter Ray
-items.Arrakis_Cutter_Ray.description = A two-handed pulse rifle. Hold the left mouse button to fire at a block up to 5 blocks away: each shot chips the block and throws sparks and white globs. Costs 10 power per shot. Does not hurt creatures.
-commands.arrakis.compactor.desc = Compactor development commands.
-commands.arrakis.compactor.selftest.desc = Runs the Compactor engine calls on a sand block placed at 0, 200, 0 and reports.
-commands.arrakis.hud.desc = On-screen display commands (operators): arrakis hud tune | rig
-commands.arrakis.hud.tune.desc = List the display settings, or set one live (not saved): arrakis hud tune [name value]
-commands.arrakis.hud.rig.desc = Show the tool panel for 5 seconds (arrakis hud rig [tool]) or a test AMMO number (arrakis hud rig ammo <n>)
-dewReaper.needsWaterMod = The Dew Reaper needs the Water of Arrakis mod.
-dewReaper.needsPower = The Dew Reaper needs {cost} power.
-commands.arrakis.dewreaper.desc = Dew Reaper development commands.
-commands.arrakis.dewreaper.selftest.desc = Says whether Water of Arrakis is linked and runs its flask functions on a made-up Litrejon.
-dewReaper.filledFlask = {added} water collected into a Litrejon ({amount}/{capacity}).
-dewReaper.lost = {lost} water lost, no container.
-items.Arrakis_Holtzman_Shield.name = Holtzman Shield
-items.Arrakis_Holtzman_Shield.description = An off-hand utility. Place it in a utility slot and pick it with Z: while it is selected and you have power, an amber field surrounds you and projectile damage is taken out of your Arrakis power instead of your health. A hit that uses up the last of the power breaks the field and puts the shield away. It does nothing against melee, fire or falls.
-commands.arrakis.shield.desc = Holtzman Shield test commands: arrakis shield hit <damage> | state
-commands.arrakis.shield.hit.desc = Hit yourself with a projectile-sourced damage event of that size, through the normal damage path: arrakis shield hit <damage>
-commands.arrakis.shield.state.desc = Say whether the Holtzman field is up, the power, and the effect state: arrakis shield state
-items.Arrakis_Maula_Pistol.name = Maula Pistol
-items.Arrakis_Maula_Pistol.description = A spring-gun pistol that fires darts. Hold it in your main hand: left click fires one dart (click again for the next, about three a second at most). Each shot costs 1 ammo, and a dart does 1 damage out to 40 blocks. Right click bashes. It cannot go in the off-hand slot.
-items.Arrakis_Dartgun.name = Dartgun
-items.Arrakis_Dartgun.description = A two-handed spring gun that fires darts. Left click fires one dart (click again for the next, about three a second at most). Each shot costs 1 ammo, and a dart does 1 damage out to 40 blocks. Right click bashes.
-commands.arrakis.ammo.desc = Debug commands for the Arrakis_Ammo stat: arrakis ammo fill|set <n> [player]
-commands.arrakis.ammo.fill.desc = Fill ammo to its maximum: arrakis ammo fill [player]
-commands.arrakis.ammo.set.desc = Set ammo (0-100): arrakis ammo set <n> [player]
-commands.arrakis.dart.desc = Spring gun development commands.
-commands.arrakis.dart.selftest.desc = Flies real darts around 0, 200, 0 and reports damage by distance, drop, range and the entity count.
-commands.arrakis.shield.shot.desc = Count as a projectile you launched, without a gun: the Holtzman field drops and the cooldown starts: arrakis shield shot
-commands.arrakis.shield.cooldown.desc = Show, or set live (not saved), the seconds the field stays down after a shot: arrakis shield cooldown [seconds]
-commands.arrakis.shield.diag.desc = List the Ranged-tagged interactions seen ending with no player projectile, and the ignore list: arrakis shield diag
-commands.arrakis.shield.hooktest.desc = Fire darts and an arrow with dummies as shooters and report whether the projectile hooks saw a player shot: arrakis shield hooktest
+# IslandCraft - Equipment of Arrakis. One section per module.
+
+# ---- core
+commands.arrakis.desc = Equipment of Arrakis commands (operators only): modules, selfcheck, worldtest, power
+commands.arrakis.modules.desc = Lists the modules, whether each is enabled and how its setup went.
+commands.arrakis.selfcheck.desc = Re-runs every module's self-check and prints the lines.
+commands.arrakis.worldtest.desc = Development: writes and reads a block at 0, 200, 0 through the world access helper.
+
+# ---- power
+commands.arrakis.power.desc = Power (the Mana stat): get, set, add, fill, spend, max, modifier, selftest
+commands.arrakis.power.get.desc = Shows Mana, the max, the fraction, the game mode and the max modifiers: arrakis power get [player]
+commands.arrakis.power.set.desc = Sets Mana, clamped to 0 and the max: arrakis power set <n> [player]
+commands.arrakis.power.add.desc = Adds to Mana (negative takes), clamped: arrakis power add <n> [player]
+commands.arrakis.power.fill.desc = Fills Mana to its max: arrakis power fill [player]
+commands.arrakis.power.spend.desc = Spends Mana all or nothing and says if it was refused; creative spends nothing: arrakis power spend <n> [player]
+commands.arrakis.power.max.desc = Shows the max and its modifiers: arrakis power max [player]
+commands.arrakis.power.modifier.desc = Max-Mana modifiers: add, remove, list
+commands.arrakis.power.modifier.add.desc = Adds a modifier to the max, same id replaces: arrakis power modifier add <id> <add|mul> <amount> [player]
+commands.arrakis.power.modifier.remove.desc = Removes a modifier: arrakis power modifier remove <id> [player]
+commands.arrakis.power.modifier.list.desc = Lists the modifiers on the max: arrakis power modifier list [player]
+commands.arrakis.power.selftest.desc = Development: runs the power checks on a test dummy.
+
+# ---- catalog
+ui.itemcategory.islandcraft = IslandCraft
+ui.itemcategory.islandcraft.tools = Tools
+ui.itemcategory.islandcraft.weapons = Weapons
+ui.itemcategory.islandcraft.armor = Armor
+ui.itemcategory.islandcraft.resources = Resources
+items.Arrakis_Dev_Marker.name = Dev Marker
