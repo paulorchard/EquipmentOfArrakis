@@ -11,8 +11,11 @@ const path = require('path');
 
 const calibration = JSON.parse(fs.readFileSync(path.join(__dirname, 'calibration.json'), 'utf8'));
 const SYSTEM = 'NatureBeam';
-const RUN_TIME = 0.03; // the pace of the Flame Beam Cutter: one server tick (30 a second), so the laser is re-spawned on every tick, i.e. every frame the server can give
-const DURATION = 0.05; // seconds each spawned laser lasts: a little over a tick, so that it is continuous
+// The NatureBeam is made for ONE cast (vanilla Stoneskin_Cast: RunTime 0.2, the system emits for that long): its streak (NatureBeam_Beam and _Overlay) is a burst
+// with WaveDelay 0.1 s and a life of 0.2 s that fades in over its first 15-50 %, so the system must run for about 0.2 s or the streak never appears (a 0.05 s
+// duration showed it for 2 frames). Casting again every 0.1 s overlaps two of them, which is what pressing the button rapidly does: an always-on beam.
+const RUN_TIME = 0.1; // the pace of the Flame Beam Cutter: a new cast every 0.1 s while the button is held
+const DURATION = 0.2; // seconds each cast emits: the vanilla cast time
 const TICK_ID = 'Arrakis_Exp_Flame_Beam_Tick'; // the Mana / cutting tick at that pace (same rates per second as Arrakis_Exp_Cutter_Tick)
 const FLAME_RUN_TIME = 0.1; // the Flame Cutter keeps its pace and its Burn animation
 const FLAME_DURATION = 0.14;

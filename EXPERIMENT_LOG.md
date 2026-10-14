@@ -346,3 +346,17 @@ person but in third person it still started at the gun.
 * Why the packet is the only way to be right in both views: the server does not know the view, so one start per spawn; the body-frame grip is near where the
   gun is in both (lower right, in front), which is the closest one number can be to "from the gun" in first person and in third.
 * Removal rehearsal repeated after this round (script above on a temp copy): no trace, `gradlew build` with the 20 base tests, no experiment file left.
+
+#### Round 4: why the laser showed for 2 frames (fixed: cast like the vanilla one)
+
+The screenshots of round 3 showed a thin laser and a faint glow for about 2 frames in 30; the `Vanilla ...` screenshots show a big green cloud and a beam.
+Reading the vanilla assets explained it:
+* `Stoneskin_Cast` spawns `NatureBeam` ONCE per cast, with `RunTime 0.2`: the system emits for 0.2 s. The beam streak (`NatureBeam_Beam`, `_Beam_Overlay`) is a burst
+  with `WaveDelay 0.1`, life 0.2 and fades in over its first 15-50 %; the continuous parts (`_Core`, `_End`, `_Sparks`, 150-200 particles a second) fade in over 20 % of 0.1-0.2 s.
+  The packet's `maxDuration` is the emission time (0 is what the vanilla server code sends: no cut), so my 0.05 s cut the streak off before it had started and let only the first
+  fade-in of the rest show. Pressing the button rapidly overlaps full 0.2 s casts: the always-on beam you saw.
+* My own glow had the same cut (0.05 s) and no fade, so it flickered.
+* Fix: each cast lasts 0.2 s (the vanilla time) and a new one is cast every 0.1 s (pace 0.1, the tick back at 0.1 s), so two overlap. The glow's sprites live 0.2 s with a fade in
+  and out, and the calibration preview (`beam worldnature`) also casts for 0.2 s. Cost: a head turn leaves the old casts at the old aim for up to 0.2 s (a short trail), and the
+  intensity is that of two overlapping casts. **Not seen in game.** If it is too bright: lower `OPACITY` in `make_beam_glow.js`, or raise the pace in `make_flame_beam.js`
+  (casts every 0.15 s overlap 1.3 times; below 0.1 s the streak may gap).

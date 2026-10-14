@@ -190,11 +190,11 @@ final class ExpCalibrationRig {
         ExpBeamGeometry.Plan plan = ExpBeamGeometry.plan(ref, store, c.useBody, c.start().x, c.start().y, c.start().z, c.apex, c.endAtBlock);
         if (state.beam == Beam.WORLD_NATURE) {
             Vector3d origin = new Vector3d(plan.end).fma(-NATURE_END_OFFSET, plan.direction);
-            ExpBeamGeometry.spawn(state.world, NATURE_BEAM, origin, plan, (float) c.start().scale, 0.14f);
+            ExpBeamGeometry.spawn(state.world, NATURE_BEAM, origin, plan, (float) c.start().scale, 0.2f);
             ExpBeamGeometry.spawnGlow(state.world, ExpBeamSpawnInteraction.GLOW_PREFIX, ExpBeamSpawnInteraction.GLOW_LEVELS, plan,
-                    System.currentTimeMillis() / 1000.0, c.pulseHz, (float) c.start().scale, 0.14f);
+                    System.currentTimeMillis() / 1000.0, c.pulseHz, (float) c.start().scale, 0.2f);
         } else {
-            ExpBeamGeometry.spawn(state.world, STREAM, plan.start, plan, (float) c.start().scale, 0.14f);
+            ExpBeamGeometry.spawn(state.world, STREAM, plan.start, plan, (float) c.start().scale, 0.2f);
         }
     }
 

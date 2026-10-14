@@ -18,8 +18,8 @@ const OPACITY = [0.05, 0.09, 0.15, 0.24]; // opacity of one sprite at each level
 const HALO_RADIUS = 0.1;          // blocks: the ring the sprites leave on
 const SIZE = 0.5;                 // blocks: width of a sprite
 const COLOR = '#79e07a';          // the green of the NatureBeam (#346830 is its dark core)
-const SPEED = 45;                 // blocks a second along the axis
-const LIFE = 0.1;                 // seconds: SPEED * LIFE = 4.5 blocks, the length of the NatureBeam
+const SPEED = 22.5;               // blocks a second along the axis
+const LIFE = 0.2;                 // seconds: SPEED * LIFE = 4.5 blocks, the length of the NatureBeam; a cast lasts 0.2 s and is repeated every 0.1 s
 const SPAWN_RATE = 500;           // sprites a second
 const TEXTURE = 'Particles/Textures/Basic/Glow.png'; // vanilla, by path
 
@@ -57,9 +57,12 @@ for (let level = 0; level < LEVELS; level++) {
             Texture: TEXTURE,
             FrameSize: { Width: 32, Height: 32 },
             ScaleRatioConstraint: 'OneToOne',
+            // fades in and out over the life, so that a sprite never pops
             Animation: {
-                0: { FrameIndex: range(0, 0), Opacity: OPACITY[level], Color: COLOR, Scale: scale(1) },
-                100: { Opacity: OPACITY[level] },
+                0: { FrameIndex: range(0, 0), Opacity: 0, Color: COLOR, Scale: scale(1) },
+                20: { Opacity: OPACITY[level] },
+                80: { Opacity: OPACITY[level] },
+                100: { Opacity: 0 },
             },
             InitialAnimationFrame: { FrameIndex: range(0, 0), Opacity: OPACITY[level], Scale: scale(SIZE) },
             SoftParticles: 'Disable',

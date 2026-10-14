@@ -99,7 +99,8 @@ class ExperimentsBeamAssetsTest {
         assertEquals(calibration.getBoolean("endAtBlock").getValue(), spawn.getBoolean("EndAtBlock").getValue());
         assertEquals(1.8, spawn.getNumber("EndOffset").doubleValue(), 1e-9, "where the NatureBeam's end burst sits (measure_nature_beam.js)");
         assertTrue(spawn.getNumber("Duration").doubleValue() > read(PACE).getNumber("RunTime").doubleValue(), "continuous: a beam outlasts a pass");
-        assertTrue(read(PACE).getNumber("RunTime").doubleValue() <= 1.0 / 30, "a pass is one server tick: the laser is re-spawned on every tick");
+        assertTrue(spawn.getNumber("Duration").doubleValue() >= 0.2, "a cast runs as long as the vanilla one (0.2 s): the NatureBeam's streak starts after a 0.1 s wave delay");
+        assertTrue(spawn.getNumber("Duration").doubleValue() >= 1.5 * read(PACE).getNumber("RunTime").doubleValue(), "casts overlap, so the beam is always on");
         assertEquals("Camera", spawn.getString("Frame").getValue());
         assertTrue(spawn.getBoolean("Glow").getValue(), "the laser has its pulsing glow");
         assertEquals(calibration.getNumber("pulseHz").doubleValue(), spawn.getNumber("PulseHz").doubleValue(), 1e-9);

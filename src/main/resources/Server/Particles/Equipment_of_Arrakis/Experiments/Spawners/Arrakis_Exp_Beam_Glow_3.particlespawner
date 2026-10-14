@@ -5,10 +5,10 @@
   "LinearFiltering": true,
   "LightInfluence": 0,
   "ParticleRotateWithSpawner": true,
-  "MaxConcurrentParticles": 79,
+  "MaxConcurrentParticles": 154,
   "ParticleLifeSpan": {
-    "Min": 0.1,
-    "Max": 0.1
+    "Min": 0.2,
+    "Max": 0.2
   },
   "SpawnRate": {
     "Min": 500,
@@ -29,8 +29,8 @@
   "UseEmitDirection": false,
   "InitialVelocity": {
     "Speed": {
-      "Min": 45,
-      "Max": 45
+      "Min": 22.5,
+      "Max": 22.5
     },
     "Yaw": {
       "Min": 0,
@@ -54,7 +54,7 @@
           "Min": 0,
           "Max": 0
         },
-        "Opacity": 0.24,
+        "Opacity": 0,
         "Color": "#79e07a",
         "Scale": {
           "X": {
@@ -67,8 +67,14 @@
           }
         }
       },
-      "100": {
+      "20": {
         "Opacity": 0.24
+      },
+      "80": {
+        "Opacity": 0.24
+      },
+      "100": {
+        "Opacity": 0
       }
     },
     "InitialAnimationFrame": {
