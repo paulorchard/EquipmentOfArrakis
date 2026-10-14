@@ -52,6 +52,8 @@ final class ExpCalibrationRig {
     static final String RULER = "Arrakis_Exp_Cal_Ruler";
     static final String STREAM = "Arrakis_Exp_Cal_Stream";
     static final String NATURE_BEAM = "NatureBeam";
+    /** Blocks in front of the NatureBeam system's origin where its end burst sits (measure_nature_beam.js). */
+    static final double NATURE_END_OFFSET = 1.8;
 
     /** The colours of the rulers, in the order the nodes are named. */
     static final String[][] COLOURS = {
@@ -63,7 +65,7 @@ final class ExpCalibrationRig {
     /** How the packet's rotation relates to degrees: 1 when the engine takes the JSON numbers as they are, pi/180 when it takes radians. */
     static volatile double angleUnit = 1;
 
-    enum Beam {OFF, STREAM, NATURE}
+    enum Beam {OFF, STREAM, NATURE, WORLD_STREAM, WORLD_NATURE}
 
     /** What one player has switched on, and the numbers. */
     static final class State {
@@ -167,15 +169,30 @@ final class ExpCalibrationRig {
         if (state.target) {
             ParticleUtil.spawnParticleEffect(MARK, targetPoint(state, ref, store, eye, dir), store);
         }
+        if (state.beam == Beam.WORLD_STREAM || state.beam == Beam.WORLD_NATURE) {
+            spawnWorldBeam(state, ref, store);
+        }
         long now = System.nanoTime();
         if (now - state.lastSlow > 400_000_000L) {
             state.lastSlow = now;
-            if (state.beam != Beam.OFF) {
+            if (state.beam == Beam.STREAM || state.beam == Beam.NATURE) {
                 spawnBeam(state, ref, store, eye);
             }
             if (!state.nodes.isEmpty()) {
                 spawnRulers(state, ref, store);
             }
+        }
+    }
+
+    /** The world-space beam: starts at the cam numbers in the camera frame and ends at the look target, every tick. */
+    private static void spawnWorldBeam(State state, Ref<EntityStore> ref, Store<EntityStore> store) {
+        ExpCalibration c = state.calibration;
+        ExpBeamGeometry.Plan plan = ExpBeamGeometry.plan(ref, store, c.cam.x, c.cam.y, c.cam.z, c.apex, c.endAtBlock);
+        if (state.beam == Beam.WORLD_NATURE) {
+            Vector3d origin = new Vector3d(plan.end).fma(-NATURE_END_OFFSET, plan.direction);
+            ExpBeamGeometry.spawn(state.world, NATURE_BEAM, origin, plan, (float) c.cam.scale, 0.14f);
+        } else {
+            ExpBeamGeometry.spawn(state.world, STREAM, plan.start, plan, (float) c.cam.scale, 0.14f);
         }
     }
 

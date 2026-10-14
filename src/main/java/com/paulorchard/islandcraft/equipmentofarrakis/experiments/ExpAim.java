@@ -58,4 +58,44 @@ final class ExpAim {
     static double lifetime(double radius, double length, double speed) {
         return slant(radius, length) / speed;
     }
+
+    // ---- aiming a world-space particle system at a point
+
+    /**
+     * The yaw (radians) that turns the forward direction (0, 0, -1) to point along (dx, dz) on the ground. The engine's own
+     * Transform.getDirection(pitch, yaw) is (-cos(pitch) sin(yaw), sin(pitch), -cos(pitch) cos(yaw)); this is its inverse.
+     */
+    static double yaw(double dx, double dz) {
+        return Math.atan2(-dx, -dz);
+    }
+
+    /** The pitch (radians, up is positive) of a direction: the inverse of the same formula. */
+    static double pitch(double dx, double dy, double dz) {
+        double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        return length < 1e-12 ? 0 : Math.asin(Math.max(-1, Math.min(1, dy / length)));
+    }
+
+    /** The player's right-hand direction for a look direction (world up is +Y; looking along -Z, right is +X). */
+    static double[] right(double dx, double dy, double dz) {
+        double rx = -dz;
+        double rz = dx;
+        double length = Math.hypot(rx, rz);
+        return length < 1e-9 ? new double[] {1, 0, 0} : new double[] {rx / length, 0, rz / length};
+    }
+
+    /** The player's up direction for a look direction: right x forward. */
+    static double[] up(double dx, double dy, double dz) {
+        double[] r = right(dx, dy, dz);
+        return new double[] {r[1] * dz - r[2] * dy, r[2] * dx - r[0] * dz, r[0] * dy - r[1] * dx};
+    }
+
+    /** A point given in the player's camera frame: eye + right * r + up * u + forward * f, for a unit look direction. */
+    static double[] cameraPoint(double[] eye, double[] dir, double right, double up, double forward) {
+        double[] r = right(dir[0], dir[1], dir[2]);
+        double[] u = up(dir[0], dir[1], dir[2]);
+        return new double[] {
+                eye[0] + r[0] * right + u[0] * up + dir[0] * forward,
+                eye[1] + r[1] * right + u[1] * up + dir[1] * forward,
+                eye[2] + r[2] * right + u[2] * up + dir[2] * forward};
+    }
 }

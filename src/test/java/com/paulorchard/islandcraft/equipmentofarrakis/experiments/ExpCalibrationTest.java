@@ -118,4 +118,60 @@ class ExpCalibrationTest {
         assertEquals(radius, inward, 1e-9);
         assertEquals(10, ExpAim.along(2, 4, 2), 1e-12);
     }
+
+    @Test
+    void theCameraStartRoundTripsAndStepsLikeTheOthers() {
+        ExpCalibration c = ExpCalibration.defaults();
+        assertEquals("0.16", c.change("cam", "x", "+"));
+        assertEquals("0.45", c.change("cam", "z", "0.45"));
+        c.endAtBlock = true;
+        ExpCalibration back = ExpCalibration.fromJson(c.toJson());
+        assertEquals(c.toJson(), back.toJson());
+        assertEquals(0.16, back.cam.x, 1e-12);
+        assertTrue(back.endAtBlock);
+    }
+
+    @Test
+    void theYawAndPitchOfADirectionAreTheInverseOfTheEnginesOwn() {
+        double[][] directions = {{0, 0, -1}, {1, 0, 0}, {0, 0, 1}, {-1, 0, 0}, {0.3, 0.5, -0.8}, {-0.6, -0.4, 0.2}, {0, 1, 0.001}};
+        for (double[] d : directions) {
+            double length = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+            double[] u = {d[0] / length, d[1] / length, d[2] / length};
+            float yaw = (float) ExpAim.yaw(u[0], u[2]);
+            float pitch = (float) ExpAim.pitch(u[0], u[1], u[2]);
+            // the engine uses a sine table, accurate to about a third of a percent
+            var back = com.hypixel.hytale.math.vector.Transform.getDirection(pitch, yaw);
+            assertEquals(u[0], back.x, 0.01, "x of " + java.util.Arrays.toString(d));
+            assertEquals(u[1], back.y, 0.01, "y of " + java.util.Arrays.toString(d));
+            assertEquals(u[2], back.z, 0.01, "z of " + java.util.Arrays.toString(d));
+        }
+    }
+
+    @Test
+    void theCameraFrameIsRightUpForwardAndAPointForwardIsOnTheRay() {
+        double[] eye = {10, 64, -5};
+        // looking north (-Z): right is +X, up is +Y
+        double[] p = ExpAim.cameraPoint(eye, new double[] {0, 0, -1}, 0.2, -0.1, 0.6);
+        assertEquals(10.2, p[0], 1e-9);
+        assertEquals(63.9, p[1], 1e-9);
+        assertEquals(-5.6, p[2], 1e-9);
+        // looking east (+X): right is +Z (south)
+        double[] q = ExpAim.cameraPoint(eye, new double[] {1, 0, 0}, 0.2, 0, 0);
+        assertEquals(10, q[0], 1e-9);
+        assertEquals(-4.8, q[2], 1e-9);
+        // looking up: the frame is still orthonormal, and a point straight ahead stays on the ray
+        double[] up = {0, 1, 0};
+        double[] ahead = ExpAim.cameraPoint(eye, up, 0, 0, 3);
+        assertEquals(67, ahead[1], 1e-9);
+        // right and up are perpendicular to the look direction and to each other
+        double[] dir = {0.3, 0.5, -0.8};
+        double l = Math.sqrt(0.09 + 0.25 + 0.64);
+        double[] d = {dir[0] / l, dir[1] / l, dir[2] / l};
+        double[] r = ExpAim.right(d[0], d[1], d[2]);
+        double[] u = ExpAim.up(d[0], d[1], d[2]);
+        assertEquals(0, r[0] * d[0] + r[1] * d[1] + r[2] * d[2], 1e-9);
+        assertEquals(0, u[0] * d[0] + u[1] * d[1] + u[2] * d[2], 1e-9);
+        assertEquals(0, r[0] * u[0] + r[1] * u[1] + r[2] * u[2], 1e-9);
+        assertEquals(1, Math.sqrt(u[0] * u[0] + u[1] * u[1] + u[2] * u[2]), 1e-9);
+    }
 }

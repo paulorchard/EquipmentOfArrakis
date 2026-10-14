@@ -51,6 +51,10 @@ final class ExpCalibration {
 
     View fp = defaultFp();
     View tp = defaultTp();
+    /** Where a world-space beam STARTS (x right, y up, z forward of the eye); its end is the look target, not a number. */
+    View cam = defaultCam();
+    /** True: the world-space beam ends where the look ray enters a block (else at the apex distance, also when nothing is hit). */
+    boolean endAtBlock;
     /** The distance along the camera ray where the beam is meant to end, blocks. */
     double apex = 5;
     /** What "+" and "-" add to a position or a scale, blocks. */
@@ -67,6 +71,11 @@ final class ExpCalibration {
         return new View("Head", -0.5, 0, 3.2, 0, 180, 0, 1, true);
     }
 
+    /** Where a world-space beam starts, in the camera's frame: x right, y up, z forward of the eye, blocks. */
+    static View defaultCam() {
+        return new View("eye", 0.15, -0.15, 0.6, 0, 0, 0, 1, false);
+    }
+
     static ExpCalibration defaults() {
         return new ExpCalibration();
     }
@@ -75,6 +84,8 @@ final class ExpCalibration {
         ExpCalibration c = new ExpCalibration();
         c.fp = fp.copy();
         c.tp = tp.copy();
+        c.cam = cam.copy();
+        c.endAtBlock = endAtBlock;
         c.apex = apex;
         c.step = step;
         c.angleStep = angleStep;
@@ -85,7 +96,8 @@ final class ExpCalibration {
         return switch (name.toLowerCase(Locale.ROOT)) {
             case "fp" -> fp;
             case "tp" -> tp;
-            default -> throw new IllegalArgumentException("the view is fp or tp, not " + name);
+            case "cam" -> cam;
+            default -> throw new IllegalArgumentException("the view is fp, tp or cam, not " + name);
         };
     }
 
@@ -179,6 +191,8 @@ final class ExpCalibration {
     String toJson() {
         return "{ \"$Comment\": \"EXPERIMENT: calibration of the Flame Beam Cutter, from /arrakis exp cal show (see EXPERIMENT_LOG.md, How to calibrate)\",\n"
                 + "  \"apex\": " + format(apex) + ", \"step\": " + format(step) + ", \"angleStep\": " + format(angleStep) + ",\n"
+                + "  \"endAtBlock\": " + endAtBlock + ",\n"
+                + "  \"cam\": " + json(cam) + ",\n"
                 + "  \"fp\": " + json(fp) + ",\n"
                 + "  \"tp\": " + json(tp) + " }";
     }
@@ -201,6 +215,10 @@ final class ExpCalibration {
         c.apex = number(document, "apex", c.apex);
         c.step = number(document, "step", c.step);
         c.angleStep = number(document, "angleStep", c.angleStep);
+        if (document.containsKey("endAtBlock") && document.get("endAtBlock").isBoolean()) {
+            c.endAtBlock = document.getBoolean("endAtBlock").getValue();
+        }
+        read(document, "cam", c.cam);
         read(document, "fp", c.fp);
         read(document, "tp", c.tp);
         return c;

@@ -122,7 +122,7 @@ the `Experiments` section) if the game has already written one with them. Check:
 (ignoring build, .git, .gradle).
 
 **Rehearsal (run for real, on a copy of the project in a temp folder, discarded afterwards):** the script above was applied; `grep` found
-no trace; `gradlew build` passed with 20 tests (the 27 experiment tests gone with the module, the other 20 unchanged); a headless boot
+no trace; `gradlew build` passed with 20 tests (the 30 experiment tests gone with the module, the other 20 unchanged); a headless boot
 loaded `core, power, catalog` (`modules loaded: 3 of 3`, `self-check: no problems`), logged nothing mentioning an experiment, no
 exception, and wrote a config with no Experiments section.
 
@@ -131,7 +131,7 @@ exception, and wrote a config with no Experiments section.
 interaction type nobody registered stops the whole boot (`Asset validation FAILED ... Mod ... failed to load`, seen in the first try).
 So the module's constructor (which runs even when the module is off) registers the `Arrakis_Exp_Cutter_Tick` type and a `BootEvent`
 listener; when `setup` did not run, the listener removes every `Arrakis_Exp_` asset (Flame Cutter: 1 item, 1 root interaction, 2 interactions,
-1 particle system, 2 spawners = 7; Flame Beam Cutter: 1 item, 1 root interaction, 1 interaction, 4 calibration systems, 5 spawners = 12; 19 in all) before any player can join. Left in the pack and in the client download: the 17 KB texture copy
+1 particle system, 2 spawners = 7; Flame Beam Cutter: 1 item, 1 root interaction, 2 interactions, 4 calibration systems, 5 spawners = 13; 20 in all) before any player can join. Left in the pack and in the client download: the 17 KB texture copy
 (a common asset cannot be removed at runtime). **confirmed** headless.
 
 ### Experiment 1: the Flame Cutter
@@ -226,7 +226,7 @@ tried).
 **Confirmed vs inferred.** Confirmed in a headless boot: everything loads without a single warning from the experiment (item, root,
 both interactions, system, both spawners, texture, `$Comment` in every asset type), `Module experiments: setup ok`, `/arrakis modules`
 lists it, the self-check has no PROBLEM line (the item has no light or sound; the stand-in pickaxe has 16 gather specs), disabling it works
-as described, the removal rehearsal, and the unit tests (47 in all: the 20 from before, `ExperimentsAssetsTest` 7, `ExperimentsIsolationTest` 7, `ExpCalibrationTest` 8 (with the aim maths), `ExperimentsBeamAssetsTest` 5).
+as described, the removal rehearsal, and the unit tests (50 in all: the 20 from before, `ExperimentsAssetsTest` 7, `ExperimentsIsolationTest` 7, `ExpCalibrationTest` 11 (with the aim maths), `ExperimentsBeamAssetsTest` 5).
 `ExperimentsIsolationTest` was also tried on the real project with a `power` file importing the experiments package: it and
 `ModuleBoundaryTest` both failed naming the file and line; reverted. Inferred, not seen: everything the beam does on a screen, the tick
 in play (cutting, Mana per second, Creative), whether the repeated 0.1 s `Burn` flickers.
@@ -252,20 +252,32 @@ custom = server ray, 0.1 s ticks, Mana only when something is cut, version-sensi
 **What was built.** `Arrakis_Exp_Flame_Beam` ("EXPERIMENT Flame Beam Cutter", IslandCraft tab, Tools): a duplicate of the Flame Cutter (same model, recoloured texture
 copy, `Goblin_Flamethrower` animations, tags, and the same tick `Arrakis_Exp_Cutter_Tick`: Mana, range 5, cutting like a Mithril pickaxe) with the ring of dots
 replaced by the Stoneskin wand's laser, the vanilla `NatureBeam` by id. Primary = `Arrakis_Exp_Flame_Beam_Primary` = [`Arrakis_Exp_Cutter_Tick`,
-`Arrakis_Exp_Flame_Beam_Look`]. The look interaction has **no `ItemAnimationId` and no `ItemPlayerAnimationsId`**, so the weapon stays in its hold pose (the
-tests check that no key of the chain mentions an animation). Its `Particles` (third person) and `FirstPersonParticles` (first person) entries are written by
-`tools/assets/experiments/make_flame_beam.js` from `tools/assets/experiments/calibration.json`; the starting numbers are Stoneskin's: first person node `Body`
-(-0.2, 1.5, 3.2), pitch 180; third person node `Head` (-0.5, 0, 3.2), pitch 180, detached. The original Flame Cutter (experiment 1) is untouched: it still plays
-the Burn animation and its focus aim is the one measured from the screenshots. The prompt's other asks for it (a static weapon, an FP/TP stream generator from the
-calibration with collision and an impact particle) were NOT done: the NatureBeam is a fixed-length vanilla effect, so there is no stream to converge, and the
-"stream that meets the apex" maths is only in `ExpAim` (`inwardAngleDegrees`, `slant`, `lifetime`, unit-tested) for when a stream is rebuilt.
+`Arrakis_Exp_Flame_Beam_Spawn`, `Arrakis_Exp_Flame_Beam_Pace`]. There is **no `ItemAnimationId` and no `ItemPlayerAnimationsId`** anywhere in the chain (the pace is a bare
+0.1 s `Simple`), so the weapon stays in its hold pose. The original Flame Cutter (experiment 1) is untouched: it still plays the Burn animation and keeps the aim
+measured from the screenshots. The prompt's other asks for it (a static weapon, an FP/TP stream generator with collision and an impact particle) were NOT done.
 
-**Confirmed vs inferred, headless.** Confirmed at boot: the item, root, look interaction and the four calibration particle systems load with no warning; `$Comment` is
-accepted everywhere; the `/arrakis exp cal ...` command tree registers (the console is told to run it as a player); **the engine's ModelParticle codec takes
-`RotationOffset` in degrees as written** (decoding `Yaw: 180` gives 180, so the runtime packet uses the same numbers as the JSON). Not testable without a client: every
-rig, the look of the beam, and whether the runtime `SpawnModelParticles` placement equals the static JSON placement (the runtime route has no first-person flag, so
-the `fp` numbers can only be judged if the client draws a model particle on the own body node in first person: **needs a client**; the third person route is the same
-data the JSON `Particles` entry carries, so it should match).
+**Why the first version of the laser was wrong, and the fix (world space).** The first version attached the NatureBeam to a model node (the calibration
+`fp`/`tp` numbers: node, offset, rotation, as vanilla Stoneskin does). The test with `Screenshots/vanishing point.png` showed the flaw: an emitter attached to a node points
+where the node's frame points, so the numbers moved where the beam STARTS and the stream's vanishing point stayed wherever the node's axis happens to aim; it was
+not the look target, and no number set the end point. The fix, which does not depend on any node frame: the **server spawns the beam in world space every tick**
+(`ExpBeamGeometry`, interaction type `Arrakis_Exp_Beam_Spawn`). Each tick it takes the look ray (`TargetUtil.getLook`), the START = eye + right x Right + up x Up + forward x Forward
+(the camera frame, `ExpAim.cameraPoint`), the END = the look target (the point `Apex` blocks along the ray, or where the ray enters a block with `EndAtBlock`, the same point
+the `target` marker shows), turns the system so that its forward axis points from the start to the end (`ExpAim.yaw` / `pitch`, the exact inverse of the engine's
+`Transform.getDirection`, checked in a unit test) and sends a `SpawnParticleSystem` packet with a short `maxDuration`. The NatureBeam has a fixed length (its end burst sits
+1.8 blocks in front of the origin, `measure_nature_beam.js`), so its origin is put 1.8 before the end point: its far end lands ON the look target by construction, and its
+start is about 4 blocks back along the line (with the start at about 1 block from the eye and the apex at 5, that is the muzzle). The vanishing point of the beam is the
+look target, so in first person (where the head ray is the camera ray) it is the crosshair dot. The only numbers left to calibrate are where the beam STARTS (`cam`: right, up, forward
+of the eye); the end is not a number.
+**Limits.** In third person the look ray is the head's, not the camera's (see above), so the beam ends on the head ray's target and the crosshair is off by the parallax; and
+there is one start for both views (the camera frame has no idea which view is on), so in third person the beam starts at the same offset from the eye, not at the model's gun.
+A world-space beam is not attached: it is re-spawned every 0.1 s and lags the turn of the head by at most that. Whether the packet's rotation turns the system the way the
+maths assumes (default emission along -Z, the look direction at yaw 0) is **inferred** from `Transform.getDirection` and not seen: `beam world` shows it.
+
+**Confirmed vs inferred, headless.** Confirmed at boot: the item, root, the `Arrakis_Exp_Beam_Spawn` and pace interactions and the four calibration particle systems
+load with no warning; `$Comment` is accepted everywhere; the `/arrakis exp cal ...` command tree registers (the console is told to run it as a player);
+**the engine's ModelParticle codec takes `RotationOffset` in degrees as written**; and the unit tests (yaw, pitch and the camera frame against the engine's own
+`Transform.getDirection`, the JSON block, the +/-/set handling, the data files). Not testable without a client: every rig, the look of the beam, and whether the packet
+turns the system as assumed.
 
 **Where the game aims in third person (from the bytecode).** `TargetUtil.getLook(ref, store)` builds its `Transform` from the entity's `TransformComponent` position plus
 `ModelComponent.getEyeHeight`, and the `HeadRotation` component: the player's own head ray, with no knowledge of the camera. The `Raycast` selector of the vanilla
@@ -292,13 +304,13 @@ to a position and to an angle. `off` switches every rig off.
    - side, 10 blocks) stays glued to the crosshair dot as you look around; in first person it collapses into the dot like step 1. Write down the node for each view.
    `nodes off`.
 3. `target on`: a magenta cross appears at the block the look ray enters (or at the apex distance when nothing is hit). It should sit exactly on the spot the dot points at.
-4. `fp node <the node from step 2>` (and `tp node ...`), then `view fp` and `beam nature` (the NatureBeam itself) or `beam on` (a fine straight stream). The beam is
-   re-spawned every 0.4 s from the numbers of the view you chose. Nudge with `fp x +`, `fp y -`, `fp z 3.1`, `fp yaw +`, `fp pitch -`, `fp roll +` (and the same with `tp`,
-   `view tp` in third person). **Aligned** means the stream passes through the crosshair dot and ends in the magenta cross, from close up and when you look at the wall.
-   Check also while turning and moving.
+4. Aim, in the way that does not depend on any node: `beam world` (a fine stream) or `beam worldnature` (the NatureBeam itself), with `target on` too. The server spawns it
+   every tick from the camera-frame start `cam` to the look target, so **the far end is exactly the magenta cross, which is where the crosshair dot points**. Only the START is yours to move:
+   `cam x +` (right), `cam y -` (up), `cam z 0.6` (forward of the eye), `cam scale 1`; `end block` or `end apex` chooses whether it ends where the ray enters a block or at the
+   apex distance (`apex 5`). **Aligned** means the beam leaves where the gun muzzle looks to be and its far end sits in the magenta cross on the dot, from close up and far away, and while
+   you turn. (The older node-attached beams stay for comparison: `fp node Body`, `fp x +` ..., `view fp`, `beam nature`; their direction is the node's, not the look's.)
 5. `show` prints the paste-ready block (JSON with `apex`, the steps and the `fp` and `tp` objects with node x y z yaw pitch roll scale detached, plus the date). `save` writes it
    to `Experiments_Calibration.json`. Paste the block to me, or replace `tools/assets/experiments/calibration.json` with it, run
    `node tools/assets/experiments/make_flame_beam.js`, `gradlew build` and `gradlew deployMod`.
 
-How the numbers map: `x y z` are blocks in the frame of the node, `yaw pitch roll` degrees (the engine takes them as written; `pitch 180` is Stoneskin's flip that turns the beam
-to run forward), `scale` multiplies the system, `detached` makes the particles ignore the node's animation (Stoneskin: true in third person, false in first).
+How the numbers map: `cam x y z` are blocks in the camera frame (right, up, forward of the eye) where the beam starts; `apex` and `end` choose where it ends along the look ray; `fp` and `tp` (node, x y z, yaw pitch roll in degrees as the engine takes them, scale, detached) are for beams attached to a model node, as Stoneskin does.

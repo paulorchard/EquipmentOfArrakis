@@ -61,6 +61,8 @@ public final class ExperimentsModule implements EquipmentModule {
         logger = plugin.getLogger();
         plugin.getCodecRegistry(Interaction.CODEC).register(ExpCutterTickInteraction.TYPE, ExpCutterTickInteraction.class,
                 ExpCutterTickInteraction.CODEC);
+        plugin.getCodecRegistry(Interaction.CODEC).register(ExpBeamSpawnInteraction.TYPE, ExpBeamSpawnInteraction.class,
+                ExpBeamSpawnInteraction.CODEC);
         plugin.getEventRegistry().register(BootEvent.class, event -> {
             if (!active) {
                 dropAssets();
@@ -167,7 +169,8 @@ public final class ExperimentsModule implements EquipmentModule {
                     : "PROBLEM the item has a light or a sound");
         }
         lines.add(exists(RootInteraction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Primary"), "root interaction Arrakis_Exp_Flame_Beam_Primary"));
-        lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Look"), "interaction Arrakis_Exp_Flame_Beam_Look"));
+        lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Spawn"), "interaction Arrakis_Exp_Flame_Beam_Spawn"));
+        lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Pace"), "interaction Arrakis_Exp_Flame_Beam_Pace"));
         for (String id : new String[] {ExpCalibrationRig.DOT, ExpCalibrationRig.MARK, ExpCalibrationRig.RULER, ExpCalibrationRig.STREAM}) {
             lines.add(exists(ParticleSystem.getAssetMap().getAsset(id), "calibration particle system " + id));
         }

@@ -48,7 +48,7 @@ final class ExpCalCommands {
         };
         String[] nodeArgs = {"node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10"};
 
-        for (String view : new String[] {"fp", "tp"}) {
+        for (String view : new String[] {"fp", "tp", "cam"}) {
             cal.addSubCommand(WorldPositional.build(view, LANG + "cal.view.desc", (c, w, s, a) -> run(c, s, state -> {
                 ExpCalibration.View v = state.calibration.view(view);
                 if (a.length == 0) {
@@ -98,12 +98,26 @@ final class ExpCalCommands {
             state.beam = switch (mode) {
                 case "on", "stream" -> ExpCalibrationRig.Beam.STREAM;
                 case "nature" -> ExpCalibrationRig.Beam.NATURE;
+                case "world" -> ExpCalibrationRig.Beam.WORLD_STREAM;
+                case "worldnature" -> ExpCalibrationRig.Beam.WORLD_NATURE;
                 case "off" -> ExpCalibrationRig.Beam.OFF;
-                default -> throw new IllegalArgumentException("on, nature or off");
+                default -> throw new IllegalArgumentException("on, nature, world, worldnature or off");
             };
-            afterSwitch(c, state, "beam", state.beam != ExpCalibrationRig.Beam.OFF, (state.beam == ExpCalibrationRig.Beam.NATURE
-                    ? "the NatureBeam" : "a fine straight stream") + " from the " + state.view + " numbers, one after the other every 0.4 s");
+            afterSwitch(c, state, "beam", state.beam != ExpCalibrationRig.Beam.OFF, (switch (state.beam) {
+                case NATURE -> "the NatureBeam attached to the fp / tp node numbers";
+                case WORLD_STREAM -> "a fine stream in world space from the cam numbers (start, camera frame) to the look target (the end is not a number)";
+                case WORLD_NATURE -> "the NatureBeam in world space from the cam numbers to the look target";
+                default -> "a fine stream attached to the fp / tp node numbers";
+            }));
         }), "mode"));
+        cal.addSubCommand(WorldPositional.build("end", LANG + "cal.view.desc", (c, w, s, a) -> run(c, s, state -> {
+            String v = a[0].toLowerCase(Locale.ROOT);
+            if (!v.equals("apex") && !v.equals("block")) {
+                throw new IllegalArgumentException("apex or block");
+            }
+            state.calibration.endAtBlock = v.equals("block");
+            say(c, "the world beams end at " + (state.calibration.endAtBlock ? "the block the look ray enters (the apex distance when nothing is hit)" : "the apex distance along the look ray"));
+        }), "where"));
         cal.addSubCommand(WorldPositional.build("nodes", LANG + "cal.rig.desc", (c, w, s, a) -> run(c, s, state -> {
             state.nodes.clear();
             if (a.length > 0 && a[0].equalsIgnoreCase("off")) {
