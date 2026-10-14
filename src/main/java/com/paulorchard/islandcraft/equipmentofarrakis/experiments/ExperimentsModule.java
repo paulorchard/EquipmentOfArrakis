@@ -8,10 +8,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.common.CommonAssetRegistry;
 import com.hypixel.hytale.server.core.event.events.BootEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
-import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
-import com.hypixel.hytale.server.core.asset.type.item.config.ItemToolSpec;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSpawner;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
@@ -20,6 +17,14 @@ import com.paulorchard.islandcraft.equipmentofarrakis.core.EquipmentModule;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.ModuleContext;
 import com.paulorchard.islandcraft.equipmentofarrakis.power.Power;
 
+import com.hypixel.hytale.server.core.asset.type.model.config.ModelParticle;
+import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
+import org.bson.BsonDocument;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,8 +48,7 @@ public final class ExperimentsModule implements EquipmentModule {
     public static final String FLAME_CUTTER = "Arrakis_Exp_Flame_Cutter";
     public static final String FLAME_PRIMARY = "Arrakis_Exp_Flame_Primary";
     public static final String FLAME_BURN = "Arrakis_Exp_Flame_Burn";
-    public static final String DRILL_CUTTER = "Arrakis_Exp_Drill_Cutter";
-    public static final String DRILL_MINE = "Arrakis_Exp_Drill_Mine";
+    public static final String FLAME_BEAM = "Arrakis_Exp_Flame_Beam";
     public static final String FLAME_FOCUS ="Arrakis_Exp_Flame_Focus";
     public static final String FLAME_TEXTURE = "Items/Equipment_of_Arrakis/Experiments/Arrakis_Exp_Flame_Cutter_Texture.png";
 
@@ -57,13 +61,37 @@ public final class ExperimentsModule implements EquipmentModule {
         logger = plugin.getLogger();
         plugin.getCodecRegistry(Interaction.CODEC).register(ExpCutterTickInteraction.TYPE, ExpCutterTickInteraction.class,
                 ExpCutterTickInteraction.CODEC);
-        plugin.getCodecRegistry(Interaction.CODEC).register(ExpManaGateInteraction.TYPE, ExpManaGateInteraction.class,
-                ExpManaGateInteraction.CODEC);
         plugin.getEventRegistry().register(BootEvent.class, event -> {
             if (!active) {
                 dropAssets();
             }
         });
+    }
+
+    private static volatile ExpCalibration starting = ExpCalibration.defaults();
+
+    /** The numbers a player starts the calibration with: the saved file when there is one, else the vanilla Stoneskin placements. */
+    static ExpCalibration startingCalibration() {
+        return starting;
+    }
+
+    private static ExpCalibration loadStarting(Path data) {
+        try {
+            return ExpCalibration.fromJson(Files.readString(data.resolve(ExpCalCommands.FILE), StandardCharsets.UTF_8));
+        } catch (IOException | RuntimeException e) {
+            return ExpCalibration.defaults();
+        }
+    }
+
+    /** How many packet units one degree of a JSON RotationOffset is: decode a ModelParticle with Yaw 180 through the engine's own codec. */
+    private static double probeAngleUnit() {
+        try {
+            ModelParticle probe = ModelParticle.CODEC.decode(BsonDocument.parse("{\"SystemId\": \"Arrakis_Exp_Cal_Dot\", \"RotationOffset\": {\"Yaw\": 180}}"));
+            return probe.getRotationOffset().yaw / 180d;
+        } catch (RuntimeException e) {
+            logger.at(Level.WARNING).log("Experiments: could not probe the model particle angle unit (%s); assuming degrees", e);
+            return 1;
+        }
     }
 
     static HytaleLogger logger() {
@@ -79,10 +107,15 @@ public final class ExperimentsModule implements EquipmentModule {
     public void setup(ModuleContext ctx) {
         active = true;
         config = ctx.settings(ID, ExperimentsConfig.class);
+        Path data = ctx.plugin().getDataDirectory();
+        starting = loadStarting(data);
+        ctx.command(ExpCalCommands.build(data));
+        ctx.events().registerGlobal(PlayerDisconnectEvent.class, event -> ExpCalibrationRig.forget(event.getPlayerRef().getUuid()));
     }
 
     @Override
     public void start(ModuleContext ctx) {
+        ExpCalibrationRig.angleUnit = probeAngleUnit();
         if (config.logSelfCheck()) {
             for (String line : selfCheck()) {
                 ctx.logger().at(line.contains("PROBLEM") ? Level.WARNING : Level.INFO).log("Experiments: %s", line);
@@ -117,50 +150,31 @@ public final class ExperimentsModule implements EquipmentModule {
         Item tool = Item.getAssetMap().getAsset("Tool_Pickaxe_Mithril");
         lines.add(tool == null || tool.getTool() == null ? "PROBLEM the stand-in tool Tool_Pickaxe_Mithril is missing"
                 : "stand-in tool Tool_Pickaxe_Mithril: " + tool.getTool().getSpecs().length + " gather specs");
-        drillChecks(lines);
+        beamChecks(lines);
         return lines;
     }
 
-    /** Experiment 2, the Drill Cutter. */
-    private static void drillChecks(List<String> lines) {
-        Item drill = Item.getAssetMap().getAsset(DRILL_CUTTER);
-        if (drill == null) {
-            lines.add("PROBLEM the item " + DRILL_CUTTER + " is not loaded");
+    /** Experiment 2, the Flame Beam Cutter: the Flame Cutter with the Stoneskin laser. */
+    private static void beamChecks(List<String> lines) {
+        Item item = Item.getAssetMap().getAsset(FLAME_BEAM);
+        if (item == null) {
+            lines.add("PROBLEM the item " + FLAME_BEAM + " is not loaded");
         } else {
-            String[] categories = drill.getCategories();
-            lines.add((categories != null && Arrays.asList(categories).contains("IslandCraft.Tools") ? "" : "PROBLEM ") + "item "
-                    + DRILL_CUTTER + " loaded, categories " + Arrays.toString(categories) + ", animations " + drill.getPlayerAnimationsId());
-            Item pickaxe = Item.getAssetMap().getAsset("Tool_Pickaxe_Mithril");
-            ItemToolSpec[] mine = drill.getTool() == null ? new ItemToolSpec[0] : drill.getTool().getSpecs();
-            ItemToolSpec[] theirs = pickaxe == null || pickaxe.getTool() == null ? new ItemToolSpec[0] : pickaxe.getTool().getSpecs();
-            boolean same = mine.length == theirs.length && mine.length > 0;
-            for (int i = 0; same && i < mine.length; i++) {
-                same = mine[i].getGatherType().equals(theirs[i].getGatherType()) && mine[i].getPower() == theirs[i].getPower()
-                        && mine[i].getQuality() == theirs[i].getQuality();
-            }
-            lines.add((same ? "" : "PROBLEM ") + "tool specs: " + mine.length + ", same as the Mithril pickaxe's: " + same);
-            int[] cells = {0};
-            if (drill.getTool() != null && drill.getTool().getBreakShape() != null) {
-                drill.getTool().getBreakShape().forEachLocalOffset((x, y, z) -> cells[0]++);
-            }
-            lines.add((cells[0] == 1 ? "" : "PROBLEM ") + "break shape covers " + cells[0] + " block(s) (expect 1)");
-            float adventure = drill.getInteractionConfig().getUseDistance(GameMode.Adventure);
-            float creative = drill.getInteractionConfig().getUseDistance(GameMode.Creative);
-            lines.add((adventure == 5f && creative == 5f ? "" : "PROBLEM ") + "use distance: Adventure " + adventure + ", Creative " + creative);
-            ItemStack stack = new ItemStack(DRILL_CUTTER, 1);
-            boolean noLoss = drill.getTool() == null || drill.getTool().getDurabilityLossBlockTypes() == null
-                    || drill.getTool().getDurabilityLossBlockTypes().length == 0;
-            lines.add((stack.isUnbreakable() && drill.getMaxDurability() <= 0 && noLoss ? "" : "PROBLEM ") + "never wears: max durability "
-                    + drill.getMaxDurability() + ", a stack is unbreakable: " + stack.isUnbreakable() + ", durability loss rules: " + !noLoss);
-            lines.add(common(drill.getTexture()) + " (vanilla texture, by path)");
+            String[] categories = item.getCategories();
+            lines.add((categories != null && Arrays.asList(categories).contains("IslandCraft.Tools") ? "" : "PROBLEM ") + "item " + FLAME_BEAM
+                    + " loaded, categories " + Arrays.toString(categories) + ", primary " + item.getInteractions());
+            lines.add(item.getLight() == null && item.getSoundEventId() == null ? "the item has no light and no sound of its own"
+                    : "PROBLEM the item has a light or a sound");
         }
-        lines.add(exists(RootInteraction.getAssetMap().getAsset(DRILL_MINE), "root interaction " + DRILL_MINE));
-        for (String id : new String[] {"Arrakis_Exp_Drill_Gate", "Arrakis_Exp_Drill_Swing", "Arrakis_Exp_Drill_Block_Break", "Arrakis_Exp_Drill_Beam"}) {
-            lines.add(exists(Interaction.getAssetMap().getAsset(id), "interaction " + id));
+        lines.add(exists(RootInteraction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Primary"), "root interaction Arrakis_Exp_Flame_Beam_Primary"));
+        lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Look"), "interaction Arrakis_Exp_Flame_Beam_Look"));
+        for (String id : new String[] {ExpCalibrationRig.DOT, ExpCalibrationRig.MARK, ExpCalibrationRig.RULER, ExpCalibrationRig.STREAM}) {
+            lines.add(exists(ParticleSystem.getAssetMap().getAsset(id), "calibration particle system " + id));
         }
-        lines.add(ParticleSystem.getAssetMap().getAsset("NatureBeam") == null
+        lines.add(ParticleSystem.getAssetMap().getAsset(ExpCalibrationRig.NATURE_BEAM) == null
                 ? "PROBLEM the vanilla particle system NatureBeam is gone (it lives in a _Test folder and an update may remove it)"
                 : "vanilla particle system NatureBeam present");
+        lines.add("model particle angle unit: " + ExpCalibrationRig.angleUnit + " per degree (probed from the engine's own codec)");
     }
 
     /** Removes every Arrakis_Exp_ asset the pack loaded: the module is switched off. */

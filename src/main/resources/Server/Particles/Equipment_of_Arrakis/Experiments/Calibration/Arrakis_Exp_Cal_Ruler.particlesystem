@@ -1,0 +1,14 @@
+{
+  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). A ruler along the local Z of a node: small dots on the + side, big dots on the - side. Coloured by the ModelParticle.",
+  "Spawners": [
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Ruler_Plus"
+    },
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Ruler_Minus"
+    }
+  ],
+  "LifeSpan": 0.6,
+  "CullDistance": 100,
+  "IsImportant": false
+}

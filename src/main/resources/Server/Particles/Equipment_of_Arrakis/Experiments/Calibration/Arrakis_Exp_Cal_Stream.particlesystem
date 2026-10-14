@@ -1,0 +1,11 @@
+{
+  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). A fine straight stream, 10 blocks long, for the beam rig.",
+  "Spawners": [
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Stream"
+    }
+  ],
+  "LifeSpan": 0.6,
+  "CullDistance": 100,
+  "IsImportant": false
+}

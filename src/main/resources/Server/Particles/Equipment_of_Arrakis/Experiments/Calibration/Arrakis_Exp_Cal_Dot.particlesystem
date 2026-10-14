@@ -1,0 +1,11 @@
+{
+  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). One small white dot.",
+  "Spawners": [
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Dot"
+    }
+  ],
+  "LifeSpan": 0.2,
+  "CullDistance": 100,
+  "IsImportant": false
+}

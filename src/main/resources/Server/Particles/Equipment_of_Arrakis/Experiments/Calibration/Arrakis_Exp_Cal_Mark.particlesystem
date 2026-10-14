@@ -1,0 +1,59 @@
+{
+  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). The target marker: a magenta cross of seven dots.",
+  "Spawners": [
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Mark"
+    },
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Mark",
+      "PositionOffset": {
+        "X": 0.16,
+        "Y": 0,
+        "Z": 0
+      }
+    },
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Mark",
+      "PositionOffset": {
+        "X": -0.16,
+        "Y": 0,
+        "Z": 0
+      }
+    },
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Mark",
+      "PositionOffset": {
+        "X": 0,
+        "Y": 0.16,
+        "Z": 0
+      }
+    },
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Mark",
+      "PositionOffset": {
+        "X": 0,
+        "Y": -0.16,
+        "Z": 0
+      }
+    },
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Mark",
+      "PositionOffset": {
+        "X": 0,
+        "Y": 0,
+        "Z": 0.16
+      }
+    },
+    {
+      "SpawnerId": "Arrakis_Exp_Cal_Mark",
+      "PositionOffset": {
+        "X": 0,
+        "Y": 0,
+        "Z": -0.16
+      }
+    }
+  ],
+  "LifeSpan": 0.3,
+  "CullDistance": 100,
+  "IsImportant": false
+}
