@@ -9,6 +9,7 @@ import com.hypixel.hytale.server.core.asset.common.CommonAssetRegistry;
 import com.hypixel.hytale.server.core.event.events.BootEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
+import com.hypixel.hytale.server.core.asset.type.itemanimation.config.ItemPlayerAnimations;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSpawner;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
@@ -193,8 +194,9 @@ public final class ExperimentsModule implements EquipmentModule {
                 + drop(RootInteraction.getAssetStore(), RootInteraction.getAssetMap().getAssetMap())
                 + drop(Interaction.getAssetStore(), Interaction.getAssetMap().getAssetMap())
                 + drop(ParticleSystem.getAssetStore(), ParticleSystem.getAssetMap().getAssetMap())
-                + drop(ParticleSpawner.getAssetStore(), ParticleSpawner.getAssetMap().getAssetMap());
-        logger.at(Level.INFO).log("Experiments: switched off in the config; removed %s experiment assets (item, interactions, particles). "
+                + drop(ParticleSpawner.getAssetStore(), ParticleSpawner.getAssetMap().getAssetMap())
+                + drop(ItemPlayerAnimations.getAssetStore(), ItemPlayerAnimations.getAssetMap().getAssetMap());
+        logger.at(Level.INFO).log("Experiments: switched off in the config; removed %s experiment assets (item, animations, interactions, particles). "
                 + "Still there: %s", dropped, Item.getAssetMap().getAsset(FLAME_CUTTER) == null ? "nothing of the item" : "PROBLEM the item");
     }
 

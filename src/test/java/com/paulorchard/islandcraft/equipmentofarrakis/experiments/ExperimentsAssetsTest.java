@@ -74,8 +74,9 @@ class ExperimentsAssetsTest {
         for (String key : new String[] {"Particles", "Light", "SoundEventId", "ItemSoundSetId", "Recipe"}) {
             assertFalse(item.containsKey(key), "the item has no " + key + " (no red glow, no crackle, no recipe)");
         }
-        assertEquals("NPC/Intelligent/Goblin/Models/Weapons/Flamethrower/Scrap.blockymodel", item.getString("Model").getValue());
-        assertEquals("Goblin_Flamethrower", item.getString("PlayerAnimationsId").getValue());
+        assertEquals("Items/Equipment_of_Arrakis/Experiments/Arrakis_Exp_Flame_Cutter.blockymodel", item.getString("Model").getValue(), "the flamethrower model with the laser on its barrel");
+        assertTrue(Files.exists(RES.resolve("Common").resolve(item.getString("Model").getValue())), "the model copy is shipped");
+        assertEquals("Arrakis_Exp_Flame_Static", item.getString("PlayerAnimationsId").getValue(), "a fixed hold pose in third person");
         assertEquals("Icons/ItemsGenerated/Flamethrower_Scrap.png", item.getString("Icon").getValue());
         assertEquals("IslandCraft.Tools", item.getArray("Categories").get(0).asString().getValue());
         assertEquals("Arrakis_Exp_Flame_Primary", item.getDocument("Interactions").getString("Primary").getValue());
@@ -98,7 +99,7 @@ class ExperimentsAssetsTest {
         for (String s : strings) {
             assertFalse(FORBIDDEN.matcher(s).find(), "nothing in the chain may burn, hurt, push or sound: found " + s);
         }
-        assertEquals(List.of("Arrakis_Exp_Flame_Tick", "Arrakis_Exp_Flame_Spawn", "Arrakis_Exp_Flame_Burn"),
+        assertEquals(List.of("Arrakis_Exp_Flame_Tick", "Arrakis_Exp_Flame_Burn"),
                 read(ROOT).getArray("Interactions").stream().map(v -> v.asString().getValue()).toList(),
                 "the tick comes first (it refuses the whole chain), the look after it");
     }
@@ -121,7 +122,7 @@ class ExperimentsAssetsTest {
     @Test
     void theBeamNumbersAgreeWithEachOther() throws IOException {
         double range = number(read(TICK), "Range");
-        assertFalse(read(BURN).getDocument("Effects").containsKey("Particles"), "the ring is spawned in world space, not on the model");
+        assertFalse(read(BURN).containsKey("Effects"), "no animation, no particles in the pass: the laser is part of the model");
         BsonDocument spawn = read(RES.resolve("Server/Item/Interactions/Equipment_of_Arrakis/Experiments/Arrakis_Exp_Flame_Spawn.json"));
         assertEquals("Arrakis_Exp_Beam_Spawn", spawn.getString("Type").getValue());
         assertEquals("Arrakis_Exp_Flame_Focus", spawn.getString("System").getValue());

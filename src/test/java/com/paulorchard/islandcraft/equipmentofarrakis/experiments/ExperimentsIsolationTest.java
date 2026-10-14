@@ -290,6 +290,8 @@ class ExperimentsIsolationTest {
                 }
             }
             case "png" -> ok = text.contains("tEXt") && text.contains(MARKER);
+            // client formats that have no comment field (an unknown key might make the client refuse the file): the marker is the path, an Experiments folder and the Arrakis_Exp_ prefix
+            case "blockymodel", "blockyanim" -> ok = relative.contains("/Experiments/") && name.startsWith("Arrakis_Exp_");
             default -> {
                 problems.add(relative + ": no marker rule for this kind of file; add one to ExperimentsIsolationTest");
                 return;

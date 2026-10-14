@@ -377,3 +377,25 @@ the path (about 0.35 blocks off the view axis at 1.2 blocks, ending on the axis 
 of dots. A line is solid where that spacing is at most 0.8 of the dot's width; the binding place is the far end (a 1 px dot on a path that still moves), and the least number is **68 dots**; 100 is used
 (spacing 9.4 px against a 50 px dot at the grip, 0.54 px against 1 px at the far end). 100 dots per 0.3 s is a rate of 333 a second; each cast emits for exactly one pass (0.3 s) so the casts join up.
 Not seen in game; if it looks beaded near the grip or too bright where the dots overlap, change `DOTS` or `SOLIDITY`.
+
+#### Round 6: the laser as part of the weapon model (test)
+
+The Flame Cutter is now a model test: no particles, no animation, the laser is geometry of the weapon.
+* `make_flame_model.js` (reads the vanilla model/animations from an unzipped Assets.zip, see its header) writes **a second vanilla copy** (the first is the texture):
+  `Arrakis_Exp_Flame_Cutter.blockymodel` = `Scrap.blockymodel` + a node `Arrakis_Beam` on `Origin_Projectile` (the muzzle: its y axis is the gun's forward +Z, checked by composing the
+  node quaternions, `Origin_Projectile` sits at the barrel end) holding 24 unlit (`shadingMode fullbright`) white boxes, 96 units = 3 blocks (32 units a block, assumed),
+  stepping from 50 px to 2 px wide on screen (1920x1080; world width = px * 2 d tan(35 deg) / 1080 with d from 1 block at the muzzle; VFOV 70 and the 1 block are guesses; the world width
+  first rises a little, the perspective shrinks a line faster than this taper). It points along the old measured aim (yaw 4.49, pitch 0.73 from the gun axis, tweak `AIM_YAW` / `AIM_PITCH`).
+  The boxes' faces point at a white 16x16 patch that `make_flame_texture.js` now paints in an empty corner (48,112) of the texture copy.
+* `Arrakis_Exp_Flame_Static`: the vanilla `Rifle` animation set with **every third-person animation** (idle, walk, run, sprint, crouch, jump, fall, fly, swim, climb, interact, shoot ...: 43) replaced by one fixed pose
+  (the first frame of the rifle idle, a copy of `Idle.blockyanim` reduced to one key per channel), so the gun never moves against the body in third person; first person keeps the vanilla rifle animations.
+  The server only accepts animation files under `Characters/` or `NPC/` (found at boot), so the pose lives under `Characters/Animations/Items/Equipment_of_Arrakis/Experiments`.
+* The Flame Cutter's chain is `[Arrakis_Exp_Flame_Tick, Arrakis_Exp_Flame_Burn]`, the latter now a bare 0.3 s pass (no `Effects`). The world-space dot-line assets (`Arrakis_Exp_Flame_Spawn`, `Arrakis_Exp_Flame_Focus`) stay in the pack, unused.
+  The Flame Beam Cutter now sets its own model (vanilla, by path) and animations (`Goblin_Flamethrower`) so it did not change.
+* **Swapping the model while firing is NOT done.** What exists: item `State` variants with a `ChangeState` interaction are for BLOCKS (the class extends `SimpleBlockInteraction`); `ItemAppearanceConditions` swap
+  model/texture/particles by the value of an entity STAT (Health in the editor tools), and nothing here changes a stat only while firing (and no new stat is allowed); `ModifyInventory` would move
+  item stacks around. The animation files that the item animations point at move the character skeleton, not the item's own nodes. So the beam is always visible for now (that is what the test
+  needs: its size, start, direction and the fixed hold). Options for the swap, if wanted: the Mana percentage (`ItemAppearanceConditions` on Mana with a range) is the only stat that moves while firing.
+* Checked: 59 tests pass; the model, the animation set, the texture patch are validated by `ExperimentsModelTest` (5); the boot loads the item and the set with no warning; with the module off the boot removes 31 assets (the
+  animation set included). Not seen in game: the model's look in either view, the beam's start and aim, the unit size (32/block), the third-person pose.
+* Removal rehearsal repeated after round 6: no trace (the `Common/Characters/.../Experiments` folder goes with the others), build OK with the 20 base tests.

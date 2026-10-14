@@ -8,9 +8,9 @@
     "IslandCraft.Tools"
   ],
   "Icon": "Icons/ItemsGenerated/Flamethrower_Scrap.png",
-  "Model": "NPC/Intelligent/Goblin/Models/Weapons/Flamethrower/Scrap.blockymodel",
+  "Model": "Items/Equipment_of_Arrakis/Experiments/Arrakis_Exp_Flame_Cutter.blockymodel",
   "Texture": "Items/Equipment_of_Arrakis/Experiments/Arrakis_Exp_Flame_Cutter_Texture.png",
-  "PlayerAnimationsId": "Goblin_Flamethrower",
+  "PlayerAnimationsId": "Arrakis_Exp_Flame_Static",
   "Interactions": {
     "Primary": "Arrakis_Exp_Flame_Primary"
   },

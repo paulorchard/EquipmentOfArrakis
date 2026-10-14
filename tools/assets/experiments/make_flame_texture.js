@@ -16,6 +16,7 @@ const { readPng, writePng } = require('./png');
 const NODES = ['Flamethrower_Eye', 'Flamethrower_Pupil', 'Flamethrower_Bottle_Top']; // the nodes whose faces are recoloured
 const WARM = 30;                       // a pixel is warm when red exceeds blue by at least this much
 const TINT = [0.62, 0.8, 1.0];         // the cool colour at full brightness (steel blue); brightness is kept
+const WHITE = { x: 48, y: 112, size: 16 }; // a free 16x16 corner (all pixels transparent in the vanilla texture)
 const OUT = 'src/main/resources/Common/Items/Equipment_of_Arrakis/Experiments/Arrakis_Exp_Flame_Cutter_Texture.png';
 
 const dir = path.join(process.argv[2] || '.', 'Common/NPC/Intelligent/Goblin/Models/Weapons/Flamethrower');
@@ -67,7 +68,17 @@ for (const r of rects) {
         }
     }
 }
+// A white 16x16 patch in an unused corner of the texture, for the unlit laser boxes of make_flame_model.js (the faces of those boxes point at it).
+for (let y = WHITE.y; y < WHITE.y + WHITE.size; y++) {
+    for (let x = WHITE.x; x < WHITE.x + WHITE.size; x++) {
+        const old = png.at(x, y);
+        if (old && old[3] > 0) {
+            throw new Error('the white patch at ' + x + ',' + y + ' is not free');
+        }
+        png.set(x, y, [255, 255, 255, 255]);
+    }
+}
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 writePng(OUT, png, 'EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, "Removing the experiments"). '
-    + 'Copy of Scrap_Texture.png with the warm pixels of ' + NODES.join(', ') + ' recoloured steel blue.');
+    + 'Copy of Scrap_Texture.png with the warm pixels of ' + NODES.join(', ') + ' recoloured steel blue, and a white 16x16 patch at ' + WHITE.x + ',' + WHITE.y + '.');
 console.log('recoloured ' + changed + ' pixels in ' + rects.length + ' face rectangles of ' + NODES.join(', ') + ' -> ' + OUT);

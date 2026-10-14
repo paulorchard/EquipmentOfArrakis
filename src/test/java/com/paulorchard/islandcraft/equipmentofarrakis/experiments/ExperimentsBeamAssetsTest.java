@@ -63,9 +63,10 @@ class ExperimentsBeamAssetsTest {
         for (String key : new String[] {"Particles", "Light", "SoundEventId", "ItemSoundSetId", "Recipe"}) {
             assertFalse(item.containsKey(key), "the item has no " + key);
         }
-        for (String key : new String[] {"Model", "Texture", "PlayerAnimationsId", "Icon", "Tags", "Weapon", "Categories"}) {
+        for (String key : new String[] {"Texture", "Icon", "Tags", "Weapon", "Categories"}) {
             assertEquals(cutter.get(key), item.get(key), key + " is the Flame Cutter's");
         }
+        assertEquals("NPC/Intelligent/Goblin/Models/Weapons/Flamethrower/Scrap.blockymodel", item.getString("Model").getValue(), "the beam cutter keeps the vanilla model, by path");
         assertEquals("Arrakis_Exp_Flame_Beam_Primary", item.getDocument("Interactions").getString("Primary").getValue());
     }
 
