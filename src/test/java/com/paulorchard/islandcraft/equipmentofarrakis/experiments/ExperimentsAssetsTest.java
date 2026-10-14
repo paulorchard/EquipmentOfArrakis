@@ -121,7 +121,7 @@ class ExperimentsAssetsTest {
         BsonDocument burn = read(BURN);
         BsonDocument particle = burn.getDocument("Effects").getArray("Particles").get(0).asDocument();
         assertEquals("Arrakis_Exp_Flame_Focus", particle.getString("SystemId").getValue());
-        assertEquals(180, number(particle.getDocument("RotationOffset"), "Yaw"), 1e-9, "turned like the vanilla flame");
+        assertEquals(180, number(particle.getDocument("RotationOffset"), "Yaw"), 10, "turned like the vanilla flame, tilted a few degrees to aim at the crosshair");
         double muzzle = number(particle.getDocument("PositionOffset"), "Z");
 
         BsonDocument system = read(SYSTEM);

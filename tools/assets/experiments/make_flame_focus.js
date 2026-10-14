@@ -40,6 +40,14 @@ const RENDER_MODE = 'BlendAdd';
 const TEXTURE = 'Particles/Textures/Basic/Glow.png'; // vanilla, by path: a soft round dot (32x32, one frame)
 const SIZE_JITTER = 0.15;    // +- fraction of random size at the muzzle
 const RING_JITTER = 0;       // blocks: how far inside START_RADIUS a particle may start (0 = exactly on the ring)
+// Aim, found by measuring where the focus lands relative to the crosshair dot in two screenshots (Screenshots/true center.png and
+// centerOff.png) and interpolating to zero. The field of view is not needed: the two tilts bracket the dot.
+//   tilt yaw +3.76 / pitch +4.51 -> focus 19.9 px right of and 56.2 px above the dot
+//   tilt yaw +5.30 / pitch +0.16 -> focus 22 px left of and 8.5 px below the dot
+// so the focus is on the dot at yaw 3.76 + 1.54 * 19.9 / 41.9 = 4.49 and pitch 4.51 - 4.35 * 56.2 / 64.7 = 0.73.
+// (More yaw moves the focus left, more pitch moves it up.) To re-aim, take a screenshot, measure, and interpolate again.
+const AIM_YAW = 4.49;
+const AIM_PITCH = 0.73;
 const FOCUS_GLOW = 0.1;      // size of the steady glow at the focus; 0 = no glow
 
 // ---- derived
@@ -157,3 +165,12 @@ for (const f of [0, 0.25, 0.5, 0.75, 1]) {
     console.log('  at ' + Math.round(f * 100) + '% of the life: ' + (MUZZLE + speed * LIFETIME * f).toFixed(2) + ' blocks out, ring radius '
         + (START_RADIUS - (START_RADIUS - END_RADIUS) * f).toFixed(3) + ', size ' + (START_SIZE + (END_SIZE - START_SIZE) * f).toFixed(3));
 }
+
+// ---- aim: tilt the whole system (it turns about the muzzle) so that its axis passes through the crosshair point RANGE out
+const yaw = 180 + AIM_YAW;
+const pitch = AIM_PITCH;
+const burnFile = path.join(__dirname, "..", "..", "..", "src", "main", "resources", "Server", "Item", "Interactions", "Equipment_of_Arrakis", "Experiments", "Arrakis_Exp_Flame_Burn.json");
+const burn = JSON.parse(fs.readFileSync(burnFile, "utf8"));
+burn.Effects.Particles[0].RotationOffset = { Pitch: +pitch.toFixed(2), Roll: 0, Yaw: +yaw.toFixed(2) };
+fs.writeFileSync(burnFile, JSON.stringify(burn, null, 2) + "\n");
+console.log("aim: yaw " + yaw.toFixed(2) + ", pitch " + pitch.toFixed(2) + " written to Arrakis_Exp_Flame_Burn.json");
