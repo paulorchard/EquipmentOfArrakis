@@ -149,7 +149,7 @@ class ExperimentsAssetsTest {
         BsonDocument animation = beam.getDocument("Particle").getDocument("Animation");
         double end = start * number(animation.getDocument("100").getDocument("Scale").getDocument("X"), "Min");
         assertTrue(start > end * 1.5, "it shrinks along the path: " + start + " to " + end);
-        assertTrue(start < 0.1 && end < 0.05, "a small dot, not a lens: " + start + " to " + end);
+        assertTrue(start < 0.3 && end < 0.05, "a small dot, not a lens: " + start + " to " + end);
     }
 
     @Test

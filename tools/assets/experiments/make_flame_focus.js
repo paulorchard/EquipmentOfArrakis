@@ -20,7 +20,7 @@ const fs = require('fs');
 const path = require('path');
 
 // ---- the look: change these and run the script again
-const START_PX = 10;         // pixels wide near the grip (1920x1080)
+const START_PX = 50;         // pixels wide near the grip (1920x1080)
 const END_PX = 1;            // pixels wide at the vanishing point
 const VFOV = 70;             // degrees, vertical field of view of the client (a guess: not read from the client)
 const VERTICAL_PIXELS = 1080;

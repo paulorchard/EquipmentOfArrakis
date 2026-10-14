@@ -369,3 +369,5 @@ vanishing point and shrinks from about 10 px to 1 px wide (1920x1080, relative s
 half its square), distance 1.2 at the start and 5 at the end, **VFOV 70 degrees is a guess** (the client's field of view is not known to the server): if the dot looks too big or small, change VFOV
 or SPRITE_GAIN. The chain passes every 0.3 s (new `Arrakis_Exp_Flame_Tick`, same Mana and cutting per second; `Burn` 0.3 s; each cast emits 0.35 s) so a new dot is born as the last arrives.
 The ring version is in git (`da9b732`). Not seen in game.
+
+Follow-up: the user liked it and asked for 50 px down to 1 px (`START_PX = 50`: world size 0.156 -> 0.013 blocks).
