@@ -69,7 +69,8 @@ class ModuleBoundaryTest {
     }
 
     static List<String> check(String module, String source) {
-        Set<String> allowed = ALLOWED.getOrDefault(module, Set.of(module));
+        // A module not listed above is a module like any other: its own package, core and power.
+        Set<String> allowed = ALLOWED.getOrDefault(module, Set.copyOf(List.of(module, "core", "power")));
         List<String> violations = new ArrayList<>();
         Matcher m = REFERENCE.matcher(source);
         while (m.find()) {

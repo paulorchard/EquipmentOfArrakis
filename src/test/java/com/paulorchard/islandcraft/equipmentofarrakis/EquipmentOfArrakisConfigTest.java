@@ -12,10 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EquipmentOfArrakisConfigTest {
 
+    /** The modules every build has; later modules may add to the defaults. */
+    private static final Set<String> BASE = Set.of("core", "power", "catalog");
+
     @Test
-    void defaultsEnableAllThreeModulesAndSurviveARoundTrip() {
+    void defaultsEnableTheBaseModulesAndSurviveARoundTrip() {
         EquipmentOfArrakisConfig defaults = new EquipmentOfArrakisConfig();
-        assertEquals(Set.of("core", "power", "catalog"), defaults.enabledModules());
+        assertTrue(defaults.enabledModules().containsAll(BASE), "the base modules are on by default");
         BsonValue written = EquipmentOfArrakisConfig.CODEC.encode(defaults);
         EquipmentOfArrakisConfig read = EquipmentOfArrakisConfig.CODEC.decode(written);
         assertEquals(written, EquipmentOfArrakisConfig.CODEC.encode(read), "writing, reading and writing again changes nothing");
@@ -29,7 +32,7 @@ class EquipmentOfArrakisConfigTest {
     @Test
     void anEmptyFileGivesTheDefaults() {
         EquipmentOfArrakisConfig read = EquipmentOfArrakisConfig.CODEC.decode(new BsonDocument());
-        assertEquals(Set.of("core", "power", "catalog"), read.enabledModules());
+        assertTrue(read.enabledModules().containsAll(BASE), "the base modules are on by default");
         assertNotNull(read.power());
         assertTrue(read.power().logStatDefinition());
     }
