@@ -187,12 +187,14 @@ final class ExpCalibrationRig {
     /** The world-space beam: starts at the cam numbers in the camera frame and ends at the look target, every tick. */
     private static void spawnWorldBeam(State state, Ref<EntityStore> ref, Store<EntityStore> store) {
         ExpCalibration c = state.calibration;
-        ExpBeamGeometry.Plan plan = ExpBeamGeometry.plan(ref, store, c.cam.x, c.cam.y, c.cam.z, c.apex, c.endAtBlock);
+        ExpBeamGeometry.Plan plan = ExpBeamGeometry.plan(ref, store, c.useBody, c.start().x, c.start().y, c.start().z, c.apex, c.endAtBlock);
         if (state.beam == Beam.WORLD_NATURE) {
             Vector3d origin = new Vector3d(plan.end).fma(-NATURE_END_OFFSET, plan.direction);
-            ExpBeamGeometry.spawn(state.world, NATURE_BEAM, origin, plan, (float) c.cam.scale, 0.14f);
+            ExpBeamGeometry.spawn(state.world, NATURE_BEAM, origin, plan, (float) c.start().scale, 0.14f);
+            ExpBeamGeometry.spawnGlow(state.world, ExpBeamSpawnInteraction.GLOW_PREFIX, ExpBeamSpawnInteraction.GLOW_LEVELS, plan,
+                    System.currentTimeMillis() / 1000.0, c.pulseHz, (float) c.start().scale, 0.14f);
         } else {
-            ExpBeamGeometry.spawn(state.world, STREAM, plan.start, plan, (float) c.cam.scale, 0.14f);
+            ExpBeamGeometry.spawn(state.world, STREAM, plan.start, plan, (float) c.start().scale, 0.14f);
         }
     }
 

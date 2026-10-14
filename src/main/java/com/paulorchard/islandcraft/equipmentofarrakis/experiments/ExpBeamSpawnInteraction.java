@@ -20,7 +20,9 @@ import org.joml.Vector3d;
  * and ends where the look ray lands: at the apex distance, or where it enters a block when {@code EndAtBlock}. The vanilla NatureBeam
  * has a fixed length and its end burst sits {@code EndOffset} blocks in front of the system's origin, so the origin is put that far
  * before the end point; the system is turned to point along the line from the start to the end. It runs after the Mana tick in the chain,
- * so it only shows when the tick did not refuse.
+ * so it only shows when the tick did not refuse. {@code Frame} is Camera (the start is right, up and forward of the eye, in the frame of the
+ * head) or Body (along the heading of the body, which does not pitch: the grip of a hand-held tool); {@code Glow} adds the pulsing halo
+ * (systems {@code Arrakis_Exp_Beam_Glow_0..3}, chosen by a sine of {@code PulseHz}).
  *
  * <pre>
  * {"Type": "Arrakis_Exp_Beam_Spawn", "System": "NatureBeam", "Right": 0.15, "Up": -0.15, "Forward": 0.6, "Apex": 5, "EndAtBlock": false,
@@ -30,6 +32,9 @@ import org.joml.Vector3d;
 public class ExpBeamSpawnInteraction extends SimpleInstantInteraction {
 
     public static final String TYPE = "Arrakis_Exp_Beam_Spawn";
+    /** The glow systems are {@code GLOW_PREFIX + 0 .. GLOW_LEVELS - 1}, from dim to bright (make_beam_glow.js). */
+    public static final String GLOW_PREFIX = "Arrakis_Exp_Beam_Glow_";
+    public static final int GLOW_LEVELS = 4;
 
     public static final BuilderCodec<ExpBeamSpawnInteraction> CODEC = BuilderCodec
             .builder(ExpBeamSpawnInteraction.class, ExpBeamSpawnInteraction::new, SimpleInstantInteraction.CODEC)
@@ -51,6 +56,12 @@ public class ExpBeamSpawnInteraction extends SimpleInstantInteraction {
             .add()
             .append(new KeyedCodec<>("Scale", Codec.FLOAT, false), (i, v) -> i.scale = v, i -> i.scale)
             .add()
+            .append(new KeyedCodec<>("Frame", Codec.STRING, false), (i, v) -> i.body = "Body".equalsIgnoreCase(v), i -> i.body ? "Body" : "Camera")
+            .add()
+            .append(new KeyedCodec<>("Glow", Codec.BOOLEAN, false), (i, v) -> i.glow = v, i -> i.glow)
+            .add()
+            .append(new KeyedCodec<>("PulseHz", Codec.FLOAT, false), (i, v) -> i.pulseHz = v, i -> i.pulseHz)
+            .add()
             .build();
 
     private String system = "NatureBeam";
@@ -62,6 +73,9 @@ public class ExpBeamSpawnInteraction extends SimpleInstantInteraction {
     private float endOffset = 1.8f;
     private float duration = 0.14f;
     private float scale = 1f;
+    private boolean body;
+    private boolean glow;
+    private float pulseHz = 2f;
 
     @Override
     protected void firstRun(InteractionType type, InteractionContext context, CooldownHandler cooldowns) {
@@ -71,8 +85,12 @@ public class ExpBeamSpawnInteraction extends SimpleInstantInteraction {
             return;
         }
         World world = buffer.getExternalData().getWorld();
-        ExpBeamGeometry.Plan plan = ExpBeamGeometry.plan(player, buffer, right, up, forward, apex, endAtBlock);
-        Vector3d origin = new Vector3d(plan.end).fma(-endOffset, plan.direction);
+        ExpBeamGeometry.Plan plan = ExpBeamGeometry.plan(player, buffer, body, right, up, forward, apex, endAtBlock);
+        // never behind the start: a target nearer than EndOffset puts the origin at the start
+        Vector3d origin = new Vector3d(plan.end).fma(-Math.min(endOffset, plan.length()), plan.direction);
         ExpBeamGeometry.spawn(world, system, origin, plan, scale, duration);
+        if (glow) {
+            ExpBeamGeometry.spawnGlow(world, GLOW_PREFIX, GLOW_LEVELS, plan, System.currentTimeMillis() / 1000.0, pulseHz, scale, duration);
+        }
     }
 }

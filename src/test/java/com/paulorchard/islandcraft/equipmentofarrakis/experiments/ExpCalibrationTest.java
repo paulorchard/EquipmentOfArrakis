@@ -174,4 +174,63 @@ class ExpCalibrationTest {
         assertEquals(0, r[0] * u[0] + r[1] * u[1] + r[2] * u[2], 1e-9);
         assertEquals(1, Math.sqrt(u[0] * u[0] + u[1] * u[1] + u[2] * u[2]), 1e-9);
     }
+
+    @Test
+    void theGripIsWhereARightHandedPlayerHoldsAGunAndABodyPointFollowsTheHeadingNotThePitch() {
+        double[] g = ExpAim.gripPoint(1.8);
+        assertEquals(0.275, g[0], 1e-9, "shoulder 0.225 plus 0.05");
+        assertEquals(-0.324, g[1], 1e-9, "chest height 1.296 against the eyes at 1.62");
+        assertEquals(0.45, g[2], 1e-9);
+        assertEquals(g[0], ExpCalibration.defaultBody().x, 1e-6);
+        double[] eye = {10, 64, -5};
+        // looking north: right is +X, forward is -Z
+        double[] n = ExpAim.bodyPoint(eye, new double[] {0, 0, -1}, 0.275, -0.324, 0.45);
+        assertEquals(10.275, n[0], 1e-9);
+        assertEquals(63.676, n[1], 1e-9);
+        assertEquals(-5.45, n[2], 1e-9);
+        // looking north and 60 degrees up: the body does not pitch, so the point is the same
+        double s = Math.sin(Math.toRadians(60));
+        double c = Math.cos(Math.toRadians(60));
+        double[] up = ExpAim.bodyPoint(eye, new double[] {0, s, -c}, 0.275, -0.324, 0.45);
+        assertEquals(n[0], up[0], 1e-9);
+        assertEquals(n[1], up[1], 1e-9);
+        assertEquals(n[2], up[2], 1e-9);
+        // looking east: right is +Z
+        double[] e = ExpAim.bodyPoint(eye, new double[] {1, 0, 0}, 0.275, 0, 0.45);
+        assertEquals(10.45, e[0], 1e-9);
+        assertEquals(-4.725, e[2], 1e-9);
+        // straight up does not blow up, and a left-hander is the mirror image
+        assertEquals(63.676, ExpAim.bodyPoint(eye, new double[] {0, 1, 0}, 0.275, -0.324, 0.45)[1], 1e-9);
+        assertEquals(9.725, ExpAim.bodyPoint(eye, new double[] {0, 0, -1}, -0.275, 0, 0)[0], 1e-9);
+    }
+
+    @Test
+    void thePulseStepsThroughTheLevelsOnASineAndStaysInRange() {
+        int[] seen = new int[4];
+        for (int i = 0; i < 1000; i++) {
+            int level = ExpAim.pulseLevel(i / 1000.0, 2, 4);
+            assertTrue(level >= 0 && level < 4);
+            seen[level]++;
+        }
+        for (int count : seen) {
+            assertTrue(count > 0, "every level is used");
+        }
+        assertEquals(2, ExpAim.pulseLevel(0, 2, 4), "the sine starts in the middle (rounded up)");
+        assertEquals(3, ExpAim.pulseLevel(0.125, 2, 4), "a quarter of a cycle at 2 Hz: the brightest");
+        assertEquals(0, ExpAim.pulseLevel(0.375, 2, 4), "three quarters: the dimmest");
+    }
+
+    @Test
+    void theBodyStartFrameAndPulseRoundTrip() {
+        ExpCalibration c = ExpCalibration.defaults();
+        c.useBody = true;
+        c.pulseHz = 1.5;
+        assertEquals("0.285", c.change("body", "x", "0.285"));
+        ExpCalibration back = ExpCalibration.fromJson(c.toJson());
+        assertEquals(c.toJson(), back.toJson());
+        assertTrue(back.useBody);
+        assertEquals(1.5, back.pulseHz, 1e-12);
+        assertEquals(0.285, back.start().x, 1e-12);
+        assertEquals(0.15, back.cam.x, 1e-12);
+    }
 }

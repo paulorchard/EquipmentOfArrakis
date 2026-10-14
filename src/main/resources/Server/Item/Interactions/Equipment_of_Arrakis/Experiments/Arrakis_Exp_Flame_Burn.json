@@ -1,25 +1,10 @@
 {
-  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). The look of the Flame Cutter: the vanilla Burn animation of Goblin_Flamethrower and the focusing beam Arrakis_Exp_Flame_Focus at the muzzle (the vanilla flame is placed at Z 3.7 with its spawners at +2.5 and turned by Yaw 180, so its ring starts 1.2 in front: Z here is that muzzle). It runs only when the tick before it did not refuse.",
+  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). The animation of the Flame Cutter: the vanilla Burn animation of Goblin_Flamethrower. The ring of dots is Arrakis_Exp_Flame_Spawn (world space), not particles on the model. Runs only when the tick before it did not refuse.",
   "Type": "Simple",
   "RunTime": 0.1,
   "Effects": {
     "ItemPlayerAnimationsId": "Goblin_Flamethrower",
     "ItemAnimationId": "Burn",
-    "ClearAnimationOnFinish": true,
-    "Particles": [
-      {
-        "SystemId": "Arrakis_Exp_Flame_Focus",
-        "PositionOffset": {
-          "X": 0,
-          "Y": 0.15,
-          "Z": 1.2
-        },
-        "RotationOffset": {
-          "Pitch": 0.73,
-          "Roll": 0,
-          "Yaw": 184.49
-        }
-      }
-    ]
+    "ClearAnimationOnFinish": true
   }
 }

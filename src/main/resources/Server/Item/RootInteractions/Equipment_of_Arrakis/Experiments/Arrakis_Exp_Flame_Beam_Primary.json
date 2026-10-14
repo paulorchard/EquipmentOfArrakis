@@ -1,7 +1,7 @@
 {
-  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). Primary of the Flame Beam Cutter: the tick of the Flame Cutter (Mana, range 5, cutting; it refuses the whole chain without Mana), then the laser spawned by the server, then the pace.",
+  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). Primary of the Flame Beam Cutter: the tick at the pace of the beam (Mana, range 5, cutting; it refuses the whole chain without Mana), then the laser and its pulsing glow spawned by the server, then the pace.",
   "Interactions": [
-    "Arrakis_Exp_Cutter_Tick",
+    "Arrakis_Exp_Flame_Beam_Tick",
     "Arrakis_Exp_Flame_Beam_Spawn",
     "Arrakis_Exp_Flame_Beam_Pace"
   ],

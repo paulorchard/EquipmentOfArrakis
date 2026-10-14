@@ -53,6 +53,15 @@ final class ExpCalibration {
     View tp = defaultTp();
     /** Where a world-space beam STARTS (x right, y up, z forward of the eye); its end is the look target, not a number. */
     View cam = defaultCam();
+    /**
+     * Where a world-space beam starts when it is held in the hand (the Flame Cutter): x right (negative for a left-hander), y up from the eye,
+     * z forward, along the heading of the body (the body does not pitch with the head). The default is ExpAim.gripPoint(1.8).
+     */
+    View body = defaultBody();
+    /** True: the world-space beams start at {@link #body} rather than {@link #cam}. */
+    boolean useBody;
+    /** Cycles a second of the glow around the Flame Beam Cutter's beam. */
+    double pulseHz = 2;
     /** True: the world-space beam ends where the look ray enters a block (else at the apex distance, also when nothing is hit). */
     boolean endAtBlock;
     /** The distance along the camera ray where the beam is meant to end, blocks. */
@@ -76,6 +85,16 @@ final class ExpCalibration {
         return new View("eye", 0.15, -0.15, 0.6, 0, 0, 0, 1, false);
     }
 
+    static View defaultBody() {
+        double[] g = ExpAim.gripPoint(1.8);
+        return new View("body", round(g[0]), round(g[1]), round(g[2]), 0, 0, 0, 1, false);
+    }
+
+    /** The start in use: the body's grip, or the camera's. */
+    View start() {
+        return useBody ? body : cam;
+    }
+
     static ExpCalibration defaults() {
         return new ExpCalibration();
     }
@@ -85,6 +104,9 @@ final class ExpCalibration {
         c.fp = fp.copy();
         c.tp = tp.copy();
         c.cam = cam.copy();
+        c.body = body.copy();
+        c.useBody = useBody;
+        c.pulseHz = pulseHz;
         c.endAtBlock = endAtBlock;
         c.apex = apex;
         c.step = step;
@@ -97,7 +119,8 @@ final class ExpCalibration {
             case "fp" -> fp;
             case "tp" -> tp;
             case "cam" -> cam;
-            default -> throw new IllegalArgumentException("the view is fp, tp or cam, not " + name);
+            case "body" -> body;
+            default -> throw new IllegalArgumentException("the view is fp, tp, cam or body, not " + name);
         };
     }
 
@@ -191,8 +214,9 @@ final class ExpCalibration {
     String toJson() {
         return "{ \"$Comment\": \"EXPERIMENT: calibration of the Flame Beam Cutter, from /arrakis exp cal show (see EXPERIMENT_LOG.md, How to calibrate)\",\n"
                 + "  \"apex\": " + format(apex) + ", \"step\": " + format(step) + ", \"angleStep\": " + format(angleStep) + ",\n"
-                + "  \"endAtBlock\": " + endAtBlock + ",\n"
+                + "  \"endAtBlock\": " + endAtBlock + ", \"frame\": \"" + (useBody ? "body" : "cam") + "\", \"pulseHz\": " + format(pulseHz) + ",\n"
                 + "  \"cam\": " + json(cam) + ",\n"
+                + "  \"body\": " + json(body) + ",\n"
                 + "  \"fp\": " + json(fp) + ",\n"
                 + "  \"tp\": " + json(tp) + " }";
     }
@@ -218,7 +242,12 @@ final class ExpCalibration {
         if (document.containsKey("endAtBlock") && document.get("endAtBlock").isBoolean()) {
             c.endAtBlock = document.getBoolean("endAtBlock").getValue();
         }
+        c.pulseHz = number(document, "pulseHz", c.pulseHz);
+        if (document.containsKey("frame") && document.get("frame").isString()) {
+            c.useBody = document.getString("frame").getValue().equalsIgnoreCase("body");
+        }
         read(document, "cam", c.cam);
+        read(document, "body", c.body);
         read(document, "fp", c.fp);
         read(document, "tp", c.tp);
         return c;

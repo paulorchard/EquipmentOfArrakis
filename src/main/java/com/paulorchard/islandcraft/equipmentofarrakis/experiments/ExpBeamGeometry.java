@@ -69,15 +69,27 @@ final class ExpBeamGeometry {
         return new Vector3d(eye).fma(apex, direction);
     }
 
-    /** The plan for a beam that starts at (right, up, forward) in the camera's frame and ends at the target of the look ray. */
-    static Plan plan(Ref<EntityStore> ref, ComponentAccessor<EntityStore> accessor, double right, double up, double forward, double apex,
-            boolean endAtBlock) {
+    /**
+     * The plan for a beam that starts at (right, up, forward) and ends at the target of the look ray. The start is in the camera's
+     * frame (it turns with the head), or, with {@code body}, in the body's (the heading only, it does not pitch with the head).
+     */
+    static Plan plan(Ref<EntityStore> ref, ComponentAccessor<EntityStore> accessor, boolean body, double right, double up, double forward,
+            double apex, boolean endAtBlock) {
         Transform look = TargetUtil.getLook(ref, accessor);
         Vector3d eye = new Vector3d(look.getPosition());
         Vector3d direction = new Vector3d(look.getDirection()).normalize();
-        double[] start = ExpAim.cameraPoint(new double[] {eye.x, eye.y, eye.z}, new double[] {direction.x, direction.y, direction.z},
-                right, up, forward);
+        double[] e = {eye.x, eye.y, eye.z};
+        double[] d = {direction.x, direction.y, direction.z};
+        double[] start = body ? ExpAim.bodyPoint(e, d, right, up, forward) : ExpAim.cameraPoint(e, d, right, up, forward);
         return new Plan(new Vector3d(start[0], start[1], start[2]), target(ref, accessor, eye, direction, apex, endAtBlock));
+    }
+
+    /**
+     * The glow around a beam: one of {@code levels} systems named {@code prefix + level}, from dim to bright, chosen by a sine of
+     * {@code hz} cycles a second of the time {@code seconds}, spawned at the START of the plan and turned along it.
+     */
+    static void spawnGlow(World world, String prefix, int levels, Plan plan, double seconds, double hz, float scale, float duration) {
+        spawn(world, prefix + ExpAim.pulseLevel(seconds, hz, levels), plan.start, plan, scale, duration);
     }
 
     /** Sends the system at a position, turned to the plan's direction, to the players of the world; it stops after {@code duration} seconds. */

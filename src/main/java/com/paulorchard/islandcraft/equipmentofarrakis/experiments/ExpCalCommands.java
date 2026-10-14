@@ -48,7 +48,7 @@ final class ExpCalCommands {
         };
         String[] nodeArgs = {"node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10"};
 
-        for (String view : new String[] {"fp", "tp", "cam"}) {
+        for (String view : new String[] {"fp", "tp", "cam", "body"}) {
             cal.addSubCommand(WorldPositional.build(view, LANG + "cal.view.desc", (c, w, s, a) -> run(c, s, state -> {
                 ExpCalibration.View v = state.calibration.view(view);
                 if (a.length == 0) {
@@ -110,6 +110,20 @@ final class ExpCalCommands {
                 default -> "a fine stream attached to the fp / tp node numbers";
             }));
         }), "mode"));
+        cal.addSubCommand(WorldPositional.build("frame", LANG + "cal.view.desc", (c, w, s, a) -> run(c, s, state -> {
+            String v = a[0].toLowerCase(Locale.ROOT);
+            if (!v.equals("cam") && !v.equals("body")) {
+                throw new IllegalArgumentException("cam or body");
+            }
+            state.calibration.useBody = v.equals("body");
+            say(c, "the world beams start at the " + v + " numbers" + (state.calibration.useBody
+                    ? " (the grip: right, up from the eye, forward along the heading of the body; the body does not pitch with the head)"
+                    : " (right, up, forward of the eye in the camera frame)"));
+        }), "which"));
+        cal.addSubCommand(WorldPositional.build("pulse", LANG + "cal.number.desc", (c, w, s, a) -> run(c, s, state -> {
+            state.calibration.pulseHz = ExpCalibration.next(state.calibration.pulseHz, a[0], 0.25);
+            say(c, "pulse = " + ExpCalibration.format(state.calibration.pulseHz) + " cycles a second");
+        }), "value"));
         cal.addSubCommand(WorldPositional.build("end", LANG + "cal.view.desc", (c, w, s, a) -> run(c, s, state -> {
             String v = a[0].toLowerCase(Locale.ROOT);
             if (!v.equals("apex") && !v.equals("block")) {
@@ -231,7 +245,8 @@ final class ExpCalCommands {
 
     private static String summary(ExpCalibration cal) {
         return "apex " + ExpCalibration.format(cal.apex) + ", step " + ExpCalibration.format(cal.step) + " blocks / "
-                + ExpCalibration.format(cal.angleStep) + " degrees";
+                + ExpCalibration.format(cal.angleStep) + " degrees, start " + (cal.useBody ? "body" : "cam") + ", pulse "
+                + ExpCalibration.format(cal.pulseHz) + " Hz";
     }
 
     private static void say(CommandContext c, String text) {

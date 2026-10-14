@@ -98,4 +98,34 @@ final class ExpAim {
                 eye[1] + r[1] * right + u[1] * up + dir[1] * forward,
                 eye[2] + r[2] * right + u[2] * up + dir[2] * forward};
     }
+
+    /**
+     * A point given in the player's BODY frame: the eye, moved right, up and forward along the heading of the body. The body does not
+     * pitch when the head does, so right and forward are the horizontal ones (the look direction with its height removed) and up is
+     * world up; right is signed, so a left-hander uses a negative number. Looking straight up or down keeps the last meaningful heading
+     * (north).
+     */
+    static double[] bodyPoint(double[] eye, double[] dir, double right, double up, double forward) {
+        double length = Math.hypot(dir[0], dir[2]);
+        double fx = length < 1e-9 ? 0 : dir[0] / length;
+        double fz = length < 1e-9 ? -1 : dir[2] / length;
+        // right of a horizontal heading (fx, fz): (-fz, fx), the same rule as right()
+        return new double[] {eye[0] - fz * right + fx * forward, eye[1] + up, eye[2] + fx * right + fz * forward};
+    }
+
+    /**
+     * Where a one-handed gun is held, from the proportions of the player (height {@code h} blocks, eyes at 0.9 h): the right shoulder is
+     * 0.125 h from the middle of the body and the grip 0.05 further out; the grip is at chest height, 0.72 h (the middle of the body, the
+     * node called Body, is at 0.55 h); and the arm reaches 0.25 h in front of the body. Returned as {right, up from the eye, forward},
+     * for a right-hander; negate the first for a left-hander.
+     */
+    static double[] gripPoint(double h) {
+        return new double[] {0.125 * h + 0.05, 0.72 * h - 0.9 * h, 0.25 * h};
+    }
+
+    /** The brightness step (0 to levels - 1) of a pulse at {@code seconds}: a sine of {@code hz} cycles a second, from dim (0) to bright. */
+    static int pulseLevel(double seconds, double hz, int levels) {
+        double wave = 0.5 + 0.5 * Math.sin(2 * Math.PI * hz * seconds);
+        return (int) Math.max(0, Math.min(levels - 1, Math.round(wave * (levels - 1))));
+    }
 }

@@ -226,7 +226,7 @@ tried).
 **Confirmed vs inferred.** Confirmed in a headless boot: everything loads without a single warning from the experiment (item, root,
 both interactions, system, both spawners, texture, `$Comment` in every asset type), `Module experiments: setup ok`, `/arrakis modules`
 lists it, the self-check has no PROBLEM line (the item has no light or sound; the stand-in pickaxe has 16 gather specs), disabling it works
-as described, the removal rehearsal, and the unit tests (50 in all: the 20 from before, `ExperimentsAssetsTest` 7, `ExperimentsIsolationTest` 7, `ExpCalibrationTest` 11 (with the aim maths), `ExperimentsBeamAssetsTest` 5).
+as described, the removal rehearsal, and the unit tests (50 in all: the 20 from before, `ExperimentsAssetsTest` 7, `ExperimentsIsolationTest` 7, `ExpCalibrationTest` 11 (with the aim maths), `ExperimentsBeamAssetsTest` 5) (round 3 later made it 34 experiment tests, 54 in all).
 `ExperimentsIsolationTest` was also tried on the real project with a `power` file importing the experiments package: it and
 `ModuleBoundaryTest` both failed naming the file and line; reverted. Inferred, not seen: everything the beam does on a screen, the tick
 in play (cutting, Mana per second, Creative), whether the repeated 0.1 s `Burn` flickers.
@@ -314,3 +314,35 @@ to a position and to an angle. `off` switches every rig off.
    `node tools/assets/experiments/make_flame_beam.js`, `gradlew build` and `gradlew deployMod`.
 
 How the numbers map: `cam x y z` are blocks in the camera frame (right, up, forward of the eye) where the beam starts; `apex` and `end` choose where it ends along the look ray; `fp` and `tp` (node, x y z, yaw pitch roll in degrees as the engine takes them, scale, detached) are for beams attached to a model node, as Stoneskin does.
+
+#### Round 3: a laser on every tick with a pulsing glow, and the Flame Cutter's ring from the hand (world space, body frame)
+
+What the user saw in game before this round: the Stoneskin laser (`beam world` / the Flame Beam Cutter) lands on the crosshair in first AND third
+person (the world-space spawn works, so the packet turns a system as `ExpAim.yaw/pitch` assume); the Flame Cutter's ring landed on the crosshair in first
+person but in third person it still started at the gun.
+
+* **Every tick.** The Flame Beam Cutter's chain now passes every 0.03 s (one server tick at 30 a second): `Arrakis_Exp_Flame_Beam_Tick` (generated copy of
+  the tick: same Mana and cutting per second, in steps of 0.03 s, `DamageScale` scaled), then the spawn, then the pace. Each laser lasts 0.05 s, so there
+  is no gap and the laser follows the look to within a tick. The server cannot draw more often than it ticks; the client draws what lasts.
+* **Pulsing glow.** `make_beam_glow.js` writes `Arrakis_Exp_Beam_Glow_0..3`: soft green sprites on a thin ring around the axis, flown along it for 4.5 blocks,
+  the same halo at four brightnesses. With each laser the server also spawns ONE of them, chosen by `ExpAim.pulseLevel` (a sine of `pulseHz`, default 2
+  cycles a second, `/arrakis exp cal pulse <hz>`). Switching levels pulses the glow without stretching it (a scale pulse would scale its length too).
+  Look (opacity per level, radius, size, colour) is at the top of the script. **Not seen in game.**
+* **The Flame Cutter's ring from the hand.** The node-attached ring is gone (it could only be aimed for one view). `Arrakis_Exp_Flame_Spawn` spawns
+  `Arrakis_Exp_Flame_Focus` in world space like the laser, with `Frame: Body`, origin 3.8 blocks (= the ring's travel) before the look target, so its
+  focus is the target by construction in both views. The start is the **grip**, in the body frame (`ExpAim.bodyPoint`): heading of the body (look
+  direction with the height removed: the body does not pitch with the head), right/up/forward as numbers, signed right (negative for a left-hander).
+  This is a change in first person too (the old node-attached version, measured to land on the dot, is in git: `ce45eb1`).
+* **The maths of the right-handed grip** (`ExpAim.gripPoint(h)`, player height h = 1.8 blocks, eyes at 0.9 h = 1.62): the middle of the body (the `Body`
+  node, the "centre of mass") is at 0.55 h; a one-handed gun is held at chest height 0.72 h = 1.296, i.e. 0.324 below the eye; the right shoulder is
+  0.125 h = 0.225 from the middle and the grip 0.05 further out, so **0.275 to the right**; the arm reaches 0.25 h = **0.45 forward**. So the start is
+  (right 0.275, up -0.324, forward 0.45) from the eye along the body's heading; a left-hander is (-0.275, ...). Tune with `/arrakis exp cal body x|y|z`,
+  preview with `/arrakis exp cal frame body` + `beam world` or `worldnature` + `target on`, then `show`, paste into `calibration.json`
+  (`body`), `node tools/assets/experiments/make_flame_beam.js`, rebuild.
+* New calibration commands: `body` (like `cam`), `frame cam|body`, `pulse <hz>`. `show` prints `body`, `frame`, `pulseHz` too.
+* Checked headlessly: 34 experiment tests pass (54 with the base 20) (new: the grip numbers and the body frame, the pulse levels, the JSON round trip, the beam tick's rates,
+  the ring's spawn data); boot loads everything with no warning; with the module off the boot removes 30 `Arrakis_Exp_` assets (up from 20) and the
+  server runs. Not testable without a client: what any of it looks like.
+* Why the packet is the only way to be right in both views: the server does not know the view, so one start per spawn; the body-frame grip is near where the
+  gun is in both (lower right, in front), which is the closest one number can be to "from the gun" in first person and in third.
+* Removal rehearsal repeated after this round (script above on a temp copy): no trace, `gradlew build` with the 20 base tests, no experiment file left.

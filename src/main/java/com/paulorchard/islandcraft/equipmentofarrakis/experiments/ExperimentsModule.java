@@ -171,6 +171,12 @@ public final class ExperimentsModule implements EquipmentModule {
         lines.add(exists(RootInteraction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Primary"), "root interaction Arrakis_Exp_Flame_Beam_Primary"));
         lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Spawn"), "interaction Arrakis_Exp_Flame_Beam_Spawn"));
         lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Pace"), "interaction Arrakis_Exp_Flame_Beam_Pace"));
+        lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Tick"), "interaction Arrakis_Exp_Flame_Beam_Tick"));
+        lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Spawn"), "interaction Arrakis_Exp_Flame_Spawn"));
+        for (int level = 0; level < ExpBeamSpawnInteraction.GLOW_LEVELS; level++) {
+            String id = ExpBeamSpawnInteraction.GLOW_PREFIX + level;
+            lines.add(exists(ParticleSystem.getAssetMap().getAsset(id), "glow particle system " + id));
+        }
         for (String id : new String[] {ExpCalibrationRig.DOT, ExpCalibrationRig.MARK, ExpCalibrationRig.RULER, ExpCalibrationRig.STREAM}) {
             lines.add(exists(ParticleSystem.getAssetMap().getAsset(id), "calibration particle system " + id));
         }

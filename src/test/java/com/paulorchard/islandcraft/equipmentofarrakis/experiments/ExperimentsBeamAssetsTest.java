@@ -71,7 +71,7 @@ class ExperimentsBeamAssetsTest {
 
     @Test
     void theChainIsTickSpawnPaceAndHasNoFireDamageSoundAnimationOrAttachedParticles() throws IOException {
-        assertEquals(List.of("Arrakis_Exp_Cutter_Tick", "Arrakis_Exp_Flame_Beam_Spawn", "Arrakis_Exp_Flame_Beam_Pace"),
+        assertEquals(List.of("Arrakis_Exp_Flame_Beam_Tick", "Arrakis_Exp_Flame_Beam_Spawn", "Arrakis_Exp_Flame_Beam_Pace"),
                 read(ROOT).getArray("Interactions").stream().map(v -> v.asString().getValue()).toList());
         List<String> strings = new ArrayList<>();
         strings(read(ROOT), strings);
@@ -99,10 +99,27 @@ class ExperimentsBeamAssetsTest {
         assertEquals(calibration.getBoolean("endAtBlock").getValue(), spawn.getBoolean("EndAtBlock").getValue());
         assertEquals(1.8, spawn.getNumber("EndOffset").doubleValue(), 1e-9, "where the NatureBeam's end burst sits (measure_nature_beam.js)");
         assertTrue(spawn.getNumber("Duration").doubleValue() > read(PACE).getNumber("RunTime").doubleValue(), "continuous: a beam outlasts a pass");
+        assertTrue(read(PACE).getNumber("RunTime").doubleValue() <= 1.0 / 30, "a pass is one server tick: the laser is re-spawned on every tick");
+        assertEquals("Camera", spawn.getString("Frame").getValue());
+        assertTrue(spawn.getBoolean("Glow").getValue(), "the laser has its pulsing glow");
+        assertEquals(calibration.getNumber("pulseHz").doubleValue(), spawn.getNumber("PulseHz").doubleValue(), 1e-9);
+        for (int level = 0; level < ExpBeamSpawnInteraction.GLOW_LEVELS; level++) {
+            assertTrue(Files.exists(PARTICLES.getParent().resolve(ExpBeamSpawnInteraction.GLOW_PREFIX + level + ".particlesystem")), "glow level " + level);
+        }
         try (Stream<Path> files = Files.walk(RES)) {
             assertEquals(List.of(), files.filter(f -> f.getFileName().toString().contains("NatureBeam")).map(Path::toString).toList(),
                     "NatureBeam is referenced, never copied");
         }
+    }
+
+    @Test
+    void theBeamTickPaysAndCutsAtTheSameRatesAsTheFlameCutterTickInSmallerSteps() throws IOException {
+        BsonDocument beamTick = read(INTERACTIONS.resolve("Arrakis_Exp_Flame_Beam_Tick.json"));
+        BsonDocument flameTick = read(INTERACTIONS.resolve("Arrakis_Exp_Cutter_Tick.json"));
+        assertEquals(read(PACE).getNumber("RunTime").doubleValue(), beamTick.getNumber("RunTime").doubleValue(), 1e-9, "one tick per pass");
+        assertEquals(flameTick.getNumber("ManaPerSecond").doubleValue(), beamTick.getNumber("ManaPerSecond").doubleValue(), 1e-9);
+        assertEquals(flameTick.getNumber("DamageScale").doubleValue() / flameTick.getNumber("RunTime").doubleValue(),
+                beamTick.getNumber("DamageScale").doubleValue() / beamTick.getNumber("RunTime").doubleValue(), 1e-3, "the same cutting per second");
     }
 
     @Test

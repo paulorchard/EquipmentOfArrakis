@@ -98,7 +98,7 @@ class ExperimentsAssetsTest {
         for (String s : strings) {
             assertFalse(FORBIDDEN.matcher(s).find(), "nothing in the chain may burn, hurt, push or sound: found " + s);
         }
-        assertEquals(List.of("Arrakis_Exp_Cutter_Tick", "Arrakis_Exp_Flame_Burn"),
+        assertEquals(List.of("Arrakis_Exp_Cutter_Tick", "Arrakis_Exp_Flame_Spawn", "Arrakis_Exp_Flame_Burn"),
                 read(ROOT).getArray("Interactions").stream().map(v -> v.asString().getValue()).toList(),
                 "the tick comes first (it refuses the whole chain), the look after it");
     }
@@ -118,11 +118,14 @@ class ExperimentsAssetsTest {
     @Test
     void theBeamNumbersAgreeWithEachOther() throws IOException {
         double range = number(read(TICK), "Range");
-        BsonDocument burn = read(BURN);
-        BsonDocument particle = burn.getDocument("Effects").getArray("Particles").get(0).asDocument();
-        assertEquals("Arrakis_Exp_Flame_Focus", particle.getString("SystemId").getValue());
-        assertEquals(180, number(particle.getDocument("RotationOffset"), "Yaw"), 10, "turned like the vanilla flame, tilted a few degrees to aim at the crosshair");
-        double muzzle = number(particle.getDocument("PositionOffset"), "Z");
+        assertFalse(read(BURN).getDocument("Effects").containsKey("Particles"), "the ring is spawned in world space, not on the model");
+        BsonDocument spawn = read(RES.resolve("Server/Item/Interactions/Equipment_of_Arrakis/Experiments/Arrakis_Exp_Flame_Spawn.json"));
+        assertEquals("Arrakis_Exp_Beam_Spawn", spawn.getString("Type").getValue());
+        assertEquals("Arrakis_Exp_Flame_Focus", spawn.getString("System").getValue());
+        assertEquals("Body", spawn.getString("Frame").getValue(), "held in the hand: the body frame");
+        assertEquals(range, number(spawn, "Apex"), 1e-9, "the focus is the look target at Range");
+        assertTrue(number(spawn, "Right") > 0, "a right-hander holds it to the right");
+        assertTrue(number(spawn, "Duration") > number(read(BURN), "RunTime"), "continuous");
 
         BsonDocument system = read(SYSTEM);
         assertEquals("Arrakis_Exp_Flame_Focus_Beam", system.getArray("Spawners").get(0).asDocument().getString("SpawnerId").getValue());
@@ -131,7 +134,7 @@ class ExperimentsAssetsTest {
         double life = number(beam.getDocument("ParticleLifeSpan"), "Min");
         assertEquals(life, number(beam.getDocument("ParticleLifeSpan"), "Max"), 1e-9);
         double speed = number(beam.getDocument("InitialVelocity").getDocument("Speed"), "Min");
-        assertEquals(range, muzzle + speed * life, 0.05, "the particles reach the focus at Range");
+        assertEquals(number(spawn, "EndOffset"), speed * life, 0.05, "the focus is EndOffset in front of the system, so the origin put that far before the target puts the focus on it");
 
         // A ring: Shape Sphere with only X and Y, rim only (Min = Max).
         assertEquals("Sphere", beam.getString("Shape").getValue());

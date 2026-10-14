@@ -8,6 +8,9 @@
   "Apex": 5,
   "EndAtBlock": false,
   "EndOffset": 1.8,
-  "Duration": 0.14,
-  "Scale": 1
+  "Duration": 0.05,
+  "Scale": 1,
+  "Frame": "Camera",
+  "Glow": true,
+  "PulseHz": 2
 }
