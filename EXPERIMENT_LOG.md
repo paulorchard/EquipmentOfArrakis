@@ -360,3 +360,12 @@ Reading the vanilla assets explained it:
   and out, and the calibration preview (`beam worldnature`) also casts for 0.2 s. Cost: a head turn leaves the old casts at the old aim for up to 0.2 s (a short trail), and the
   intensity is that of two overlapping casts. **Not seen in game.** If it is too bright: lower `OPACITY` in `make_beam_glow.js`, or raise the pace in `make_flame_beam.js`
   (casts every 0.15 s overlap 1.3 times; below 0.1 s the streak may gap).
+
+#### Round 5: the Flame Cutter as a single dot (test)
+
+The start and vanishing point are right in game (user), so the Flame Cutter's ring of dots was replaced by ONE dot per cast that flies from the grip along the path to the
+vanishing point and shrinks from about 10 px to 1 px wide (1920x1080, relative sizes for the test). `make_flame_focus.js`: a one-particle burst, life 0.3 s, speed
+(5 - 1.2) / 0.3 = 12.7 blocks a second, size 0.031 -> 0.013 blocks. The sizes are computed from the pixel targets: size = px * 2 * distance * tan(VFOV/2) / 1080 * SPRITE_GAIN (the soft Glow sprite fills about
+half its square), distance 1.2 at the start and 5 at the end, **VFOV 70 degrees is a guess** (the client's field of view is not known to the server): if the dot looks too big or small, change VFOV
+or SPRITE_GAIN. The chain passes every 0.3 s (new `Arrakis_Exp_Flame_Tick`, same Mana and cutting per second; `Burn` 0.3 s; each cast emits 0.35 s) so a new dot is born as the last arrives.
+The ring version is in git (`da9b732`). Not seen in game.

@@ -98,7 +98,7 @@ class ExperimentsAssetsTest {
         for (String s : strings) {
             assertFalse(FORBIDDEN.matcher(s).find(), "nothing in the chain may burn, hurt, push or sound: found " + s);
         }
-        assertEquals(List.of("Arrakis_Exp_Cutter_Tick", "Arrakis_Exp_Flame_Spawn", "Arrakis_Exp_Flame_Burn"),
+        assertEquals(List.of("Arrakis_Exp_Flame_Tick", "Arrakis_Exp_Flame_Spawn", "Arrakis_Exp_Flame_Burn"),
                 read(ROOT).getArray("Interactions").stream().map(v -> v.asString().getValue()).toList(),
                 "the tick comes first (it refuses the whole chain), the look after it");
     }
@@ -112,7 +112,10 @@ class ExperimentsAssetsTest {
         assertEquals(3.3, number(tick, "ManaPerSecond"), 1e-9);
         assertTrue(number(tick, "DamageScale") > 0);
         assertEquals("Tool_Pickaxe_Mithril", tick.getString("ToolItemId").getValue());
-        assertEquals(0.1, number(read(BURN), "RunTime"), 1e-9, "the look lasts one tick");
+        BsonDocument flameTick = read(TICK.resolveSibling("Arrakis_Exp_Flame_Tick.json"));
+        assertEquals(number(flameTick, "RunTime"), number(read(BURN), "RunTime"), 1e-9, "the look lasts one pass");
+        assertEquals(number(tick, "ManaPerSecond"), number(flameTick, "ManaPerSecond"), 1e-9);
+        assertEquals(number(tick, "DamageScale") / number(tick, "RunTime"), number(flameTick, "DamageScale") / number(flameTick, "RunTime"), 1e-3, "the same cutting per second");
     }
 
     @Test
@@ -136,30 +139,17 @@ class ExperimentsAssetsTest {
         double speed = number(beam.getDocument("InitialVelocity").getDocument("Speed"), "Min");
         assertEquals(number(spawn, "EndOffset"), speed * life, 0.05, "the focus is EndOffset in front of the system, so the origin put that far before the target puts the focus on it");
 
-        // A ring: Shape Sphere with only X and Y, rim only (Min = Max).
-        assertEquals("Sphere", beam.getString("Shape").getValue());
-        BsonDocument offset = beam.getDocument("EmitOffset");
-        assertFalse(offset.containsKey("Z"), "two ranges make a ring");
-        double ring = number(offset.getDocument("X"), "Max");
-        assertEquals(ring, number(offset.getDocument("Y"), "Max"), 1e-9);
-        assertTrue(ring >= number(offset.getDocument("X"), "Min") && ring > 0.2, "a wide ring at the muzzle: " + ring);
-
-        // The constant pull towards the beam axis brings the ring down to a fine point exactly at the end of the life.
-        BsonDocument attractor = beam.getArray("Attractors").get(0).asDocument();
-        assertEquals(1, number(attractor.getDocument("RadialAxis"), "Z"), 1e-9, "the axis is the beam");
-        double inward = -number(attractor, "RadialImpulse");
-        assertTrue(inward > 0, "towards the axis");
-        double endRadius = ring - inward * life;
-        assertTrue(endRadius > 0 && endRadius <= 0.05, "the beam ends in a fine point, radius " + endRadius);
-
-        // The size shrinks from about 0.3 to about 0.03.
+        // One dot per cast, born at the origin and flown to the target as it shrinks (about 10 px to 1 px at 1920x1080).
+        assertTrue(beam.getBoolean("SpawnBurst").getValue());
+        assertEquals(1, number(beam.getDocument("TotalParticles"), "Max"), 1e-9, "a single dot");
+        assertFalse(beam.containsKey("Attractors") || beam.containsKey("EmitOffset"), "no ring, no pull: one dot on the path");
+        assertEquals(number(read(BURN), "RunTime"), life, 0.05, "a new dot is cast as the last one arrives");
         BsonDocument frame = beam.getDocument("Particle").getDocument("InitialAnimationFrame");
         double start = number(frame.getDocument("Scale").getDocument("X"), "Max");
         BsonDocument animation = beam.getDocument("Particle").getDocument("Animation");
         double end = start * number(animation.getDocument("100").getDocument("Scale").getDocument("X"), "Min");
-        assertTrue(start >= 0.25 && start <= 0.4, "starts large: " + start);
-        assertTrue(end <= 0.05, "ends fine: " + end);
-        assertTrue(end < start / 5, "it shrinks, it does not grow");
+        assertTrue(start > end * 1.5, "it shrinks along the path: " + start + " to " + end);
+        assertTrue(start < 0.1 && end < 0.05, "a small dot, not a lens: " + start + " to " + end);
     }
 
     @Test
@@ -175,10 +165,10 @@ class ExperimentsAssetsTest {
                 int r = Integer.parseInt(hex.substring(1, 3), 16);
                 int g = Integer.parseInt(hex.substring(3, 5), 16);
                 int b = Integer.parseInt(hex.substring(5, 7), 16);
-                assertTrue(r >= 200 && g >= 0.9 * r && b >= 0.55 * r, "pale hot yellow-white to white-yellow, no red or orange: " + hex);
+                assertTrue(r >= 200 && g >= 0.9 * r && b >= 0.55 * r, "white-yellow, no red or orange: " + hex);
             }
         }
-        assertTrue(colours >= 2, "the colour is keyframed over the life");
+        assertTrue(colours >= 1, "the dot has a colour");
     }
 
     @Test

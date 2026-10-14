@@ -172,6 +172,7 @@ public final class ExperimentsModule implements EquipmentModule {
         lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Spawn"), "interaction Arrakis_Exp_Flame_Beam_Spawn"));
         lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Pace"), "interaction Arrakis_Exp_Flame_Beam_Pace"));
         lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Beam_Tick"), "interaction Arrakis_Exp_Flame_Beam_Tick"));
+        lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Tick"), "interaction Arrakis_Exp_Flame_Tick"));
         lines.add(exists(Interaction.getAssetMap().getAsset("Arrakis_Exp_Flame_Spawn"), "interaction Arrakis_Exp_Flame_Spawn"));
         for (int level = 0; level < ExpBeamSpawnInteraction.GLOW_LEVELS; level++) {
             String id = ExpBeamSpawnInteraction.GLOW_PREFIX + level;

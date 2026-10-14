@@ -1,7 +1,7 @@
 {
   "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). The animation of the Flame Cutter: the vanilla Burn animation of Goblin_Flamethrower. The ring of dots is Arrakis_Exp_Flame_Spawn (world space), not particles on the model. Runs only when the tick before it did not refuse.",
   "Type": "Simple",
-  "RunTime": 0.1,
+  "RunTime": 0.3,
   "Effects": {
     "ItemPlayerAnimationsId": "Goblin_Flamethrower",
     "ItemAnimationId": "Burn",
