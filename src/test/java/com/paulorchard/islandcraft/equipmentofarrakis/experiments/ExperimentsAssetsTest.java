@@ -128,7 +128,7 @@ class ExperimentsAssetsTest {
         assertEquals("Body", spawn.getString("Frame").getValue(), "held in the hand: the body frame");
         assertEquals(range, number(spawn, "Apex"), 1e-9, "the focus is the look target at Range");
         assertTrue(number(spawn, "Right") > 0, "a right-hander holds it to the right");
-        assertTrue(number(spawn, "Duration") > number(read(BURN), "RunTime"), "continuous");
+        assertTrue(number(spawn, "Duration") >= number(read(BURN), "RunTime"), "continuous");
 
         BsonDocument system = read(SYSTEM);
         assertEquals("Arrakis_Exp_Flame_Focus_Beam", system.getArray("Spawners").get(0).asDocument().getString("SpawnerId").getValue());
@@ -140,8 +140,9 @@ class ExperimentsAssetsTest {
         assertEquals(number(spawn, "EndOffset"), speed * life, 0.05, "the focus is EndOffset in front of the system, so the origin put that far before the target puts the focus on it");
 
         // One dot per cast, born at the origin and flown to the target as it shrinks (about 10 px to 1 px at 1920x1080).
-        assertTrue(beam.getBoolean("SpawnBurst").getValue());
-        assertEquals(1, number(beam.getDocument("TotalParticles"), "Max"), 1e-9, "a single dot");
+        assertFalse(beam.getBoolean("SpawnBurst").getValue(), "a steady stream of dots");
+        assertTrue(number(beam.getDocument("SpawnRate"), "Min") * life >= 68, "enough dots at once for an almost solid line (the least is 68, see make_flame_focus.js)");
+        assertEquals(number(spawn, "Duration"), number(read(BURN), "RunTime"), 1e-9, "each cast emits for exactly one pass: no gap, no double");
         assertFalse(beam.containsKey("Attractors") || beam.containsKey("EmitOffset"), "no ring, no pull: one dot on the path");
         assertEquals(number(read(BURN), "RunTime"), life, 0.05, "a new dot is cast as the last one arrives");
         BsonDocument frame = beam.getDocument("Particle").getDocument("InitialAnimationFrame");

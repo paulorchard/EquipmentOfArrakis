@@ -18,7 +18,7 @@ const RUN_TIME = 0.1; // the pace of the Flame Beam Cutter: a new cast every 0.1
 const DURATION = 0.2; // seconds each cast emits: the vanilla cast time
 const TICK_ID = 'Arrakis_Exp_Flame_Beam_Tick'; // the Mana / cutting tick at that pace (same rates per second as Arrakis_Exp_Cutter_Tick)
 const FLAME_RUN_TIME = 0.3; // the Flame Cutter casts one dot per pass; the dot lives LIFETIME = 0.3 s (make_flame_focus.js), so there is always one on its way
-const FLAME_DURATION = 0.35; // a little over the life of the dot
+const FLAME_DURATION = 0.3; // each cast emits for one pass (DOTS dots at an even rate), so the line is continuous from cast to cast
 const FLAME_TICK_ID = 'Arrakis_Exp_Flame_Tick'; // the Mana / cutting tick at that pace
 const FLAME_END_OFFSET = 3.8; // RANGE - MUZZLE of make_flame_focus.js: the focus of the ring is that far in front of the system's origin
 const END_OFFSET = 1.8; // blocks in front of the NatureBeam's origin where its end burst sits (measure_nature_beam.js)

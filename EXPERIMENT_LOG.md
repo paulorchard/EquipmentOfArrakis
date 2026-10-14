@@ -371,3 +371,9 @@ or SPRITE_GAIN. The chain passes every 0.3 s (new `Arrakis_Exp_Flame_Tick`, same
 The ring version is in git (`da9b732`). Not seen in game.
 
 Follow-up: the user liked it and asked for 50 px down to 1 px (`START_PX = 50`: world size 0.156 -> 0.013 blocks).
+
+Follow-up 2: **a line of white dots** instead of one. The maths (`make_flame_focus.js`): the dots are released at a constant rate and fly at one speed, so they are evenly spaced in the world; on screen
+the path (about 0.35 blocks off the view axis at 1.2 blocks, ending on the axis at 5) is about 225 px long, and the spacing at fraction t is the rate of change of the screen position divided by the number
+of dots. A line is solid where that spacing is at most 0.8 of the dot's width; the binding place is the far end (a 1 px dot on a path that still moves), and the least number is **68 dots**; 100 is used
+(spacing 9.4 px against a 50 px dot at the grip, 0.54 px against 1 px at the far end). 100 dots per 0.3 s is a rate of 333 a second; each cast emits for exactly one pass (0.3 s) so the casts join up.
+Not seen in game; if it looks beaded near the grip or too bright where the dots overlap, change `DOTS` or `SOLIDITY`.
