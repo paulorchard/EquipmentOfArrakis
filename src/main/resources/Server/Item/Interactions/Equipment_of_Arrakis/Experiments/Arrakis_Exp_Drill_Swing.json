@@ -1,0 +1,28 @@
+{
+  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). The vanilla Drill_Mine chain without its sound effect (Drill_Spin_Source) and without the Stab selector that hurt creatures; with the beam as a branch of its own, so that it lasts the whole swing.",
+  "Type": "Simple",
+  "Effects": {
+    "ItemAnimationId": "Drill"
+  },
+  "RunTime": 0.1,
+  "Next": {
+    "Type": "Parallel",
+    "Interactions": [
+      {
+        "Interactions": [
+          "Arrakis_Exp_Drill_Beam"
+        ]
+      },
+      {
+        "Interactions": [
+          {
+            "Type": "Simple",
+            "$Comment": "Block break delay",
+            "RunTime": 0.05,
+            "Next": "Arrakis_Exp_Drill_Block_Break"
+          }
+        ]
+      }
+    ]
+  }
+}

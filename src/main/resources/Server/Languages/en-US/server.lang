@@ -31,4 +31,6 @@ items.Arrakis_Dev_Marker.name = Dev Marker
 # EXPERIMENT BEGIN
 items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter
 items.Arrakis_Exp_Flame_Cutter.description = EXPERIMENT. A flamethrower turned into a rock-cutting beam: no fire, no damage to creatures; hold Primary to cut. Costs Mana.
+items.Arrakis_Exp_Drill_Cutter.name = EXPERIMENT Drill Cutter
+items.Arrakis_Exp_Drill_Cutter.description = EXPERIMENT. The scrap drill with a laser: cuts rock up to 5 blocks away, one block at a time, like the best pickaxe. Never wears out, hurts no creature. Costs Mana.
 # EXPERIMENT END

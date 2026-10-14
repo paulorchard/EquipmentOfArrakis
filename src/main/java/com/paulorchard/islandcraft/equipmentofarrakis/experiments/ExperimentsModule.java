@@ -8,7 +8,10 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.common.CommonAssetRegistry;
 import com.hypixel.hytale.server.core.event.events.BootEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
+import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
+import com.hypixel.hytale.server.core.asset.type.item.config.ItemToolSpec;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSpawner;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
@@ -40,7 +43,9 @@ public final class ExperimentsModule implements EquipmentModule {
     public static final String FLAME_CUTTER = "Arrakis_Exp_Flame_Cutter";
     public static final String FLAME_PRIMARY = "Arrakis_Exp_Flame_Primary";
     public static final String FLAME_BURN = "Arrakis_Exp_Flame_Burn";
-    public static final String FLAME_FOCUS = "Arrakis_Exp_Flame_Focus";
+    public static final String DRILL_CUTTER = "Arrakis_Exp_Drill_Cutter";
+    public static final String DRILL_MINE = "Arrakis_Exp_Drill_Mine";
+    public static final String FLAME_FOCUS ="Arrakis_Exp_Flame_Focus";
     public static final String FLAME_TEXTURE = "Items/Equipment_of_Arrakis/Experiments/Arrakis_Exp_Flame_Cutter_Texture.png";
 
     private static HytaleLogger logger;
@@ -52,6 +57,8 @@ public final class ExperimentsModule implements EquipmentModule {
         logger = plugin.getLogger();
         plugin.getCodecRegistry(Interaction.CODEC).register(ExpCutterTickInteraction.TYPE, ExpCutterTickInteraction.class,
                 ExpCutterTickInteraction.CODEC);
+        plugin.getCodecRegistry(Interaction.CODEC).register(ExpManaGateInteraction.TYPE, ExpManaGateInteraction.class,
+                ExpManaGateInteraction.CODEC);
         plugin.getEventRegistry().register(BootEvent.class, event -> {
             if (!active) {
                 dropAssets();
@@ -110,7 +117,50 @@ public final class ExperimentsModule implements EquipmentModule {
         Item tool = Item.getAssetMap().getAsset("Tool_Pickaxe_Mithril");
         lines.add(tool == null || tool.getTool() == null ? "PROBLEM the stand-in tool Tool_Pickaxe_Mithril is missing"
                 : "stand-in tool Tool_Pickaxe_Mithril: " + tool.getTool().getSpecs().length + " gather specs");
+        drillChecks(lines);
         return lines;
+    }
+
+    /** Experiment 2, the Drill Cutter. */
+    private static void drillChecks(List<String> lines) {
+        Item drill = Item.getAssetMap().getAsset(DRILL_CUTTER);
+        if (drill == null) {
+            lines.add("PROBLEM the item " + DRILL_CUTTER + " is not loaded");
+        } else {
+            String[] categories = drill.getCategories();
+            lines.add((categories != null && Arrays.asList(categories).contains("IslandCraft.Tools") ? "" : "PROBLEM ") + "item "
+                    + DRILL_CUTTER + " loaded, categories " + Arrays.toString(categories) + ", animations " + drill.getPlayerAnimationsId());
+            Item pickaxe = Item.getAssetMap().getAsset("Tool_Pickaxe_Mithril");
+            ItemToolSpec[] mine = drill.getTool() == null ? new ItemToolSpec[0] : drill.getTool().getSpecs();
+            ItemToolSpec[] theirs = pickaxe == null || pickaxe.getTool() == null ? new ItemToolSpec[0] : pickaxe.getTool().getSpecs();
+            boolean same = mine.length == theirs.length && mine.length > 0;
+            for (int i = 0; same && i < mine.length; i++) {
+                same = mine[i].getGatherType().equals(theirs[i].getGatherType()) && mine[i].getPower() == theirs[i].getPower()
+                        && mine[i].getQuality() == theirs[i].getQuality();
+            }
+            lines.add((same ? "" : "PROBLEM ") + "tool specs: " + mine.length + ", same as the Mithril pickaxe's: " + same);
+            int[] cells = {0};
+            if (drill.getTool() != null && drill.getTool().getBreakShape() != null) {
+                drill.getTool().getBreakShape().forEachLocalOffset((x, y, z) -> cells[0]++);
+            }
+            lines.add((cells[0] == 1 ? "" : "PROBLEM ") + "break shape covers " + cells[0] + " block(s) (expect 1)");
+            float adventure = drill.getInteractionConfig().getUseDistance(GameMode.Adventure);
+            float creative = drill.getInteractionConfig().getUseDistance(GameMode.Creative);
+            lines.add((adventure == 5f && creative == 5f ? "" : "PROBLEM ") + "use distance: Adventure " + adventure + ", Creative " + creative);
+            ItemStack stack = new ItemStack(DRILL_CUTTER, 1);
+            boolean noLoss = drill.getTool() == null || drill.getTool().getDurabilityLossBlockTypes() == null
+                    || drill.getTool().getDurabilityLossBlockTypes().length == 0;
+            lines.add((stack.isUnbreakable() && drill.getMaxDurability() <= 0 && noLoss ? "" : "PROBLEM ") + "never wears: max durability "
+                    + drill.getMaxDurability() + ", a stack is unbreakable: " + stack.isUnbreakable() + ", durability loss rules: " + !noLoss);
+            lines.add(common(drill.getTexture()) + " (vanilla texture, by path)");
+        }
+        lines.add(exists(RootInteraction.getAssetMap().getAsset(DRILL_MINE), "root interaction " + DRILL_MINE));
+        for (String id : new String[] {"Arrakis_Exp_Drill_Gate", "Arrakis_Exp_Drill_Swing", "Arrakis_Exp_Drill_Block_Break", "Arrakis_Exp_Drill_Beam"}) {
+            lines.add(exists(Interaction.getAssetMap().getAsset(id), "interaction " + id));
+        }
+        lines.add(ParticleSystem.getAssetMap().getAsset("NatureBeam") == null
+                ? "PROBLEM the vanilla particle system NatureBeam is gone (it lives in a _Test folder and an update may remove it)"
+                : "vanilla particle system NatureBeam present");
     }
 
     /** Removes every Arrakis_Exp_ asset the pack loaded: the module is switched off. */

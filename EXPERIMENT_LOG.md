@@ -85,7 +85,7 @@ not seen working; **needs a client** = only a player on a client can show it.
 
 Throw-away look-and-feel experiments, all in the module `experiments`. They are replaced by the real modules when a design is chosen,
 so everything of them is findable by one search (`Arrakis_Exp_` for assets and ids, `Exp` for classes, the word `Experiments` for the
-package and every asset folder) and leaves no trace when removed. Experiment 1 is the Flame Cutter; prompt 03 adds a second one.
+package and every asset folder) and leaves no trace when removed. Experiment 1 is the Flame Cutter, experiment 2 the Drill Cutter.
 
 Rules (enforced by `ExperimentsIsolationTest`, which scans the project): everything lives under an `experiments` / `Experiments` path
 (Java package, `Server/.../Equipment_of_Arrakis/Experiments/`, `Common/.../Experiments/`, `tools/assets/experiments/`, the test package);
@@ -122,7 +122,7 @@ the `Experiments` section) if the game has already written one with them. Check:
 (ignoring build, .git, .gradle).
 
 **Rehearsal (run for real, on a copy of the project in a temp folder, discarded afterwards):** the script above was applied; `grep` found
-no trace; `gradlew build` passed with 20 tests (the 14 experiment tests gone with the module, the other 20 unchanged); a headless boot
+no trace; `gradlew build` passed with 20 tests (the 18 experiment tests gone with the module, the other 20 unchanged); a headless boot
 loaded `core, power, catalog` (`modules loaded: 3 of 3`, `self-check: no problems`), logged nothing mentioning an experiment, no
 exception, and wrote a config with no Experiments section.
 
@@ -130,8 +130,8 @@ exception, and wrote a config with no Experiments section.
 `/arrakis modules` shows `experiments: disabled`. The asset pack loads every asset whatever the config says, and one asset whose
 interaction type nobody registered stops the whole boot (`Asset validation FAILED ... Mod ... failed to load`, seen in the first try).
 So the module's constructor (which runs even when the module is off) registers the `Arrakis_Exp_Cutter_Tick` type and a `BootEvent`
-listener; when `setup` did not run, the listener removes every `Arrakis_Exp_` asset (here: 1 item, 1 root interaction, 2 interactions,
-1 particle system, 2 spawners = 7) before any player can join. Left in the pack and in the client download: the 17 KB texture copy
+listener; when `setup` did not run, the listener removes every `Arrakis_Exp_` asset (Flame Cutter: 1 item, 1 root interaction, 2 interactions,
+1 particle system, 2 spawners = 7; Drill Cutter: 1 item, 1 root interaction, 4 interactions = 6; 13 in all) before any player can join. Left in the pack and in the client download: the 17 KB texture copy
 (a common asset cannot be removed at runtime). **confirmed** headless.
 
 ### Experiment 1: the Flame Cutter
@@ -226,7 +226,7 @@ tried).
 **Confirmed vs inferred.** Confirmed in a headless boot: everything loads without a single warning from the experiment (item, root,
 both interactions, system, both spawners, texture, `$Comment` in every asset type), `Module experiments: setup ok`, `/arrakis modules`
 lists it, the self-check has no PROBLEM line (the item has no light or sound; the stand-in pickaxe has 16 gather specs), disabling it works
-as described, the removal rehearsal, and the unit tests (34 in all: the 20 from before, `ExperimentsAssetsTest` 7, `ExperimentsIsolationTest` 7).
+as described, the removal rehearsal, and the unit tests (38 in all: the 20 from before, `ExperimentsAssetsTest` 7, `ExperimentsIsolationTest` 7, `ExperimentsDrillAssetsTest` 4).
 `ExperimentsIsolationTest` was also tried on the real project with a `power` file importing the experiments package: it and
 `ModuleBoundaryTest` both failed naming the file and line; reverted. Inferred, not seen: everything the beam does on a screen, the tick
 in play (cutting, Mana per second, Creative), whether the repeated 0.1 s `Burn` flickers.
@@ -238,3 +238,88 @@ shrinks to a fine white-yellow point about 5 blocks out, not growing or reddenin
 cracks and breaks like under a pickaxe, a block at 6 does not; no fire anywhere; a creature hit by the beam takes nothing and is not
 pushed; Mana drops about 3.3 per second while cutting; at 0 Mana nothing shows and nothing breaks; in Creative blocks break at once and
 no Mana is spent; size, colour, ring radius, muzzle position are the settings of `make_flame_focus.js`.
+
+### Experiment 2: the Drill Cutter
+
+What was built: `Arrakis_Exp_Drill_Cutter` ("EXPERIMENT Drill Cutter", IslandCraft tab, Tools): a clone of `Tool_Drill_Scrap` with the same model,
+texture, `Drill` animations, icon, tags, drop animation and icon placement (all by vanilla path; nothing copied), and no recipe, no
+sound set. Primary and Secondary are both the root `Arrakis_Exp_Drill_Mine` (cooldown 0.3 s, like the vanilla drill) =
+[`Arrakis_Exp_Drill_Gate`, `Arrakis_Exp_Drill_Swing`]. `Arrakis_Exp_Drill_Swing` is the vanilla `Drill_Mine` chain (Drill animation, a
+Parallel with the 0.05 s break delay into `Arrakis_Exp_Drill_Block_Break`, a copy of `Drill_Block_Break`: UseBlock, else BreakBlock with tool
+`Pickaxe` on the target the client sends, then the vanilla `Drill_Mine` / `Drill_Spin` particles at the `DrillHead` node and the
+`Pickaxe_Mine_Impact` / `Drill_Mine` camera effects) without its sound effect (`Drill_Spin_Source`, only sounds) and without the `Stab`
+selector and `Drill_Mine_Damage` (nothing hurts a creature), and with the beam as a branch of its own (`Arrakis_Exp_Drill_Beam`).
+The only Java is `ExpManaGateInteraction` (type `Arrakis_Exp_Mana_Gate`): there is no tick of ours here to pay in. `tools/assets/experiments/make_drill_cutter.js`
+writes the item and the beam; `measure_nature_beam.js` measures the beam. `ExperimentsDrillAssetsTest` (4 tests) checks the data.
+
+**Strongest pickaxe, re-run on 0.7.0** (the same `compare_pickaxes.js` as experiment 1): `Tool_Pickaxe_Mithril` still dominates all ten pickaxes
+in every gather type (Rocks 1.0 quality 6, Metals 0.5, Soils 1.0, ores 0.25 to 1.0). Its 16 `Specs` are copied into the item as data by the generator
+and compared at boot against the live Mithril item (**confirmed**: `tool specs: 16, same as the Mithril pickaxe's: true`). The vanilla drill's own
+Specs are weak (Rocks 0.25 quality 1), so without this replacement it would not cut stone of higher quality at all.
+
+**Single block, no wear.** `BreakShape` Box 1x1x1, centred, no offset (vanilla: 2x2, offset Y -1): `forEachLocalOffset` visits exactly 1 cell
+(**confirmed** at boot). No `MaxDurability` and no `DurabilityLossBlockTypes`: a stack of the item is unbreakable and the item's max durability is 0
+(**confirmed** at boot, `ItemStack.isUnbreakable()` true). That the held item stays at full condition after real mining is **inferred** (needs a client).
+
+**Range: does BreakBlock honour a 5 block UseDistance?** Yes, by data, nothing else needed; read from the bytecode: `InteractionConfiguration` has
+`UseDistance` per game mode (keys `Adventure` and `Creative` only; defaults 5.0 and 6.0, the drill's 1.75 overrides Adventure only). It is sent to the
+client in the item packet (the client picks the target block, which is why the interaction is in the `client` package and reads the block from the client's sync data
+with `UseLatestTarget`), and the server checks it again in `SimpleBlockInteraction` through `InteractionValidation.canEntityInteractWithBlock`
+("failed block interaction distance check" in the log), which uses the held item's `getUseDistance(gameMode)` plus a small buffer; in Creative it also
+allows the player's own creative interaction distance. So both keys are set to 5 (**confirmed** at boot: `use distance: Adventure 5.0, Creative 5.0`),
+no selector length and no other distance appear in the chain. `BreakBlockInteraction` itself has no distance logic. That a 5 block block is really
+targeted and broken is **inferred** (needs a client).
+
+**Mana gate placement, and what the chain does on a refusal.** `Arrakis_Exp_Drill_Gate` is the FIRST interaction of the root, in front of the swing. The
+engine runs the interactions of a root one after the other and ends the chain when one ends as Failed (`Interaction.tick` throws `ChainCancelledException`,
+as v1 verified), so on a refusal the swing, the animation, the beam and the mining never start. Why it cannot sit inside the `Parallel`: the bytecode
+of `ParallelInteraction` shows each branch is started with `InteractionContext.fork` / `execute` as a chain of its own, so a Failed branch does not
+cancel its siblings (the spin, the beam and the mining would go on). A gate in front is the only place that stops all of them. The gate
+pays `ManaPerSecond * Seconds` = 3.3 x 0.3 = 0.99 per run of the chain (Creative pays nothing); with the 0.3 s cooldown that is 3.3 Mana per second while held.
+Unlike the tick of experiment 1 it cannot see whether a block was in reach or was mined, so every swing costs, also in the air. **Not run** (no player headlessly):
+the refusal at 0 Mana is **inferred** from the bytecode and from v1's behaviour, needs a client.
+
+**The laser: how far the NatureBeam really reaches, and how it was aligned.** `NatureBeam` (`Server/Particles/_Test/NatureRnD`) is referenced by id, never
+copied; it sits in a test folder, so **a game update may remove it** (the boot self-check prints a PROBLEM line when it is gone, and the item then
+simply has no beam). The entries are Stoneskin's, in `Arrakis_Exp_Drill_Beam.json`. `measure_nature_beam.js` reads its eight spawners and works out where
+their particles can be along the beam (the Pitch 180 turns the local Z around, so a particle at local z is `Z - z` forward of the attachment point, and the
+default particle direction runs forward): with the vanilla Z 3.2 the **Start** burst is at 1.2 blocks, the **Core** (the green leaf stream, 200 per second)
+spawns from 1.2 to 3.2 and drifts up to 1.6 further, the **End** burst spawns from 4.2 to 5.2 and drifts up to 1 block (centre of mass 4.97), the **Beam** quad
+is a single 0.2 s particle in the middle, and the **Sparks** (damped, falling) can fly out to about 8 at the far edge. So the beam is about 1.2 to 5.2
+blocks long, with the sprays at both ends; vanilla's Z 3.2 (Z 3.0 in the first-person entry, which would end at 4.8) already puts the end burst at the 5 block
+mark where the cut happens, so the entries keep Z 3.2 for both (a single `BEAM_Z` in the generator moves both; no `Scale` is used). The sideways offsets are
+Stoneskin's (-0.5 third person; -0.2, Y 1.5 first person), which centre the beam on the player's line of sight; the first-person beam therefore runs along the
+crosshair from just in front of the face, not out of the drill head. If it should leave the drill instead, tilt it as the Flame Cutter's focus was
+(`RotationOffset` Yaw and Pitch around the 180) or attach it to the `DrillHead` node: **needs a client**. All of this is inferred from the data; the look is **not seen**.
+Colour: the vanilla green (`#346830` and darker in the spawners) is left alone; `BEAM_COLOR` in the generator writes `Color` on both entries. Neither an amber
+nor a white-blue tint was tried on a screen (needs a client), so there is no verdict on them; the entry's `Color` loads without a warning, but whether it
+multiplies the green (which would make amber brown and white-blue grey) or replaces it is not known: try `#ffb347` and `#9fd8ff` and tell me.
+The beam is its own interaction, `RunTime` 0.3 (the cooldown), in a Parallel branch after the gate, so it shows for exactly the runs the gate let through
+and is continuous while the button is held; with no Mana nothing shows (**inferred**).
+
+**Sounds and creatures.** None of the item's own: the chain has no sound key (`ExperimentsDrillAssetsTest` rejects any key or value mentioning Sound, Damage,
+Selector, ApplyEffect, Knockback, Fire, PlaceFluid, Projectile), the item has no `ItemSoundSetId`. The block's own break sound is the engine's and `BreakBlock` has no
+setting to switch it off, so breaking a block may still be heard: **needs a client**. No selector, no damage: a creature in the way is not hurt.
+
+#### The two routes compared (a deliverable)
+
+| | Flame Cutter (experiment 1): custom `performBlockDamage` | Drill Cutter (experiment 2): native `BreakBlock` |
+|---|---|---|
+| Who picks the block | the server, a ray from the player's look each tick (`TargetUtil.getTargetBlock`, Range as data) | the client picks it, the server validates it against the item's `UseDistance` |
+| Rate | a tick every 0.1 s, damage `0.24` per tick = 2.4 scale per second = one Mithril swing per 0.4167 s (v1's measurement) | one `BreakBlock` per run of the chain, a run every 0.3 s (the cooldown); each call is a full swing of the item's Specs |
+| Mana | 0.33 per tick = 3.3 per second, paid only when a block is in range; one pickaxe swing costs about 1.4 Mana | 0.99 per run = 3.3 per second, paid for every run, also in the air; about 1 Mana per swing |
+| Mining speed per Mana | on paper the same order: both ask 3.3 per second, speeds are pickaxe-like vs up to 3.3 swings/s (**not measured**; needs a client) | |
+| Refusal at 0 Mana | first in the chain: Failed cancels the animation and beam after it | same, a gate in front of everything (a gate inside the Parallel would not stop the siblings) |
+| What it needs from the engine | custom Java: the section lookup, the stand-in stack, `performBlockDamage` / `performBlockBreak` signatures that changed in 0.7.0 (v1 needed a migration) | data only, apart from the Mana gate; the signatures are the engine's own |
+| Tool rules | emulated: tool id `Pickaxe`, a stand-in stack, a damage scale | real: the item's own `Tool.Specs`, `BreakShape`, `BreakShapeDurabilityMode`; a different shape or a mining tier is a data edit |
+| Protection and events | goes through the engine's `performBlockDamage` / `performBlockBreak`; the interaction's own checks (distance, world rules) are not done | the interaction validates distance, and checks the world's rules (`isBlockBreakingAllowed`, `isBlockGatheringAllowed`) and pickup before breaking |
+| Feels like cutting with a beam? | a continuous 0.1 s drain, the crack grows smoothly; the beam has no idea what is cut (the particles are placed by data) | discrete 0.3 s swings like a drill, the crack in jumps; the beam is decoration next to the spinning drill head |
+| Not mineable blocks | cost Mana, nothing happens | cost Mana, the swing and the drill particles play |
+
+**Recommendation (provisional: neither route has been run on a client).** Build the final Cutter Ray on the **native route**: the engine does the mining, so the
+tool rules, the break events, the world's protection rules and the client's own block targeting come for free, and a later change of tier or shape is
+data. The Java it needs is one small, stable gate, and the signatures that broke between 0.6.8 and 0.7.0 (v1's costly migration) are not in the mod at all.
+Keep the custom route for one case: if a client test shows that 0.3 s swings do not read as a beam, a continuous tick like experiment 1's is the way to get
+a smooth crack and Mana paid only when something is cut, and it can be added on top of the native item (the same Specs) without throwing the native work away.
+What decides it is the feel on a client, so: hold both items against the same rock and compare how quickly it breaks, how the crack grows, and whether the
+swing rhythm of the drill fits a laser.

@@ -1,0 +1,6 @@
+{
+  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). The Mana gate of the Drill Cutter: one swing costs ManaPerSecond * Seconds (Seconds is the cooldown of the swing); refused silently when the player cannot pay, which cancels the chain. Creative pays nothing.",
+  "Type": "Arrakis_Exp_Mana_Gate",
+  "ManaPerSecond": 3.3,
+  "Seconds": 0.3
+}
