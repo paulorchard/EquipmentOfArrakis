@@ -222,8 +222,8 @@ removed from `Modules` (each removes its own assets at BootEvent, see `ModuleAss
 
 ### Experiment cleanup, summary
 
-Removed from the throw-away trial module when the picker was promoted: the four stand-in tools (`Arrakis_Tool_Axe`, `_Pickaxe`, `_Hoe`, `_Shovel`: items and translations), the interaction
-`Arrakis_Exp_Tool_Picker_Open` and root `Arrakis_Exp_Tool_Picker_Secondary`, `ExpToolCommands`, `ExpToolPicker` and `ExpToolSwap` (moved and renamed into `picker`), the three `.ui`
+Removed from the throw-away trial module when the picker was promoted: the four stand-in tools (`Arrakis_Tool_Axe`, `_Pickaxe`, `_Hoe`, `_Shovel`: items and translations), the trial
+interaction and root interaction of the picker, its command class, and its page and swap classes (moved and renamed into `picker`), the three `.ui`
 files (moved and renamed), the edits made to the trial module and to its isolation test (the `Arrakis_Tool_` allow-list and reserved prefix are gone; the prefix now belongs to the real tools),
 and `/arrakis exp tools`. The earlier trials 1 to 3 are unchanged. **Removal rehearsal (run for real on a copy after everything above was built):** the removal script of the trial module (see its section, below)
 leaves no trace of the trial names in the sources and `gradlew build` passes.
