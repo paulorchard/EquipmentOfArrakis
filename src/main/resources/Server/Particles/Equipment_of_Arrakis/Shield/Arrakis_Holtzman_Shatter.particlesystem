@@ -1,0 +1,20 @@
+{
+  "$Comment": "The burst when the Holtzman shield breaks: amber and white shards, a flash and a ring. Spawned by the code at the player.",
+  "Spawners": [
+    {
+      "SpawnerId": "Arrakis_Holtzman_Shatter_Amber"
+    },
+    {
+      "SpawnerId": "Arrakis_Holtzman_Shatter_White"
+    },
+    {
+      "SpawnerId": "Arrakis_Holtzman_Shatter_Flash"
+    },
+    {
+      "SpawnerId": "Arrakis_Holtzman_Shatter_Ring"
+    }
+  ],
+  "BoundingRadius": 8,
+  "CullDistance": 64,
+  "IsImportant": false
+}

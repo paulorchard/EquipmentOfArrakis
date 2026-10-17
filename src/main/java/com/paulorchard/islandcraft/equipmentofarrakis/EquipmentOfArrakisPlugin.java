@@ -19,6 +19,7 @@ import com.paulorchard.islandcraft.equipmentofarrakis.light.LightModule;
 import com.paulorchard.islandcraft.equipmentofarrakis.litrejon.LitrejonModule;
 import com.paulorchard.islandcraft.equipmentofarrakis.placeholders.PlaceholdersModule;
 import com.paulorchard.islandcraft.equipmentofarrakis.power.Power;
+import com.paulorchard.islandcraft.equipmentofarrakis.shield.ShieldModule;
 import com.paulorchard.islandcraft.equipmentofarrakis.power.PowerModule;
 
 import java.nio.file.Files;
@@ -73,7 +74,8 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
                 new BloodBagModule(this),
                 new ExtractorModule(this),
                 new PlaceholdersModule(this),
-                new LightModule());
+                new LightModule(),
+                new ShieldModule(this));
         all = java.util.stream.Stream.concat(all.stream(), java.util.stream.Stream.of(new com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsModule(this))).toList(); // EXPERIMENT: remove with the experiments module
         modules.setupAll(all, settings.enabledModules(), context);
         getCommandRegistry().registerCommand(root.command());

@@ -6,6 +6,7 @@ import com.hypixel.hytale.assetstore.map.JsonAssetWithMap;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
+import com.hypixel.hytale.server.core.asset.type.modelvfx.config.ModelVFX;
 import com.hypixel.hytale.server.core.asset.type.itemanimation.config.ItemPlayerAnimations;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSpawner;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
@@ -62,6 +63,7 @@ public final class ModuleAssets {
                     + drop(ParticleSystem.getAssetStore(), ParticleSystem.getAssetMap().getAssetMap())
                     + drop(ParticleSpawner.getAssetStore(), ParticleSpawner.getAssetMap().getAssetMap())
                     + drop(ItemPlayerAnimations.getAssetStore(), ItemPlayerAnimations.getAssetMap().getAssetMap())
+                    + drop(ModelVFX.getAssetStore(), ModelVFX.getAssetMap().getAssetMap())
                     + drop(EntityEffect.getAssetStore(), EntityEffect.getAssetMap().getAssetMap())
                     + drop(SoundEvent.getAssetStore(), SoundEvent.getAssetMap().getAssetMap());
             logger.at(Level.INFO).log("Module %s is off in the config: removed %s of its assets", module, dropped);

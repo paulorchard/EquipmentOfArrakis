@@ -1,0 +1,14 @@
+{
+  "$Comment": "A small amber flash and ripple where a projectile hit the field. Spawned by the code, no sound.",
+  "Spawners": [
+    {
+      "SpawnerId": "Arrakis_Holtzman_Hit_Flash"
+    },
+    {
+      "SpawnerId": "Arrakis_Holtzman_Hit_Ripple"
+    }
+  ],
+  "BoundingRadius": 2,
+  "CullDistance": 64,
+  "IsImportant": false
+}

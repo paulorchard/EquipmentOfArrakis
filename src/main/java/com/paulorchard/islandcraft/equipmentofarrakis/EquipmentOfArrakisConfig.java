@@ -9,6 +9,7 @@ import com.paulorchard.islandcraft.equipmentofarrakis.core.CoreConfig;
 import com.paulorchard.islandcraft.equipmentofarrakis.light.LightConfig;
 import com.paulorchard.islandcraft.equipmentofarrakis.litrejon.LitrejonConfig;
 import com.paulorchard.islandcraft.equipmentofarrakis.power.PowerConfig;
+import com.paulorchard.islandcraft.equipmentofarrakis.shield.ShieldConfig;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
  *
  * <pre>
  * {
- *   "Modules": ["core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor", "placeholders", "light"],
+ *   "Modules": ["core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor", "placeholders", "light", "shield"],
  *   "Core": { "LogSelfCheckAtBoot": true },
  *   "Power": { "LogStatDefinition": true },
  *   "Catalog": { }
@@ -32,13 +33,14 @@ public class EquipmentOfArrakisConfig {
 
     public static final String FILE_NAME = "Equipment_of_Arrakis";
 
-    private String[] modules = {"core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor", "placeholders", "light"};
+    private String[] modules = {"core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor", "placeholders", "light", "shield"};
     private CoreConfig core = new CoreConfig();
     private PowerConfig power = new PowerConfig();
     private CatalogConfig catalog = new CatalogConfig();
     private LitrejonConfig litrejon = new LitrejonConfig();
     private BloodBagConfig bloodbag = new BloodBagConfig();
     private LightConfig light = new LightConfig();
+    private ShieldConfig shield = new ShieldConfig();
     { modules = java.util.stream.Stream.concat(java.util.Arrays.stream(modules), java.util.stream.Stream.of("experiments")).toArray(String[]::new); } // EXPERIMENT: remove with the experiments module
     private com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig experiments = new com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig(); // EXPERIMENT: remove with the experiments module
 
@@ -71,6 +73,10 @@ public class EquipmentOfArrakisConfig {
         return light;
     }
 
+    public ShieldConfig shield() {
+        return shield;
+    }
+
     public com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig experiments() { // EXPERIMENT: remove with the experiments module
         return experiments; // EXPERIMENT: remove with the experiments module
     } // EXPERIMENT: remove with the experiments module
@@ -84,6 +90,7 @@ public class EquipmentOfArrakisConfig {
             case "litrejon" -> litrejon;
             case "bloodbag" -> bloodbag;
             case "light" -> light;
+            case "shield" -> shield;
             case "experiments" -> experiments; // EXPERIMENT: remove with the experiments module
             default -> null;
         };
@@ -112,6 +119,9 @@ public class EquipmentOfArrakisConfig {
             .add()
             .append(new KeyedCodec<>("Light", LightConfig.CODEC, false), (c, v) -> c.light = v, c -> c.light)
             .documentation("Settings of the light module (Personal Light).")
+            .add()
+            .append(new KeyedCodec<>("Shield", ShieldConfig.CODEC, false), (c, v) -> c.shield = v, c -> c.shield)
+            .documentation("Settings of the shield module (Holtzman Shield).")
             .add()
             .append(new KeyedCodec<>("Experiments", com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig.CODEC, false), (c, v) -> c.experiments = v, c -> c.experiments) // EXPERIMENT: remove with the experiments module
             .documentation("Settings of the experiments module (throw-away experiments).") // EXPERIMENT: remove with the experiments module

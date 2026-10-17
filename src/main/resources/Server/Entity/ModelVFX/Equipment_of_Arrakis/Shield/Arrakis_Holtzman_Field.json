@@ -1,0 +1,21 @@
+{
+  "$Comment": "The Holtzman field on the body (tools/assets/make_holtzman.js, modelled on Bow_Signature_Status): an amber outline with bloom and a faint amber wash that sweeps up and down the model and back, smoothly.",
+  "SwitchTo": "PostColor",
+  "EffectDirection": "FromCenter",
+  "AnimationDuration": 2.5,
+  "CurveType": "QuartInOut",
+  "LoopOption": "LoopMirror",
+  "HighlightColor": "#ffb02e",
+  "HighlightThickness": 3,
+  "UseBloomOnHighlight": true,
+  "NoiseScale": {
+    "X": 1,
+    "Y": 5
+  },
+  "PostColor": "#ffb02e",
+  "PostColorOpacity": 0.22,
+  "UseProgessiveHighlight": false,
+  "AnimationRange": {
+    "Y": 0.6
+  }
+}

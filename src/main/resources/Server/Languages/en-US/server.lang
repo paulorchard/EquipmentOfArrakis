@@ -94,6 +94,15 @@ commands.arrakis.light.off.desc = Switch your Personal Light off
 commands.arrakis.light.state.desc = Show whether your Personal Light is on and its numbers
 customUI.arrakisPicker.light = Personal Light
 
+# ---- shield
+commands.arrakis.shield.desc = Holtzman Shield: hit, state, shot, cooldown, diag
+commands.arrakis.shield.hit.desc = Hits you with projectile damage through the real damage pipeline: arrakis shield hit <damage>
+commands.arrakis.shield.state.desc = Shows the toggle, the field, Mana, whether the shield is broken and the cooldown
+commands.arrakis.shield.shot.desc = Counts as a shot of yours: the field drops and the cooldown starts
+commands.arrakis.shield.cooldown.desc = Shows or sets the cooldown in seconds (not saved): arrakis shield cooldown [seconds]
+commands.arrakis.shield.diag.desc = Logs every projectile creation with its creator: arrakis shield diag [on|off]
+customUI.arrakisPicker.shield = Holtzman Shield
+
 # EXPERIMENT BEGIN
 items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter
 items.Arrakis_Exp_Flame_Cutter.description = EXPERIMENT. A flamethrower turned into a rock-cutting beam: no fire, no damage to creatures; hold Primary to cut. Costs Mana.

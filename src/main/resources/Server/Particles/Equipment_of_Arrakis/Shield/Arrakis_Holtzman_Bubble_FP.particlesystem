@@ -1,0 +1,14 @@
+{
+  "$Comment": "The Holtzman bubble the owner sees from the inside: the glow at a fraction of the opacity and a few motes, so the view stays readable.",
+  "Spawners": [
+    {
+      "SpawnerId": "Arrakis_Holtzman_Bubble_Glow_FP"
+    },
+    {
+      "SpawnerId": "Arrakis_Holtzman_Bubble_Motes_FP"
+    }
+  ],
+  "BoundingRadius": 3,
+  "CullDistance": 64,
+  "IsImportant": false
+}
