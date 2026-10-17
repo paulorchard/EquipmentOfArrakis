@@ -1,0 +1,5 @@
+{
+  "$Comment": "Last in the Blood Extractor Primary chain: only reached when the poke ran to its end. Lets the crouch go and adds the blood to the first Blood Bag with room.",
+  "Type": "Arrakis_Extractor_Finish",
+  "BagItemId": "Arrakis_Blood_Bag"
+}

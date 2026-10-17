@@ -1,0 +1,33 @@
+{
+  "$Comment": "Blood Extractor. Placeholder: the vanilla Handgun by path (model, texture, icon, animation set Handgun) with no shot: no bullet, no muzzle particles, no shot sound. Left click on a fresh mob corpse: crouch, a short poke, blood into a Blood Bag. Right click opens the picker. No recipe, no durability.",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Tool_Blood_Extractor.name",
+    "Description": "server.items.Arrakis_Tool_Blood_Extractor.description"
+  },
+  "Categories": [
+    "IslandCraft.Tools"
+  ],
+  "Model": "Items/Hypixel/Minigames/GunPvP/Weapons/Handguns/Handgun.blockymodel",
+  "Texture": "Items/Hypixel/Minigames/GunPvP/Weapons/Handguns/Handgun_Texture.png",
+  "Icon": "Icons/ItemsGenerated/Weapon_Handgun.png",
+  "PlayerAnimationsId": "Handgun",
+  "Interactions": {
+    "Primary": "Arrakis_Extractor_Primary",
+    "Secondary": "Arrakis_Picker_Secondary"
+  },
+  "IconProperties": {
+    "Scale": 0.67,
+    "Translation": [
+      0.69,
+      -10.11
+    ],
+    "Rotation": [
+      315,
+      90,
+      0
+    ]
+  },
+  "Quality": "Technical",
+  "MaxDurability": 0,
+  "MaxStack": 1
+}

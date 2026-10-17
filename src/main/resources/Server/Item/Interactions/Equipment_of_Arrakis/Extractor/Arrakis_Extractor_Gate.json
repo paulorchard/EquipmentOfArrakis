@@ -1,0 +1,13 @@
+{
+  "$Comment": "First in the Blood Extractor Primary chain. Refuses (chain failed: no animation, nothing spent, a short message) when there is no corpse within Range and aim, the corpse was already used, no Blood Bag is carried or every bag is full (RequireCrouched is the fallback when the crouch cannot be forced). Otherwise claims the corpse, forces the crouch (ForceCrouch) and remembers the poke for Arrakis_Extractor_Finish. PokeSeconds must equal the RunTime of Arrakis_Extractor_Poke.",
+  "Type": "Arrakis_Extractor_Gate",
+  "Range": 2.5,
+  "AimRadius": 0.9,
+  "AimHeight": 0.5,
+  "PokeSeconds": 1.0,
+  "BloodPerBody": 10,
+  "ForceCrouch": true,
+  "RequireCrouched": false,
+  "RequireNpc": true,
+  "BagItemId": "Arrakis_Blood_Bag"
+}

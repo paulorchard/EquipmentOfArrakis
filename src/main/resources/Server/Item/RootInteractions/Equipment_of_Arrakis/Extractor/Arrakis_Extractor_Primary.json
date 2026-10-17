@@ -1,0 +1,8 @@
+{
+  "$Comment": "Primary (left click) of the Blood Extractor: the gate, the poke, the finish.",
+  "Interactions": [
+    "Arrakis_Extractor_Gate",
+    "Arrakis_Extractor_Poke",
+    "Arrakis_Extractor_Finish"
+  ]
+}

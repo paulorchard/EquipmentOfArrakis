@@ -1,0 +1,9 @@
+{
+  "$Comment": "The poke, PokeSeconds long: the vanilla GuardBash item animation of the Handgun set (the pistol jab). Animation only; no damage, no sound.",
+  "Type": "Simple",
+  "RunTime": 1.0,
+  "Effects": {
+    "ItemAnimationId": "GuardBash",
+    "ClearAnimationOnFinish": true
+  }
+}

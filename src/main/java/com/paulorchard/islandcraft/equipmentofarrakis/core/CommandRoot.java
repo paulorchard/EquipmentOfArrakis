@@ -22,18 +22,20 @@ public final class CommandRoot {
 
     /**
      * A command group shared by several modules (for example blood: the bag adds, the extractor spawns a corpse): the first module to
-     * ask creates it under /arrakis, the others add their sub-commands to it. Setup runs on one thread.
+     * ask creates it, the others add their sub-commands to it; {@link #command()} attaches the groups to /arrakis once every module
+     * has been set up (a command cannot get sub-commands after it is attached).
      */
     public synchronized AbstractCommandCollection group(String name) {
         return groups.computeIfAbsent(name, n -> {
             AbstractCommandCollection group = new AbstractCommandCollection(n, LANG + n + ".desc") {
             };
-            collection.addSubCommand(group);
             return group;
         });
     }
 
-    public AbstractCommandCollection command() {
+    public synchronized AbstractCommandCollection command() {
+        groups.values().forEach(collection::addSubCommand);
+        groups.clear();
         return collection;
     }
 }

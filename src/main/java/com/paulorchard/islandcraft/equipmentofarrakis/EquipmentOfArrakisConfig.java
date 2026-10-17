@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  *
  * <pre>
  * {
- *   "Modules": ["core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag"],
+ *   "Modules": ["core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor"],
  *   "Core": { "LogSelfCheckAtBoot": true },
  *   "Power": { "LogStatDefinition": true },
  *   "Catalog": { }
@@ -31,7 +31,7 @@ public class EquipmentOfArrakisConfig {
 
     public static final String FILE_NAME = "Equipment_of_Arrakis";
 
-    private String[] modules = {"core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag"};
+    private String[] modules = {"core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor"};
     private CoreConfig core = new CoreConfig();
     private PowerConfig power = new PowerConfig();
     private CatalogConfig catalog = new CatalogConfig();
