@@ -2,7 +2,7 @@
 
 v1 (the Cutter Ray, guns, off-hand tools, Holtzman shield, Arrakis_Power stat and HUD) is thrown away; `git show equipment-v1-final:<path>`
 reads any v1 file. v2 is built in modules, one package and one asset folder each: core, power, catalog (this prompt), then cutter,
-compactor, dewreaper, bloodextractor, weapons, shield, bloodbag, litrejon, stillsuit, armor.
+compactor, litrejon, harvester, bloodbag, extractor, placeholders, light, shield (built, see "Module notes"), then weapons, stillsuit, armor.
 
 Legend: **confirmed** = seen in a headless boot or in bytecode with javap; **inferred** = reasoned from bytecode or from vanilla data,
 not seen working; **needs a client** = only a player on a client can show it.
@@ -75,6 +75,177 @@ not seen working; **needs a client** = only a player on a client can show it.
   `name null` for the tab itself.
 - Tests: `CatalogAssetsTest` (valid JSON, unique child ids, all name keys in `server.lang`, icons ours or in Assets.zip, order after the vanilla tabs,
   items in the tab name an existing child), `EquipmentOfArrakisConfigTest`, `PowerMathTest`, `ModuleBoundaryTest`.
+
+## Module notes: the v2.1 tool set
+
+Everything below was built on the foundation (core, power, catalog). **confirmed** = seen in a headless boot, in a unit test or in bytecode with javap;
+**inferred** = reasoned from bytecode or vanilla data; **needs a client** = only a player on a client can show it. Nothing client-side could be tried here,
+and no player or mob can be spawned headlessly, so every behaviour that needs one is on the human test sheet at the end.
+
+**Order of the work (one commit each, `gradlew test` green before the next):** core additions and the cleanup of the earlier picker trial; picker; cutter; compactor;
+litrejon + harvester; bloodbag; extractor; placeholders + light; shield. Each new module has an id in the config `Modules` list and its own section in
+`Equipment_of_Arrakis.json` where it has settings. The headless boot loads all of them with no PROBLEM line, with and without the Water mod, and with the new modules
+removed from `Modules` (each removes its own assets at BootEvent, see `ModuleAssets`).
+
+### core additions
+
+- `ToolRegistry` (picker tools by item id, display order, optional label key; detection is by this list, never by a prefix), `ToggleRegistry` (passive toggles: id, order, label
+  key, icon item id, switch / read / reset callbacks; `forget(uuid)` runs every reset), `GiveRegistry` (what `/arrakis tools give` hands out: the six tools, the LitreJon and the
+  Blood Bag, containers through their own factory so they start with their bar), `ToolUse.fired(PlayerRef)` with listeners (the shield listens; only the Cutter Ray calls it),
+  `ContainerItem` (amount in stack metadata under a key, mirrored to the durability bar: max durability = capacity, durability = amount; pure clamp / add / room, unit-tested),
+  `ContainerInventory` (carried containers, first with room: hotbar then main inventory, never the backpack or the utility slots; add to the first with room; registered by item id so
+  the Harvester fills the LitreJon and the Extractor fills the Blood Bag without importing those modules), `Notice` (a short chat line from a translation key, at most one per
+  second per player and key), `ModuleAssets` (switching a module off), shared `/arrakis` command groups (`CommandRoot.group`, attached after setup), `WorldAccess.healthSection`.
+- power: `ManaRefusal.say(player, n)`: "This needs N Mana.", at most one per second per player, switched by the Power setting `ShowMessages` (default true).
+  The Mana regeneration is untouched (the boot log and the hook in `PowerModule.start` stay).
+- The toggles are reset on disconnect, on entering or leaving a world (`AddPlayerToWorldEvent`, `DrainPlayerFromWorldEvent`) and on death (`ToggleResetSystem`, once per death).
+- Unit tests (engine-free): registry order and replace, toggle forget even after a failing hook, ToolUse listeners, ContainerItem clamp / add / room, first-with-room selection,
+  Notice and ManaRefusal throttles. The stack side of `ContainerItem` (metadata and bar on a real `ItemStack`) cannot run in a unit test (the `ItemStack` class needs the engine's
+  assets); it is exercised by `/arrakis tools give` and `/arrakis blood add` in the game. A raw stack taken from the creative menu has no saved amount, so it reads as
+  empty (`StartsFull` false) but the bar shows full until the first change; `/arrakis tools give` makes proper ones.
+
+### picker
+
+- The earlier picker trial (page, swap rule, three `.ui` files, the `OpenCustomUI` interaction registered with `OpenCustomUIInteraction.registerSimple`) became this module:
+  `ToolPicker` (page + swap adapter), `ToolSwap` (pure rule, 10 tests), `PickerCommands`, assets `Arrakis_Picker_Open` / `Arrakis_Picker_Secondary`, `Arrakis_Picker_{Page,Entry,Toggle}.ui`.
+  Every tool's `Interactions.Secondary` is `Arrakis_Picker_Secondary`.
+- Lists the registered tools found in the hotbar and the main inventory (not the backpack, not the utility container) in registry order, the held one marked "In hand" and not
+  clickable, then always every registered toggle with ON / OFF. A toggle click flips it, sends "<label>: ON" and rebuilds (page stays open); a tool click validates against the
+  inventory as it is now, does one `ItemContainer.swapItems` (the chosen tool into the active hotbar slot, the old one into the slot the chosen one came from; metadata travels
+  with the stack; no free slot needed) and closes; if the inventory changed it says so and swaps nothing.
+- `/arrakis tools give | state | open`. `state` prints the held item, the tools found with container and slot, the toggles and Mana.
+- The page opens only from a held Arrakis tool because only those tools carry the Secondary; the engine interaction refuses to open over another custom page (bytecode).
+- **needs a client**: that the `.ui` files parse and look right, the cursor, the swap latency and the refresh of the held model and the bar.
+
+### cutter (Cutter Ray)
+
+- Item `Arrakis_Tool_Cutter_Ray`: the vanilla `Weapon_Gun` (Pulse Rifle) by path (model, texture, animation set with the Shoot animations at speed 3, icon). Primary = `Arrakis_Cutter_Primary`
+  = [`Arrakis_Cutter_Shot`, `Arrakis_Cutter_Effects`]. `Arrakis_Cutter_Effects` carries the vanilla shot feel: the `Shoot` item animation, the `Handgun_Shoot` camera effect, the `RifleShooting`
+  muzzle particles at the vanilla offsets, `RunTime 0.25` (the vanilla `Gun_Shoot` pace, the `ShotInterval`). No projectile, no sound added.
+- `Arrakis_Cutter_Shot` (custom type, `CutterShotInteraction`, first in the chain so a refusal, which ends it as Failed, stops the effects from ever starting): needs `ManaPerShot` 10
+  (below that: no shot, no effects, the Mana refusal line), spends it (creative pays none), casts `TargetUtil.getTargetBlock` from the eye `Range` 5, and hits the block with
+  `BlockHarvestUtils.performBlockDamage` with an unbreakable stand-in `Tool_Pickaxe_Crude`, tool id `Pickaxe`, `DamageScale 1`. Creative breaks the block at once. Then `ToolUse.fired`.
+  It spends on every shot, with or without a block in reach. Gate unit-tested at Mana 9 / 10 / 100 and creative; 10 shots from full Mana.
+- **How the damage was matched to the crude pickaxe:** the vanilla `BreakBlockInteraction` calls the same `performBlockDamage` with the held tool and a damage scale pushed with
+  `fconst_1` (read in its bytecode, both call sites), so one real swing is scale 1.0 of the held tool's own gather specs, and v1 measured the same (0.24 per 0.1 s = one swing
+  per 0.4167 s). The shot uses scale 1.0 with the crude pickaxe stack, so a shot is one swing by construction, and the crack accumulates on the block as with the pickaxe.
+  **confirmed**: the bytecode and the compile; **not measured**: shots-to-break on sand, stone and an ore against the real crude pickaxe (that needs a player to swing the pickaxe):
+  on the test sheet, the numbers must match.
+- Settings are data in `Arrakis_Cutter_Shot.json` (`ManaPerShot`, `Range`, `DamageScale`, `ToolItemId`, `Silent`) and `Arrakis_Cutter_Effects.json` (`RunTime`).
+
+### compactor
+
+- v1 ported: model, texture, aim animation (first and third person), the `Arrakis_Compactor` animation set (parent `Torch`), the hum effect and its two sounds, the sand-dust particle,
+  `CompactMath` + `BeamMath` (tests carried over), `CompactorInteraction` (the vanilla `Charging` interaction with a compacting tick), `CompactorTrail` (crack, repair, drop, hum),
+  `CompactorSystem`. Now Primary (left click held), no `Utility.Usable`, no `RequireNewClick`, in the hand only. 1 Mana per second while really compacting (`PowerPerSecond 1`,
+  spent in proportion to the tick time), stops at 0 Mana (creative never runs out), no `ToolUse.fired`. Any other block or no target: nothing, no Mana. Range 3, `CompactSeconds` 1,
+  groups `Sand`, exclusions `Arrakis_Sand`, `Arrakis_Worm_Ripple_Layer_`, `Arrakis_Worm_Sunk_`, all data in `Arrakis_Compactor_Aim.json`.
+- The block is never broken: the crack is the block health lowered to at most 90 % and given back at the end of each cycle (v1 logic unchanged).
+- **needs a client**: the aim pose as a main-hand item (the set is the off-hand torch set), the hum, the dust, and that holding left click keeps the `Charging` interaction going.
+
+### litrejon (LitreJon) and harvester (Dew Harvester)
+
+- `Arrakis_Tool_Litrejon`: its own item, a second flask next to the Water mod's `Arrakis_Litrejon` (which is untouched, loaded and working next to it: the headless boot with both
+  mods lists both items). Model and icon: `Potion_Template` parent, the Energy Potion icon and the Cyan texture, by path. Metadata `Arrakis_Water_Units`, `Capacity 500`,
+  `StartsFull false`, `PourPerClick 50` (section `Litrejon`), the bar via `ContainerItem`. Left click = `Arrakis_Litrejon_Pour`, repeating every 0.5 s while held: moves
+  min(flask, 50, what the player lacks) into the player's water; a player 19 below the cap takes 19 and the flask loses 19 (a fractional shortfall is offered rounded up and the flask
+  pays for the water really gained, rounded up; the Water mod clamps at 100). Empty flask or full player: a short message. Right click opens the picker, so filling from water blocks
+  is not available on this item; the Dew Harvester fills it (an open point for you).
+- Water link: `WaterApi` / `WaterBridge` / `WaterLink` as in v1 (compiled against the Water jar `compileOnly`, never packed; `-PwaterJar=` points at another copy; the bridge class is
+  loaded only after the plugin is found, inside a handler for linkage errors). The manifest lists Water as an **optional** dependency, not a required one: a required one would
+  stop the whole mod from loading without Water, and the brief wants the LitreJon and the Harvester to degrade. **confirmed headless:** with Water loaded the log says
+  "Water of Arrakis linked" and "the Water mod's own Arrakis_Litrejon is loaded and untouched"; without it, "Water of Arrakis not loaded: the LitreJon will refuse to pour (everything
+  else works)", and a click says "Water of Arrakis is needed to pour from the LitreJon." The picker lists only `Arrakis_Tool_Litrejon` (it is the only one registered) and the Harvester
+  fills only it (it looks the item up in `ContainerInventory` by that id).
+- **What a later Water prompt would remove if the old item is retired:** `Items/Water_of_Arrakis/Arrakis_Litrejon.json`, the interactions `Arrakis_Condition_Flask` and `Arrakis_Flask_Charge`
+  (and the `Arrakis_Root_Flask` root they feed), `FlaskInteraction`, the `Litrejon` class with its `FillSource` / `addFillSource` hook, the Litrejon settings in `WaterOfArrakisConfig`
+  (`LitrejonCapacity`, `LitrejonDrinkAmount`, `LitrejonStartsFull`, the fill reach and water fluid ids), the references in `WaterOfArrakisPlugin` and `SunProbeCommand`, and the
+  `flaskFilled` / `flaskEmpty` / `notThirsty` lines of its `server.lang`.
+- Dew Harvester `Arrakis_Tool_Dew_Harvester`: the vanilla `Tool_Sickle_Crude` by path (model, texture, icon, animation set `Sickle`), no recipe, no durability. Primary =
+  [`Arrakis_Harvester_Gate`, `Arrakis_Harvester_Swing`, `Arrakis_Harvester_Finish`], the v1 Dew Reaper's gate / swing / finish. The gate refuses (nothing spent, a short message)
+  unless the block under the crosshair within 3 is `Arrakis_Primrose`, a LitreJon is carried, one has room and there are 10 Mana; otherwise it pays 10 Mana, starts the hum and remembers
+  the swing. The swing is a 1 second `Simple` (the sickle's `SwingLeftSlow` animation). The finish moves 10 water into the first LitreJon with room (hotbar, then main inventory) if the
+  Primrose is still there. The Primrose is not touched, there is no cooldown, no evening window and no cap, the player's own water is not touched. Held, the chain repeats. Rules
+  unit-tested (order of the refusals, exact cost, creative). Without the Water mod there is no Primrose to aim at and no LitreJon to pour from; the tool says "Aim at a Primrose."
+  **needs a client**: the sickle animation length (1 s is the interaction's time, not measured against the animation), the hum.
+
+### bloodbag and extractor
+
+- `Arrakis_Blood_Bag`: parent `Potion_Template`, Red texture by path, icon `Potion_Health`; metadata `Arrakis_Blood_Units`, `Capacity 500`, `StartsFull false` (section `Bloodbag`); Primary and
+  Secondary are a root that does nothing (so the inherited drink is gone). Not registered as a picker tool. API: `BloodBag.isBag / getAmount / add / firstWithRoom / carried / capacity`
+  for the future purifier. `/arrakis blood add <n>` fills the first bag with room.
+- `Arrakis_Tool_Blood_Extractor`: the vanilla Handgun by path (model, texture, icon, animation set `Handgun`), no shot at all. Primary = [`Arrakis_Extractor_Gate`,
+  `Arrakis_Extractor_Poke`, `Arrakis_Extractor_Finish`]. Refusals before any animation, nothing spent, a short message, in this order: no corpse in range and aim; already used; no bag;
+  all bags full. No Mana. The gate claims the corpse, forces the crouch and remembers the poke; the poke is a 1 s `Simple` (`PokeSeconds`) playing the Handgun set's **`GuardBash`** item
+  animation (the vanilla pistol jab, an existing animation, nothing custom); the finish lets the crouch go and puts `BloodPerBody` 10 into the first bag with room.
+- **What a dead mob is, in 0.7.0 (bytecode):** a killed NPC keeps its entity. `DeathComponent` is added to it; `NPCSystems.OnDeathSystem` then adds `DeferredCorpseRemoval(role.getDeathAnimationTime(),
+  deathParticles)`, which `DeathSystems.TickCorpseRemoval` counts down, and `CorpseRemoval` removes the entity when it is over. So a corpse exists only for the role's death animation time
+  (a second or a few, per role) and then vanishes, as the brief expected. The rule is `CorpseAim.isCorpse`: not a player, has a `DeathComponent`, and (data `RequireNpc`, default true) an `NPCEntity`.
+  Widen it by setting `RequireNpc` false in `Arrakis_Extractor_Gate.json`, or by editing the one pure method.
+- **How a corpse is found:** not with `TargetUtil.getTargetEntity` (a dead entity may no longer have a hitbox the engine ray takes; not tried). `TargetUtil.getAllEntitiesInSphere` around the eye,
+  filtered by the rule, then a pure ray test (`CorpseAim.pick`): the nearest corpse whose aim point (feet + `AimHeight` 0.5) is within `AimRadius` 0.9 of the look ray and `Range` 2.5 along it.
+  Unit-tested. **inferred**: that the radius and height suit every mob size (they are data).
+- **One body, one use:** the corpse's entity ref goes into a set at the gate (claimed), so nobody can use it again; refs of removed entities are dropped from the set, so it clears itself when the body
+  vanishes. A poke that does not reach its finish (button released, player left) gives the corpse back. This is a runtime set, not an ECS marker component on the entity (registering a
+  component type was not worth the risk for a tool that is to be refined); the effect asked for is the same.
+- **Forcing the crouch:** the client owns the movement state (it sends its `MovementStates` every tick; `MovementEffects` can only disable crouch, and the `SetMovementStates` packet
+  carries only the flying flag). What is possible from the server is writing the server-side `MovementStatesComponent`: `crouching = true` and `forcedCrouching = true`, every tick of the
+  poke (`ExtractorSystem`), restored at the end; the engine's movement-states system sends that state to the players who can see this one, so **others** see the crouch. Whether the owner's own client
+  overrides it in between is **needs a client**. Fallback, if it does: set `ForceCrouch` false and `RequireCrouched` true in `Arrakis_Extractor_Gate.json` and the tool refuses unless the player is
+  already crouching ("Crouch first."). The default is forcing.
+- `/arrakis blood corpse` spawns a cow two blocks ahead (`NPCPlugin.spawnNPC`) and kills it with a `DeathComponent` (`COMMAND` damage); it vanishes within seconds like a real corpse.
+  Spawning an NPC failed in the headless world (no player), so this is **needs a client**.
+
+### placeholders, light, shield
+
+- Placeholders: `Arrakis_Tool_Vehicle_Summoner`, `Arrakis_Tool_Build_Repair`: the crude pickaxe's model, texture, icon and animation set `Pickaxe` by path, no `Tool` block, no Primary (the engine fills it
+  with its own empty interaction: confirmed in the self-check), no durability, Secondary = the picker, descriptions "Not built yet.", registered in the picker.
+- Personal Light (`light`): a toggle on the page, no item, no cost. The light is the entity component `DynamicLight(ColorLight)` (the component the engine gives a dropped torch; the light of a held
+  torch is made by the client from the block's Light), added while the toggle is ON and removed when OFF by `Reconcile`, a system that makes the entities match the ON set every tick (so a death, a
+  disconnect or a world change cannot leave a stuck light). **How it was matched to a torch:** the torch's light is the `Light` of its block type, `{Radius 0, Color #ba9}`; the module reads
+  `BlockType Furniture_Crude_Torch` `.getLight()` at start (**confirmed**: radius 0, colour 11/10/9) and uses its radius and its brightest channel (11) with the tint 0.85 / 0.93 / 1.0 (section
+  `Light`: `TintRed/Green/Blue`, or `Radius/Red/Green/Blue` to override each number; `-1` = from the torch). **Final values: radius 0, red 9, green 10, blue 11** (cool white: pale, leaning blue,
+  as bright as the torch's brightest channel). That the numbers look the same as a held torch "side by side in the dark" is **needs a client**; the radius reading 0 for the torch is why the
+  radius is copied, not chosen. `/arrakis light on | off | state`. Reset to OFF on relog, death, respawn and world change.
+- Holtzman Shield (`shield`), ported from v1: the entity effects, ModelVFX, bubble / hit / shatter particles and the eight sounds are byte-for-byte v1 (moved into `Shield` folders; they reference
+  vanilla textures and sounds by path, so no art is shipped), `HoltzmanSystem`, `HoltzmanDamageSystem` (in the engine's filter damage group, after the armour reductions, cancels the hit), `HoltzmanField`,
+  `ShieldCooldown` (with its modifier hook and override), the two projectile hooks `ShieldShotLegacySystem` / `ShieldShotSystem` (any projectile a player creates) and `/arrakis shield hit | state | shot
+  | cooldown | diag`. **Differences from v1:** (1) no item, no Z slot, no off hand: the condition "shield selected" is now "the toggle is ON"; (2) the power is Mana through `Power`, `ManaPerDamage 1.0`,
+  creative pays nothing; (3) a hit that takes Mana to 0 or is at least the Mana left is absorbed whole, Mana goes to 0, the shatter burst and break sound play, the field goes down and the **toggle
+  stays ON**; the state is "broken" and the field returns by itself, with the normal power-up sound and no message, when Mana is back to `RearmMana` 100 (or to the maximum if that is lower);
+  (4) the toggle is not saved: it is OFF after a relog, a world change and death; (5) the Cutter Ray's `ToolUse.fired` drops the field for `CooldownSeconds` 1.0 like any projectile, restarting on each
+  shot, with the off / on sounds; the Compactor, Extractor, Harvester and LitreJon never call it; (6) the v1 `RangedWatch` diagnostic (a dev check of Ranged-tagged interactions) and the hook
+  self-test were not ported; `/arrakis shield diag` now switches a trace of every projectile creation with its creator. **ON with less than 100 Mana:** the field rises with any Mana above 0
+  unless the shield has just broken and is waiting (the v1 rule); with 0 Mana it does not rise; toggling OFF and ON does not clear a break (only a death, a relog or a world change does), so the
+  wait for 100 cannot be skipped. Rules unit-tested (absorb, break at equal, re-arm at 100, a lowered maximum, drop and restart of the timer, ON with low Mana, a script of the per-tick plan and its sounds).
+  **needs a client**: the look and the sound mix (as v1, unchanged), the fall of the field at a Cutter shot, an arrow costing 1 Mana per damage.
+
+### Experiment cleanup, summary
+
+Removed from the throw-away trial module when the picker was promoted: the four stand-in tools (`Arrakis_Tool_Axe`, `_Pickaxe`, `_Hoe`, `_Shovel`: items and translations), the interaction
+`Arrakis_Exp_Tool_Picker_Open` and root `Arrakis_Exp_Tool_Picker_Secondary`, `ExpToolCommands`, `ExpToolPicker` and `ExpToolSwap` (moved and renamed into `picker`), the three `.ui`
+files (moved and renamed), the edits made to the trial module and to its isolation test (the `Arrakis_Tool_` allow-list and reserved prefix are gone; the prefix now belongs to the real tools),
+and `/arrakis exp tools`. The earlier trials 1 to 3 are unchanged. **Removal rehearsal (run for real on a copy after everything above was built):** the removal script of the trial module (see its section, below)
+leaves no trace of the trial names in the sources and `gradlew build` passes.
+
+### Human test sheet (a client; `/arrakis tools give` first, survival and creative)
+
+1. Creative menu, IslandCraft tab, Tools: Cutter Ray, Compactor, LitreJon, Dew Harvester, Blood Extractor, Vehicle Summoner, Build/Repair Tool, Blood Bag, each with icon and name; only the two
+   containers show a bar (and a raw one shows a full bar until first used); nothing wears or breaks.
+2. Picker: right-click any tool: it opens once with the tools you carry (icons, "Hotbar n" / "Inventory", "In hand"), then Holtzman Shield and Personal Light with ON / OFF. Click a tool: right model and
+   animation in the hand, the old tool in the slot it came from, works with a full inventory, the LitreJon keeps its water. Escape closes with no change. Note the swap latency and any lag of the held model.
+3. Cutter Ray: hold left click: vanilla gun look, 4 shots per second, 10 Mana each, stops after 10 at full Mana, "This needs 10 Mana." (once a second) at 9 or less; mobs are not hurt. Break a sand, a stone and an
+   ore block with it and with the real `Tool_Pickaxe_Crude`: count the shots and the swings (they must match).
+4. Compactor: hold left click on sand within 3: crack, a drop per second, hum, the block stays; 1 Mana per second; stops at 0; nothing on other blocks.
+5. LitreJon: with Water loaded: left click gives up to 50, only what you lack (test at 81 water: 19); the bar follows; empty and full messages; right click opens the picker. Without Water: the message.
+6. Dew Harvester: left click on a Primrose with a LitreJon with room: a swing per second, +10 water in the flask, -10 Mana, Primrose unchanged, your water unchanged; no Mana, no flask, full flask, other block:
+   no swing and a message.
+7. Blood Extractor: `/arrakis blood corpse`, left click on it within 2.5: crouch (do you and others see it? does your own client fight it?), the jab, +10 blood in the first bag; the same corpse again: refused;
+   no bag or full bags: refused with no animation; no Mana spent. `/arrakis blood add 495` fills a bag to 500.
+8. Holtzman: ON from the picker: field, hum and power-up sound as v1; `/arrakis shield hit 20` costs 20 Mana; firing the Cutter drops it for 1 s and it returns; `/arrakis shield hit 500` breaks it with the
+   shatter, the toggle stays ON, it returns by itself at 100 Mana; OFF removes everything; relog and death leave it OFF.
+9. Personal Light: ON gives a torch-equivalent cool white light that other players see (compare with a held `Furniture_Crude_Torch` in the dark); OFF removes it; relog and death leave it OFF.
+10. Vehicle Summoner and Build/Repair: appear in the picker, show a pickaxe, left click does nothing.
 
 ## Harness notes
 
