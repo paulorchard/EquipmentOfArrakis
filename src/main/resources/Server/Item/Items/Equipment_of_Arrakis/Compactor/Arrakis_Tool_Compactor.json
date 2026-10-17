@@ -1,0 +1,24 @@
+{
+  "$Comment": "Compactor. Main-hand tool, left click held on a sand block compacts it (drops one item per second, the block is not broken). Model: the Human Ruins torch without the Flame node, no light, no particles. No recipe, no durability. Right click opens the picker.",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Tool_Compactor.name",
+    "Description": "server.items.Arrakis_Tool_Compactor.description"
+  },
+  "Categories": [
+    "IslandCraft.Tools"
+  ],
+  "Quality": "Rare",
+  "MaxStack": 1,
+  "MaxDurability": 0,
+  "Icon": "Icons/ItemsGenerated/Furniture_Human_Ruins_Torch.png",
+  "IconProperties": {"Rotation": [22.5, 45, 22.5], "Scale": 0.605, "Translation": [0, -9.6]},
+  "Model": "Items/Equipment_of_Arrakis/Compactor/Arrakis_Compactor.blockymodel",
+  "Texture": "Items/Equipment_of_Arrakis/Compactor/Arrakis_Compactor_Texture.png",
+  "Scale": 1,
+  "PlayerAnimationsId": "Arrakis_Compactor",
+  "Interactions": {
+    "Primary": "Arrakis_Compactor_Primary",
+    "Secondary": "Arrakis_Picker_Secondary"
+  },
+  "ItemSoundSetId": "ISS_Blocks_Wood"
+}

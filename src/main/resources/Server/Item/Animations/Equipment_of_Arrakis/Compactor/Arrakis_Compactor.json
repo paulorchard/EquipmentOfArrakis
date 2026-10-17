@@ -1,0 +1,14 @@
+{
+  "$Comment": "The vanilla off-hand torch set. Its Camera.Pitch block makes the left arm follow the look pitch (-60..60 degrees). Arrakis_Aim is the torch Idle stance with only the left wrist turning forward, so the head of the torch points out; the last keyframe is held (tools/assets/make_compactor_animation.js).",
+  "Parent": "Torch",
+  "Animations": {
+    "Arrakis_Aim": {
+      "ThirdPerson": "Characters/Animations/Items/Equipment_of_Arrakis/Compactor/Compactor_Aim.blockyanim",
+      "ThirdPersonMoving": "Characters/Animations/Items/Equipment_of_Arrakis/Compactor/Compactor_Aim.blockyanim",
+      "FirstPerson": "Characters/Animations/Items/Equipment_of_Arrakis/Compactor/Compactor_Aim_FPS.blockyanim",
+      "Speed": 1,
+      "BlendingDuration": 0.1,
+      "Looping": false
+    }
+  }
+}

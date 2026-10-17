@@ -4,6 +4,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.util.Config;
 import com.paulorchard.islandcraft.equipmentofarrakis.catalog.CatalogModule;
+import com.paulorchard.islandcraft.equipmentofarrakis.compactor.CompactorModule;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.CommandRoot;
 import com.paulorchard.islandcraft.equipmentofarrakis.cutter.CutterModule;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.CoreModule;
@@ -59,7 +60,8 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
         context = new ModuleContext(this, root, settings::section);
         List<EquipmentModule> all = List.of(new CoreModule(modules), new PowerModule(), new CatalogModule(),
                 new PickerModule(this),
-                new CutterModule(this));
+                new CutterModule(this),
+                new CompactorModule(this));
         all = java.util.stream.Stream.concat(all.stream(), java.util.stream.Stream.of(new com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsModule(this))).toList(); // EXPERIMENT: remove with the experiments module
         modules.setupAll(all, settings.enabledModules(), context);
         getCommandRegistry().registerCommand(root.command());

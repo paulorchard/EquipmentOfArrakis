@@ -1,0 +1,18 @@
+{
+  "$Comment": "The Compactor's hum while it compacts: one looping layer of the vanilla Staff_Charged_LP_01 (mono, 44.1 kHz, 3.66 s). Heard by the others, positional; the _Local copy is the shooter's, without the attenuation Parent.",
+  "AudioCategory": "AudioCat_Weapons",
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Weapons/Staff/Staff_Charged_LP_01.ogg"
+      ],
+      "Looping": true,
+      "StartDelay": 0,
+      "Volume": 6
+    }
+  ],
+  "Volume": 0,
+  "MaxInstance": 2,
+  "PreventSoundInterruption": false,
+  "Parent": "SFX_Attn_Loud"
+}

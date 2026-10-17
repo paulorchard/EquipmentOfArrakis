@@ -1,0 +1,6 @@
+{
+  "$Comment": "Primary (left click) of the Compactor: aim and compact while the button is held.",
+  "Interactions": [
+    "Arrakis_Compactor_Aim"
+  ]
+}

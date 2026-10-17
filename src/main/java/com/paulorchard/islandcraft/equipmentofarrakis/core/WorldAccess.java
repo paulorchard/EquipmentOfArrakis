@@ -3,6 +3,8 @@ package com.paulorchard.islandcraft.equipmentofarrakis.core;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthModule;
+import com.hypixel.hytale.server.core.modules.blockhealth.BlockHealthSection;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.accessor.SectionReader;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockOperations;
@@ -112,6 +114,13 @@ public final class WorldAccess {
             return false;
         }
         return BlockOperations.setBlock(chunks, section, x, y, z, id, type, 0, 0, settings);
+    }
+
+    /** The block health of the section containing this position, or null when the section is not loaded. */
+    public BlockHealthSection healthSection(int x, int y, int z) {
+        Ref<ChunkStore> section = sectionRef(x, y, z);
+        return section == null ? null
+                : chunks.getStore().getComponent(section, BlockHealthModule.get().getBlockHealthSectionComponentType());
     }
 
     /** The ChunkSection (save mark, keep-loaded counter) containing this position, or null when it is not loaded. */

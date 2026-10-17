@@ -1,0 +1,14 @@
+{
+  "$Comment": "Sand dust off the top face of the block being compacted (the engine's own hit particles come off the side faces only). The vanilla sand hit spawner, without the 0.4 sideways offset of Block_Hit_Sand, spawned unrotated so that its hemisphere of specks points up out of the face.",
+  "Spawners": [
+    {
+      "SpawnerId": "Block_Sand_Spash_Dust_Speck",
+      "PositionOffset": {
+        "X": 0,
+        "Y": 0,
+        "Z": 0
+      }
+    }
+  ],
+  "CullDistance": 40
+}

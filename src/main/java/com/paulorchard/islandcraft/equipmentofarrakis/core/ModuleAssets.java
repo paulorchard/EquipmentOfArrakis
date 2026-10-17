@@ -4,10 +4,12 @@ import com.hypixel.hytale.assetstore.AssetMap;
 import com.hypixel.hytale.assetstore.AssetStore;
 import com.hypixel.hytale.assetstore.map.JsonAssetWithMap;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.asset.type.itemanimation.config.ItemPlayerAnimations;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSpawner;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.event.events.BootEvent;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.RootInteraction;
@@ -22,7 +24,7 @@ import java.util.logging.Level;
  * Switching a module off. The asset pack is one for the whole jar, so a module that is not in the config's Modules list would still
  * have its items in the game. A module makes a {@link Guard} in its constructor (before the assets load) and calls
  * {@link Guard#activate()} in setup(); at BootEvent a guard that was never activated removes the module's items, interactions,
- * animations and particles from the loaded assets.
+ * animations, particles, entity effects and sound events from the loaded assets.
  */
 public final class ModuleAssets {
 
@@ -59,7 +61,9 @@ public final class ModuleAssets {
                     + drop(Interaction.getAssetStore(), Interaction.getAssetMap().getAssetMap())
                     + drop(ParticleSystem.getAssetStore(), ParticleSystem.getAssetMap().getAssetMap())
                     + drop(ParticleSpawner.getAssetStore(), ParticleSpawner.getAssetMap().getAssetMap())
-                    + drop(ItemPlayerAnimations.getAssetStore(), ItemPlayerAnimations.getAssetMap().getAssetMap());
+                    + drop(ItemPlayerAnimations.getAssetStore(), ItemPlayerAnimations.getAssetMap().getAssetMap())
+                    + drop(EntityEffect.getAssetStore(), EntityEffect.getAssetMap().getAssetMap())
+                    + drop(SoundEvent.getAssetStore(), SoundEvent.getAssetMap().getAssetMap());
             logger.at(Level.INFO).log("Module %s is off in the config: removed %s of its assets", module, dropped);
         }
 
