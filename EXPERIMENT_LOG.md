@@ -85,7 +85,7 @@ not seen working; **needs a client** = only a player on a client can show it.
 
 Throw-away look-and-feel experiments, all in the module `experiments`. They are replaced by the real modules when a design is chosen,
 so everything of them is findable by one search (`Arrakis_Exp_` for assets and ids, `Exp` for classes, the word `Experiments` for the
-package and every asset folder) and leaves no trace when removed. Experiment 1 is the Flame Cutter, experiment 2 the Flame Beam Cutter (with the calibration tools).
+package and every asset folder) and leaves no trace when removed. Experiment 1 is the Flame Cutter, experiment 2 the Flame Beam Cutter (with the calibration tools), experiment 4 the tool picker page.
 
 Rules (enforced by `ExperimentsIsolationTest`, which scans the project): everything lives under an `experiments` / `Experiments` path
 (Java package, `Server/.../Equipment_of_Arrakis/Experiments/`, `Common/.../Experiments/`, `tools/assets/experiments/`, the test package);
@@ -387,8 +387,8 @@ The Flame Cutter is now a model test: no particles, no animation, the laser is g
   stepping from 50 px to 2 px wide on screen (1920x1080; world width = px * 2 d tan(35 deg) / 1080 with d from 1 block at the muzzle; VFOV 70 and the 1 block are guesses; the world width
   first rises a little, the perspective shrinks a line faster than this taper). It points along the old measured aim (yaw 4.49, pitch 0.73 from the gun axis, tweak `AIM_YAW` / `AIM_PITCH`).
   The boxes' faces point at a white 16x16 patch that `make_flame_texture.js` now paints in an empty corner (48,112) of the texture copy.
-* `Arrakis_Exp_Flame_Static`: the vanilla `Rifle` animation set with **every third-person animation** (idle, walk, run, sprint, crouch, jump, fall, fly, swim, climb, interact, shoot ...: 43) replaced by one fixed pose
-  (the first frame of the rifle idle, a copy of `Idle.blockyanim` reduced to one key per channel), so the gun never moves against the body in third person; first person keeps the vanilla rifle animations.
+* `Arrakis_Exp_Flame_Static`: the vanilla `Rifle` animation set with **only the third-person Idle** replaced by one fixed pose (first all 43 third-person animations were; walk, run, jump, swim, shoot ... were given back to the vanilla rifle afterwards)
+  (the first frame of the rifle idle, a copy of `Idle.blockyanim` reduced to one key per channel), so the gun does not move against the body while standing; first person keeps the vanilla rifle animations.
   The server only accepts animation files under `Characters/` or `NPC/` (found at boot), so the pose lives under `Characters/Animations/Items/Equipment_of_Arrakis/Experiments`.
 * The Flame Cutter's chain is `[Arrakis_Exp_Flame_Tick, Arrakis_Exp_Flame_Burn]`, the latter now a bare 0.3 s pass (no `Effects`). The world-space dot-line assets (`Arrakis_Exp_Flame_Spawn`, `Arrakis_Exp_Flame_Focus`) stay in the pack, unused.
   The Flame Beam Cutter now sets its own model (vanilla, by path) and animations (`Goblin_Flamethrower`) so it did not change.
@@ -399,3 +399,13 @@ The Flame Cutter is now a model test: no particles, no animation, the laser is g
 * Checked: 59 tests pass; the model, the animation set, the texture patch are validated by `ExperimentsModelTest` (5); the boot loads the item and the set with no warning; with the module off the boot removes 31 assets (the
   animation set included). Not seen in game: the model's look in either view, the beam's start and aim, the unit size (32/block), the third-person pose.
 * Removal rehearsal repeated after round 6: no trace (the `Common/Characters/.../Experiments` folder goes with the others), build OK with the 20 base tests.
+
+### Experiment 4 was promoted to the picker module
+
+The tool picker page (a right-click page listing the Arrakis tools you carry, click to swap into the hand, plus passive toggles) worked as a mechanism on the
+server (an engine `OpenCustomUI` interaction with the page registered through `OpenCustomUIInteraction.registerSimple`, one atomic
+`ItemContainer.swapItems`, a pure tested swap rule) and became the real `picker` module (see "Module notes: picker"). Its code and its three `.ui` files moved there, renamed.
+What was removed from the experiments module: the four stand-in tools `Arrakis_Tool_Axe/Pickaxe/Hoe/Shovel` (items, translations), the interaction
+`Arrakis_Exp_Tool_Picker_Open` and root interaction `Arrakis_Exp_Tool_Picker_Secondary`, `ExpToolCommands` (`/arrakis exp tools`), and the `ExperimentsModule` and
+`ExperimentsIsolationTest` edits (the `Arrakis_Tool_` allow-list is gone: the prefix now belongs to the real tools, outside the experiments module). Experiments 1 to 3 are unchanged.
+Removal rehearsal after the cleanup: the experiments-removal script on a copy leaves no `arrakis_exp_` or `experiments` trace and the build passes (see below, "Module notes").

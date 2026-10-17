@@ -132,16 +132,18 @@ class ExperimentsModelTest {
     }
 
     @Test
-    void everyThirdPersonAnimationIsTheStillPoseAndFirstPersonIsLeftAlone() throws IOException {
+    void onlyTheThirdPersonIdleIsTheStillPoseAndTheRestIsVanilla() throws IOException {
         BsonDocument set = read(SET);
         assertEquals("Rifle", set.getString("Parent").getValue());
         BsonDocument animations = set.getDocument("Animations");
         assertTrue(animations.size() >= 30, "every state of the rifle set is covered: " + animations.size());
         for (var entry : animations.entrySet()) {
             for (var key : entry.getValue().asDocument().entrySet()) {
-                if (key.getKey().startsWith("ThirdPerson")) {
+                if (key.getKey().startsWith("ThirdPerson") && entry.getKey().equals("Idle")) {
                     assertEquals("Characters/Animations/Items/Equipment_of_Arrakis/Experiments/Arrakis_Exp_Flame_Static.blockyanim", key.getValue().asString().getValue(),
                             entry.getKey() + "." + key.getKey() + " is the still pose");
+                } else if (key.getKey().startsWith("ThirdPerson")) {
+                    assertFalse(key.getValue().asString().getValue().contains("Equipment_of_Arrakis"), entry.getKey() + "." + key.getKey() + " is a vanilla animation, by path");
                 } else if (key.getKey().equals("FirstPerson")) {
                     assertTrue(key.getValue().asString().getValue().startsWith("Characters/Animations/Items/Dual_Handed/Rifle/"), "first person is the vanilla rifle's, by path");
                 }

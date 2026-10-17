@@ -31,6 +31,8 @@ public final class CoreModule implements EquipmentModule {
     @Override
     public void setup(ModuleContext ctx) {
         String lang = CommandRoot.LANG;
+        ctx.events().registerGlobal(com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent.class,
+                event -> ToggleRegistry.get().forget(event.getPlayerRef().getUuid()));
         ctx.command(WorldPositional.build("modules", lang + "modules.desc", (c, world, store, args) -> {
             for (Modules.Entry entry : modules.entries()) {
                 say(c, entry.module().id() + ": " + (entry.enabled() ? "enabled" : "disabled") + ", setup " + entry.setupResult());

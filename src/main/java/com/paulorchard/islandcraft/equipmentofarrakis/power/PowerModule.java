@@ -29,6 +29,9 @@ public final class PowerModule implements EquipmentModule {
         config = ctx.settings(ID, PowerConfig.class);
         Power power = new Power();
         Power.install(power);
+        ManaRefusal.show = config.showMessages();
+        ctx.events().registerGlobal(com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent.class,
+                event -> ManaRefusal.forget(event.getPlayerRef().getUuid()));
         ctx.command(PowerCommands.build(power));
     }
 
