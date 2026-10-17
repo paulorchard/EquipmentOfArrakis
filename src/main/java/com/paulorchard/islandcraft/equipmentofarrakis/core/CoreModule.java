@@ -31,8 +31,14 @@ public final class CoreModule implements EquipmentModule {
     @Override
     public void setup(ModuleContext ctx) {
         String lang = CommandRoot.LANG;
+        // Toggles are OFF after a relog, a world change and death (the death part is ToggleResetSystem).
         ctx.events().registerGlobal(com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent.class,
                 event -> ToggleRegistry.get().forget(event.getPlayerRef().getUuid()));
+        ctx.events().registerGlobal(com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent.class,
+                event -> forgetHolder(event.getHolder()));
+        ctx.events().registerGlobal(com.hypixel.hytale.server.core.event.events.player.DrainPlayerFromWorldEvent.class,
+                event -> forgetHolder(event.getHolder()));
+        ctx.system(new ToggleResetSystem());
         ctx.command(WorldPositional.build("modules", lang + "modules.desc", (c, world, store, args) -> {
             for (Modules.Entry entry : modules.entries()) {
                 say(c, entry.module().id() + ": " + (entry.enabled() ? "enabled" : "disabled") + ", setup " + entry.setupResult());
@@ -52,6 +58,14 @@ public final class CoreModule implements EquipmentModule {
     public List<String> selfCheck() {
         return List.of("modules loaded: " + modules.entries().stream().filter(Modules.Entry::running).count() + " of "
                 + modules.entries().size());
+    }
+
+    private static void forgetHolder(com.hypixel.hytale.component.Holder<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> holder) {
+        com.hypixel.hytale.server.core.universe.PlayerRef player = holder == null ? null
+                : holder.getComponent(com.hypixel.hytale.server.core.universe.PlayerRef.getComponentType());
+        if (player != null) {
+            ToggleRegistry.get().forget(player.getUuid());
+        }
     }
 
     /** Sends a line to the sender of a command. */

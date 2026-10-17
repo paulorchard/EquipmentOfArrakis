@@ -81,6 +81,19 @@ arrakis.extractor.needCrouch = Crouch first.
 arrakis.extractor.noBag = You carry no Blood Bag.
 arrakis.extractor.bagsFull = Your Blood Bags are full.
 
+# ---- placeholders
+items.Arrakis_Tool_Vehicle_Summoner.name = Vehicle Summoner
+items.Arrakis_Tool_Vehicle_Summoner.description = Not built yet.
+items.Arrakis_Tool_Build_Repair.name = Build/Repair Tool
+items.Arrakis_Tool_Build_Repair.description = Not built yet.
+
+# ---- light
+commands.arrakis.light.desc = Personal Light: on, off, state
+commands.arrakis.light.on.desc = Switch your Personal Light on
+commands.arrakis.light.off.desc = Switch your Personal Light off
+commands.arrakis.light.state.desc = Show whether your Personal Light is on and its numbers
+customUI.arrakisPicker.light = Personal Light
+
 # EXPERIMENT BEGIN
 items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter
 items.Arrakis_Exp_Flame_Cutter.description = EXPERIMENT. A flamethrower turned into a rock-cutting beam: no fire, no damage to creatures; hold Primary to cut. Costs Mana.

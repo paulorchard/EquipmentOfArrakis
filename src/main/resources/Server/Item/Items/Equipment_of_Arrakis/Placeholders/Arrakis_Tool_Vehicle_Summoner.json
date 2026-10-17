@@ -1,0 +1,34 @@
+{
+  "$Comment": "Vehicle Summoner, placeholder: not built yet. The vanilla crude pickaxe by path (model, texture, icon, animation set Pickaxe) with no Tool block, no Primary (left click does nothing), no Mana and no durability. Right click opens the picker.",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Tool_Vehicle_Summoner.name",
+    "Description": "server.items.Arrakis_Tool_Vehicle_Summoner.description"
+  },
+  "Categories": [
+    "IslandCraft.Tools"
+  ],
+  "Quality": "Common",
+  "Icon": "Icons/ItemsGenerated/Tool_Pickaxe_Crude.png",
+  "Model": "Items/Tools/Pickaxe/Crude.blockymodel",
+  "Texture": "Items/Tools/Pickaxe/Crude_Texture.png",
+  "PlayerAnimationsId": "Pickaxe",
+  "Interactions": {
+    "Secondary": "Arrakis_Picker_Secondary"
+  },
+  "IconProperties": {
+    "Scale": 0.45,
+    "Translation": [
+      13.8,
+      -14.4
+    ],
+    "Rotation": [
+      45,
+      270,
+      0
+    ]
+  },
+  "DroppedItemAnimation": "Items/Animations/Dropped/Dropped_Diagonal_Left.blockyanim",
+  "MaxDurability": 0,
+  "MaxStack": 1,
+  "ItemSoundSetId": "ISS_Weapons_Wood"
+}
