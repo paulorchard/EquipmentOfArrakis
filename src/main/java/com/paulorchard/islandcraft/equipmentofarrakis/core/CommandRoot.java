@@ -9,6 +9,8 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractComman
  */
 public final class CommandRoot {
 
+    private final java.util.Map<String, AbstractCommandCollection> groups = new java.util.HashMap<>();
+
     public static final String LANG = "server.commands.arrakis.";
 
     private final AbstractCommandCollection collection = new AbstractCommandCollection("arrakis", LANG + "desc") {
@@ -16,6 +18,19 @@ public final class CommandRoot {
 
     public void add(AbstractCommand sub) {
         collection.addSubCommand(sub);
+    }
+
+    /**
+     * A command group shared by several modules (for example blood: the bag adds, the extractor spawns a corpse): the first module to
+     * ask creates it under /arrakis, the others add their sub-commands to it. Setup runs on one thread.
+     */
+    public synchronized AbstractCommandCollection group(String name) {
+        return groups.computeIfAbsent(name, n -> {
+            AbstractCommandCollection group = new AbstractCommandCollection(n, LANG + n + ".desc") {
+            };
+            collection.addSubCommand(group);
+            return group;
+        });
     }
 
     public AbstractCommandCollection command() {

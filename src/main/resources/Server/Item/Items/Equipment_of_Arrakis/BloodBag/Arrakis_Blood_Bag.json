@@ -1,0 +1,38 @@
+{
+  "$Comment": "Blood Bag, an item and not a tool: several can be carried. Placeholder: the vanilla potion look (Parent Potion_Template) with the vanilla Red texture, by path. The blood is in the stack metadata Arrakis_Blood_Units and mirrored to the durability bar (max durability = capacity, set by ContainerItem). Left and right click do nothing (the potion drink is replaced by a root that does nothing). Not in the picker.",
+  "Parent": "Potion_Template",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Blood_Bag.name",
+    "Description": "server.items.Arrakis_Blood_Bag.description"
+  },
+  "Quality": "Uncommon",
+  "Categories": [
+    "IslandCraft.Tools"
+  ],
+  "Icon": "Icons/ItemsGenerated/Potion_Health.png",
+  "IconProperties": {
+    "Scale": 0.9,
+    "Rotation": [22.5, 45, 22.5],
+    "Translation": [0, -9]
+  },
+  "Interactions": {
+    "Primary": "Arrakis_Bloodbag_None",
+    "Secondary": "Arrakis_Bloodbag_None"
+  },
+  "BlockType": {
+    "CustomModel": "Items/Consumables/Potions/Potion_Normal.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "Items/Consumables/Potions/Potion_Textures/Red.png",
+        "Weight": 1
+      }
+    ],
+    "BlockParticleSetId": "GlassMagic",
+    "ParticleColor": "#c01818",
+    "TextureComputedColor": "#a03030"
+  },
+  "Consumable": false,
+  "MaxDurability": 500,
+  "MaxStack": 1,
+  "DropOnDeath": true
+}

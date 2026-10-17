@@ -65,6 +65,12 @@ arrakis.harvester.noPrimrose = Aim at a Primrose.
 arrakis.harvester.noFlask = You carry no LitreJon.
 arrakis.harvester.flasksFull = Your LitreJon is full.
 
+# ---- bloodbag
+items.Arrakis_Blood_Bag.name = Blood Bag
+items.Arrakis_Blood_Bag.description = Holds blood collected with the Blood Extractor. The bar shows how full it is. It does nothing else yet.
+commands.arrakis.blood.desc = Blood helpers: add, corpse
+commands.arrakis.blood.add.desc = Adds blood to the first Blood Bag with room: arrakis blood add <n>
+
 # EXPERIMENT BEGIN
 items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter
 items.Arrakis_Exp_Flame_Cutter.description = EXPERIMENT. A flamethrower turned into a rock-cutting beam: no fire, no damage to creatures; hold Primary to cut. Costs Mana.

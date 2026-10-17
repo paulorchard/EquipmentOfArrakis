@@ -3,6 +3,7 @@ package com.paulorchard.islandcraft.equipmentofarrakis;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.paulorchard.islandcraft.equipmentofarrakis.bloodbag.BloodBagConfig;
 import com.paulorchard.islandcraft.equipmentofarrakis.catalog.CatalogConfig;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.CoreConfig;
 import com.paulorchard.islandcraft.equipmentofarrakis.litrejon.LitrejonConfig;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
  *
  * <pre>
  * {
- *   "Modules": ["core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester"],
+ *   "Modules": ["core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag"],
  *   "Core": { "LogSelfCheckAtBoot": true },
  *   "Power": { "LogStatDefinition": true },
  *   "Catalog": { }
@@ -30,11 +31,12 @@ public class EquipmentOfArrakisConfig {
 
     public static final String FILE_NAME = "Equipment_of_Arrakis";
 
-    private String[] modules = {"core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester"};
+    private String[] modules = {"core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag"};
     private CoreConfig core = new CoreConfig();
     private PowerConfig power = new PowerConfig();
     private CatalogConfig catalog = new CatalogConfig();
     private LitrejonConfig litrejon = new LitrejonConfig();
+    private BloodBagConfig bloodbag = new BloodBagConfig();
     { modules = java.util.stream.Stream.concat(java.util.Arrays.stream(modules), java.util.stream.Stream.of("experiments")).toArray(String[]::new); } // EXPERIMENT: remove with the experiments module
     private com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig experiments = new com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig(); // EXPERIMENT: remove with the experiments module
 
@@ -59,6 +61,10 @@ public class EquipmentOfArrakisConfig {
         return litrejon;
     }
 
+    public BloodBagConfig bloodbag() {
+        return bloodbag;
+    }
+
     public com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig experiments() { // EXPERIMENT: remove with the experiments module
         return experiments; // EXPERIMENT: remove with the experiments module
     } // EXPERIMENT: remove with the experiments module
@@ -70,6 +76,7 @@ public class EquipmentOfArrakisConfig {
             case "power" -> power;
             case "catalog" -> catalog;
             case "litrejon" -> litrejon;
+            case "bloodbag" -> bloodbag;
             case "experiments" -> experiments; // EXPERIMENT: remove with the experiments module
             default -> null;
         };
@@ -92,6 +99,9 @@ public class EquipmentOfArrakisConfig {
             .add()
             .append(new KeyedCodec<>("Litrejon", LitrejonConfig.CODEC, false), (c, v) -> c.litrejon = v, c -> c.litrejon)
             .documentation("Settings of the litrejon module.")
+            .add()
+            .append(new KeyedCodec<>("Bloodbag", BloodBagConfig.CODEC, false), (c, v) -> c.bloodbag = v, c -> c.bloodbag)
+            .documentation("Settings of the bloodbag module.")
             .add()
             .append(new KeyedCodec<>("Experiments", com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig.CODEC, false), (c, v) -> c.experiments = v, c -> c.experiments) // EXPERIMENT: remove with the experiments module
             .documentation("Settings of the experiments module (throw-away experiments).") // EXPERIMENT: remove with the experiments module

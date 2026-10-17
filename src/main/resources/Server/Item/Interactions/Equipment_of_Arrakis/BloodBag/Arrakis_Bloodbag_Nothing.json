@@ -1,0 +1,5 @@
+{
+  "$Comment": "Does nothing: the Blood Bag has no click behaviour. It replaces the potion drink the bag would inherit.",
+  "Type": "Simple",
+  "RunTime": 0
+}

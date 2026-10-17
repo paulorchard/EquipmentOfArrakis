@@ -43,6 +43,11 @@ public final class ModuleContext {
         root.add(sub);
     }
 
+    /** A shared command group under /arrakis; see CommandRoot.group. */
+    public com.hypixel.hytale.server.core.command.system.basecommands.AbstractCommandCollection group(String name) {
+        return root.group(name);
+    }
+
     public void system(ISystem<EntityStore> system) {
         plugin.getEntityStoreRegistry().registerSystem(system);
     }
