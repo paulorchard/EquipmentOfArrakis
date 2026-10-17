@@ -1,0 +1,9 @@
+{
+  "$Comment": "One shot of the Cutter Ray, first in the Primary chain: refuses (Failed, so nothing after it starts) below ManaPerShot, else spends it, hits the block under the crosshair within Range with one crude-pickaxe swing (DamageScale 1 = one swing), and tells the Holtzman a tool fired. No projectile, no entity is looked at.",
+  "Type": "Arrakis_Cutter_Shot",
+  "Range": 5,
+  "ManaPerShot": 10,
+  "DamageScale": 1,
+  "ToolItemId": "Tool_Pickaxe_Crude",
+  "Silent": true
+}

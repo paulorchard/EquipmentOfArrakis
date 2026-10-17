@@ -1,0 +1,12 @@
+{
+  "$Comment": "Primary of the Cutter Ray: the gate and the shot first (it refuses the whole chain without Mana), then the vanilla gun look at the vanilla pace.",
+  "Interactions": [
+    "Arrakis_Cutter_Shot",
+    "Arrakis_Cutter_Effects"
+  ],
+  "Tags": {
+    "Attack": [
+      "Ranged"
+    ]
+  }
+}

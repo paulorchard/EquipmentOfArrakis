@@ -1,0 +1,21 @@
+{
+  "$Comment": "The look and the pace of the vanilla gun shot (Gun_Shoot, 0.25 s) without its projectile: the Shoot item animation, the Handgun_Shoot camera effect and the RifleShooting muzzle particles, all vanilla by id. Runs only after Arrakis_Cutter_Shot accepted the shot. ShotInterval = RunTime.",
+  "Type": "Simple",
+  "RunTime": 0.25,
+  "Effects": {
+    "ItemAnimationId": "Shoot",
+    "CameraEffect": "Handgun_Shoot",
+    "Particles": [
+      {
+        "SystemId": "RifleShooting",
+        "PositionOffset": {
+          "Z": 0.85,
+          "Y": 0.15
+        },
+        "RotationOffset": {
+          "Pitch": 90
+        }
+      }
+    ]
+  }
+}

@@ -43,6 +43,10 @@ customUI.arrakisPicker.off = OFF
 customUI.arrakisPicker.handChanged = The tool in your hand changed; nothing was swapped.
 customUI.arrakisPicker.toolGone = That tool is no longer where it was; nothing was swapped.
 
+# ---- cutter
+items.Arrakis_Tool_Cutter_Ray.name = Cutter Ray
+items.Arrakis_Tool_Cutter_Ray.description = Placeholder gun that cuts the block in front of it with the strength of a crude pickaxe. 10 Mana per shot. Right click opens the tool picker.
+
 # EXPERIMENT BEGIN
 items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter
 items.Arrakis_Exp_Flame_Cutter.description = EXPERIMENT. A flamethrower turned into a rock-cutting beam: no fire, no damage to creatures; hold Primary to cut. Costs Mana.
