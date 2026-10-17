@@ -1,0 +1,10 @@
+{
+  "$Comment": "The hum of the Dew Harvester swing. Applied when an accepted swing starts and long enough to cover it (the swing is 1 s); the Finish interaction takes it off at the end. OVERWRITE as the other held effects.",
+  "ApplicationEffects": {
+    "WorldSoundEventId": "SFX_Arrakis_Harvester_Active",
+    "LocalSoundEventId": "SFX_Arrakis_Harvester_Active_Local"
+  },
+  "OverlapBehavior": "Overwrite",
+  "Infinite": false,
+  "Duration": 1.1
+}

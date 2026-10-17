@@ -1,0 +1,38 @@
+{
+  "$Comment": "The Equipment LitreJon, a different item from the Water mod Arrakis_Litrejon (which is untouched). Placeholder: the Energy Potion model and icon by path (Parent Potion_Template, Cyan texture, as the Water item). The water is in the stack metadata Arrakis_Water_Units and mirrored to the durability bar (max durability = capacity, set by ContainerItem). Left click pours water into the player; right click opens the picker.",
+  "Parent": "Potion_Template",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Tool_Litrejon.name",
+    "Description": "server.items.Arrakis_Tool_Litrejon.description"
+  },
+  "Quality": "Uncommon",
+  "Categories": [
+    "IslandCraft.Tools"
+  ],
+  "Icon": "Icons/ItemsGenerated/Potion_Signature.png",
+  "IconProperties": {
+    "Scale": 0.9,
+    "Rotation": [22.5, 45, 22.5],
+    "Translation": [0, -9]
+  },
+  "Interactions": {
+    "Primary": "Arrakis_Litrejon_Primary",
+    "Secondary": "Arrakis_Picker_Secondary"
+  },
+  "BlockType": {
+    "CustomModel": "Items/Consumables/Potions/Potion_Normal.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "Items/Consumables/Potions/Potion_Textures/Cyan.png",
+        "Weight": 1
+      }
+    ],
+    "BlockParticleSetId": "GlassMagic",
+    "ParticleColor": "#4efaff",
+    "TextureComputedColor": "#9BCDCF"
+  },
+  "Consumable": false,
+  "MaxDurability": 500,
+  "MaxStack": 1,
+  "DropOnDeath": true
+}

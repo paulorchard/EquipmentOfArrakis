@@ -1,0 +1,5 @@
+{
+  "$Comment": "Left click of the Equipment LitreJon: pours up to 50 units from the flask into the player water, only what the player lacks. RunTime is the pace of a held click.",
+  "Type": "Arrakis_Litrejon_Pour",
+  "RunTime": 0.5
+}

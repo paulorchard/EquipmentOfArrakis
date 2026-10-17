@@ -1,0 +1,5 @@
+{
+  "$Comment": "Last in the Dew Harvester Primary chain: only reached when the swing ran to its end. Moves the water into the first LitreJon with room and takes the hum off. Charges nothing.",
+  "Type": "Arrakis_Harvester_Finish",
+  "FlaskItemId": "Arrakis_Tool_Litrejon"
+}

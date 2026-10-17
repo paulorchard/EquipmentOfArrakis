@@ -51,6 +51,20 @@ items.Arrakis_Tool_Cutter_Ray.description = Placeholder gun that cuts the block 
 items.Arrakis_Tool_Compactor.name = Compactor
 items.Arrakis_Tool_Compactor.description = Hold left click on sand to compact it: one item per second, the block is not broken. 1 Mana per second. Right click opens the tool picker.
 
+# ---- litrejon
+items.Arrakis_Tool_Litrejon.name = LitreJon
+items.Arrakis_Tool_Litrejon.description = A water flask. Left click pours up to 50 units into you, only what you lack. The bar shows how full it is. Right click opens the tool picker.
+arrakis.litrejon.needsWater = Water of Arrakis is needed to pour from the LitreJon.
+arrakis.litrejon.empty = The LitreJon is empty.
+arrakis.litrejon.full = You are not thirsty.
+
+# ---- harvester
+items.Arrakis_Tool_Dew_Harvester.name = Dew Harvester
+items.Arrakis_Tool_Dew_Harvester.description = Hold left click on a Primrose to collect dew: 10 water into a LitreJon you carry per swing, 10 Mana each. Right click opens the tool picker.
+arrakis.harvester.noPrimrose = Aim at a Primrose.
+arrakis.harvester.noFlask = You carry no LitreJon.
+arrakis.harvester.flasksFull = Your LitreJon is full.
+
 # EXPERIMENT BEGIN
 items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter
 items.Arrakis_Exp_Flame_Cutter.description = EXPERIMENT. A flamethrower turned into a rock-cutting beam: no fire, no damage to creatures; hold Primary to cut. Costs Mana.

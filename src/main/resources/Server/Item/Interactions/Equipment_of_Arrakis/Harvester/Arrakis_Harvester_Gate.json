@@ -1,0 +1,10 @@
+{
+  "$Comment": "First in the Dew Harvester Primary chain. Refuses (chain failed: no swing, no Mana, no hum, a short message) unless the block under the crosshair within Range is the Primrose, a LitreJon with room is carried and there are ManaPerSwing Mana. Otherwise pays, starts the hum and remembers the swing; Arrakis_Harvester_Finish moves WaterPerSwing into the first LitreJon with room.",
+  "Type": "Arrakis_Harvester_Gate",
+  "Range": 3,
+  "ManaPerSwing": 10,
+  "WaterPerSwing": 10,
+  "PrimroseBlockId": "Arrakis_Primrose",
+  "FlaskItemId": "Arrakis_Tool_Litrejon",
+  "HumEffectId": "Arrakis_Harvester_Active"
+}

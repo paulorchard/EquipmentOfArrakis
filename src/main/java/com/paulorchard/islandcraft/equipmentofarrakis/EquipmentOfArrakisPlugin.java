@@ -12,6 +12,8 @@ import com.paulorchard.islandcraft.equipmentofarrakis.core.EquipmentModule;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.ModuleContext;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.Modules;
 import com.paulorchard.islandcraft.equipmentofarrakis.picker.PickerModule;
+import com.paulorchard.islandcraft.equipmentofarrakis.harvester.HarvesterModule;
+import com.paulorchard.islandcraft.equipmentofarrakis.litrejon.LitrejonModule;
 import com.paulorchard.islandcraft.equipmentofarrakis.power.Power;
 import com.paulorchard.islandcraft.equipmentofarrakis.power.PowerModule;
 
@@ -61,7 +63,9 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
         List<EquipmentModule> all = List.of(new CoreModule(modules), new PowerModule(), new CatalogModule(),
                 new PickerModule(this),
                 new CutterModule(this),
-                new CompactorModule(this));
+                new CompactorModule(this),
+                new LitrejonModule(this),
+                new HarvesterModule(this));
         all = java.util.stream.Stream.concat(all.stream(), java.util.stream.Stream.of(new com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsModule(this))).toList(); // EXPERIMENT: remove with the experiments module
         modules.setupAll(all, settings.enabledModules(), context);
         getCommandRegistry().registerCommand(root.command());

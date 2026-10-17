@@ -1,0 +1,8 @@
+{
+  "$Comment": "Primary (left click) of the Dew Harvester: the gate, the swing, the finish. Held, the chain starts again after each swing.",
+  "Interactions": [
+    "Arrakis_Harvester_Gate",
+    "Arrakis_Harvester_Swing",
+    "Arrakis_Harvester_Finish"
+  ]
+}

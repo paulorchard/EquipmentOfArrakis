@@ -1,0 +1,40 @@
+{
+  "$Comment": "Dew Harvester (renamed from the Dew Reaper). Placeholder: the vanilla crude sickle by path (model, texture, icon, animation set Sickle). Left click on an Arrakis_Primrose: a 1 second swing that moves 10 water into a LitreJon and costs 10 Mana. Right click opens the picker. No recipe, no durability.",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Tool_Dew_Harvester.name",
+    "Description": "server.items.Arrakis_Tool_Dew_Harvester.description"
+  },
+  "Categories": [
+    "IslandCraft.Tools"
+  ],
+  "PlayerAnimationsId": "Sickle",
+  "Model": "Items/Tools/Sickle/Crude.blockymodel",
+  "Texture": "Items/Tools/Sickle/Crude_Texture.png",
+  "Icon": "Icons/ItemsGenerated/Tool_Sickle_Crude.png",
+  "IconProperties": {
+    "Scale": 0.37,
+    "Translation": [
+      31.2,
+      -30
+    ],
+    "Rotation": [
+      45,
+      270,
+      0
+    ]
+  },
+  "Quality": "Common",
+  "Interactions": {
+    "Primary": "Arrakis_Harvester_Primary",
+    "Secondary": "Arrakis_Picker_Secondary"
+  },
+  "DroppedItemAnimation": "Items/Animations/Dropped/Dropped_Diagonal_Left.blockyanim",
+  "MaxDurability": 0,
+  "MaxStack": 1,
+  "Tags": {
+    "Type": [
+      "Tool"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Weapons_Wood"
+}

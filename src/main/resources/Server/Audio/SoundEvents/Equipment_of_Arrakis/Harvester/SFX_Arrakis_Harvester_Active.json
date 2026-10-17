@@ -1,0 +1,18 @@
+{
+  "$Comment": "The Dew Harvester hum while it swings: one looping layer of the vanilla Staff_Charged_LP_01, by path (the sound of the v1 Dew Reaper and the Compactor). Heard by the others, positional; the _Local copy is the user own, without the attenuation Parent.",
+  "AudioCategory": "AudioCat_Weapons",
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Weapons/Staff/Staff_Charged_LP_01.ogg"
+      ],
+      "Looping": true,
+      "StartDelay": 0,
+      "Volume": 6
+    }
+  ],
+  "Volume": 0,
+  "MaxInstance": 2,
+  "PreventSoundInterruption": false,
+  "Parent": "SFX_Attn_Loud"
+}

@@ -13,6 +13,9 @@
   "Dependencies": {
     "Hytale:EntityModule": "*"
   },
+  "OptionalDependencies": {
+    "IslandCraft:IslandCraft - Water of Arrakis": "*"
+  },
   "DisabledByDefault": false,
   "IncludesAssetPack": true
 }

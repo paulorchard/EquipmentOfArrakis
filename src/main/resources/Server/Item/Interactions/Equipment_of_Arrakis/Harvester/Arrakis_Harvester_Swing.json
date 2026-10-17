@@ -1,0 +1,9 @@
+{
+  "$Comment": "One swing, SwingSeconds long: the vanilla sickle SwingLeftSlow animation (set Sickle). Animation only, no damage. RunTime is the swing length.",
+  "Type": "Simple",
+  "RunTime": 1.0,
+  "Effects": {
+    "ItemAnimationId": "SwingLeftSlow",
+    "ClearAnimationOnFinish": true
+  }
+}

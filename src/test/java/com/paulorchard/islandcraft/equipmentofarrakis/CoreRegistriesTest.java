@@ -1,5 +1,6 @@
 package com.paulorchard.islandcraft.equipmentofarrakis;
 
+import com.paulorchard.islandcraft.equipmentofarrakis.core.ContainerInventory;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.ContainerItem;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.ToggleRegistry;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.ToolRegistry;
@@ -91,5 +92,15 @@ class CoreRegistriesTest {
         assertEquals(0, jon.getAmount(null));
         assertEquals(0, jon.room(null));
         assertNull(null);
+    }
+
+    @Test
+    void theFirstContainerWithRoomIsPickedHotbarFirst() {
+        // place 0 = hotbar, place 1 = storage; negative = not the item, 0 = full
+        assertEquals("[0, 3]", java.util.Arrays.toString(ContainerInventory.firstWithRoom(new int[][] {{-1, 0, -1, 7}, {500}})));
+        assertEquals("[1, 0]", java.util.Arrays.toString(ContainerInventory.firstWithRoom(new int[][] {{-1, 0, -1}, {1, 500}})));
+        assertNull(ContainerInventory.firstWithRoom(new int[][] {{0, 0}, {0}}), "all full");
+        assertNull(ContainerInventory.firstWithRoom(new int[][] {{-1, -1}, {-1}}), "none carried");
+        assertNull(ContainerInventory.firstWithRoom(new int[][] {}));
     }
 }
