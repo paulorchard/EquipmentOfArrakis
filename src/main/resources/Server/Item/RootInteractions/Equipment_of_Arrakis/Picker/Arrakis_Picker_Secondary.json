@@ -1,0 +1,6 @@
+{
+  "$Comment": "The Secondary (right click) of every Arrakis tool: the tool picker.",
+  "Interactions": [
+    "Arrakis_Picker_Open"
+  ]
+}

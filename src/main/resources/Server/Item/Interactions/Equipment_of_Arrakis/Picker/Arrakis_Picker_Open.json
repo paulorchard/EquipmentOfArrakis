@@ -1,0 +1,7 @@
+{
+  "$Comment": "Opens the tool picker page: the engine's OpenCustomUI interaction, with the page registered by PickerModule as Arrakis_Picker. It refuses to open while another custom page is open.",
+  "Type": "OpenCustomUI",
+  "Page": {
+    "Id": "Arrakis_Picker"
+  }
+}

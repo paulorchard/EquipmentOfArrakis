@@ -28,6 +28,21 @@ ui.itemcategory.islandcraft.armor = Armor
 ui.itemcategory.islandcraft.resources = Resources
 items.Arrakis_Dev_Marker.name = Dev Marker
 
+# ---- picker
+commands.arrakis.tools.desc = The tool set: give, state, open
+commands.arrakis.tools.give.desc = Give every Arrakis tool and the Blood Bag (the hotbar if there is room, else the inventory)
+commands.arrakis.tools.state.desc = Show the held item, the tools found with their container and slot, the toggles and Mana
+commands.arrakis.tools.open.desc = Open the tool picker page without right-clicking
+customUI.arrakisPicker.title = Tools
+customUI.arrakisPicker.toolsHeading = Your tools
+customUI.arrakisPicker.passiveHeading = Always available
+customUI.arrakisPicker.only = You carry only this one tool.
+customUI.arrakisPicker.inHand = In hand
+customUI.arrakisPicker.on = ON
+customUI.arrakisPicker.off = OFF
+customUI.arrakisPicker.handChanged = The tool in your hand changed; nothing was swapped.
+customUI.arrakisPicker.toolGone = That tool is no longer where it was; nothing was swapped.
+
 # EXPERIMENT BEGIN
 items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter
 items.Arrakis_Exp_Flame_Cutter.description = EXPERIMENT. A flamethrower turned into a rock-cutting beam: no fire, no damage to creatures; hold Primary to cut. Costs Mana.
