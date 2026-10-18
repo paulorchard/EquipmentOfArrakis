@@ -11,6 +11,49 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class HudMathTest {
 
     @Test
+    void aFillIsSplitIntoWeightsThatAlwaysAddUpToTheScaleWithZeroAndOneHundredExact() {
+        for (double percent = -5; percent <= 105; percent += 0.1) {
+            int[] parts = HudMath.split(percent);
+            assertEquals(HudMath.SCALE, parts[0] + parts[1], "percent " + percent);
+            assertTrue(parts[0] >= 0 && parts[1] >= 0);
+        }
+        assertEquals(0, HudMath.split(0)[0]);
+        assertEquals(1000, HudMath.split(0)[1]);
+        assertEquals(1000, HudMath.split(100)[0]);
+        assertEquals(0, HudMath.split(100)[1]);
+        assertEquals(500, HudMath.split(50)[0]);
+        assertEquals(0, HudMath.split(-3)[0], "below 0 is empty");
+        assertEquals(1000, HudMath.split(250)[0], "above 100 is full");
+        assertEquals(0, HudMath.split(Double.NaN)[0]);
+        assertEquals(1, HudMath.split(0.1)[0], "0.1% is one step");
+    }
+
+    @Test
+    void everyColourStringTheHudSendsAtRunTimeIsPlainSixDigitHex() {
+        String hex = "^#[0-9a-fA-F]{6}$";
+        HudConfig cfg = new HudConfig();
+        for (String c : new String[] {cfg.getPowerColor(), cfg.getPowerIconColor(), cfg.getWaterIconColor(), cfg.getExposureIconLow(), cfg.getExposureIconHigh(),
+                cfg.getAlertColor(), cfg.getExposureColorOrange(), cfg.getExposureColorRed()}) {
+            assertTrue(c.matches(hex), c);
+        }
+        for (int percent = 0; percent <= 100; percent++) {
+            assertTrue(HudMath.safeColor(HudMath.exposureColor(percent, cfg.getExposureRedStartPercent(), cfg.getExposureColorOrange(), cfg.getExposureColorRed()), "#ff8a1f").matches(hex));
+            assertTrue(HudMath.exposureColor(percent, cfg.getExposureRedStartPercent(), cfg.getExposureColorOrange(), cfg.getExposureColorRed()).matches(hex), "percent " + percent);
+            assertTrue(HudMath.exposureIconColor(percent, cfg.getExposureIconLow(), cfg.getExposureIconHigh()).matches(hex), "percent " + percent);
+        }
+    }
+
+    @Test
+    void aBadColourFromTheConfigIsReplacedBeforeItCanBeSent() {
+        assertEquals("#57bbaf", HudMath.safeColor("#57BBAF", "#000000").toLowerCase());
+        assertEquals("#123456", HudMath.safeColor("#123456", "#000000"));
+        for (String bad : new String[] {"#ffffff(0.5)", "#fff", "ffffff", "red", "#gggggg", "", "#12345678", null}) {
+            assertEquals("#abcdef", HudMath.safeColor(bad, "#abcdef"), String.valueOf(bad));
+        }
+        assertTrue(HudMath.exposureColor(90, 75, "not a colour", "#12").matches("^#[0-9a-fA-F]{6}$"), "even a bad rule gives a sendable colour");
+    }
+
+    @Test
     void theProgressBarValueIsTheFractionAndStaysInRange() {
         assertEquals(0f, HudMath.value(0), 0f);
         assertEquals(1f, HudMath.value(100), 0f);

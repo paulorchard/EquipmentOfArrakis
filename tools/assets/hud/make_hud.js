@@ -31,7 +31,9 @@ const ASSETS_ZIP = process.env.HUD_ASSETS_ZIP
 const DEFAULT_ROW_GAP = 26;       // from the bottom of the lower row to the bottom of the upper row (measured from the reference screenshot)
 const TINT = { Power: '#57bbaf', Exposure: '#d49c1b', Health: '#ffffff', Water: '#ffffff' };
 const ICON_TINT = { Power: '#7fd0ff', Exposure: '#ffd23f', Water: '#4da3ff' };
-const NEUTRAL_BODY = 0.88;        // brightness of the median pixel of a neutral fill (the brightest pixels clip to 1.0 so the rim reads lighter)
+const FILL_CAP = 9;               // HorizontalBorder (virtual pixels) of a fill group: the slanted end of the vanilla fills is 16 texture pixels wide over the 24 rows (measured: first opaque column 16, 12, 8, 4, 0 on rows 0, 6, 12, 18, 23), so 18 texture pixels = 9 virtual
+const SCALE = 1000;               // FlexWeight parts of a bar: the fill group gets v of them, the empty group 1000 - v
+const NEUTRAL_BODY = 1.0;        // brightness of the median pixel of a neutral fill (the brightest pixels clip to 1.0 so the rim reads lighter)
 const ALERT_RED = '#e6004f';      // the vanilla error overlay rim (#bf0046) brightened a fifth so that a flashing fill reads as the same red
 // ------------------------------------------------------------------
 
@@ -239,15 +241,31 @@ function document(route, creative) {
             + `          Anchor: (${bar.left ? 'Left: 0, ' : ''}Width: ${m.barWidth}, Height: ${m.barHeight});\n`
             + `          Background: "${p.background}";\n\n`
             + `          Group #${n}Error {\n            Visible: false;\n            Background: PatchStyle(TexturePath: "${p.error}", Color: #ffffff);\n          }\n\n`
-            + `          ProgressBar #${n}Fill {\n            Anchor: (Width: ${m.barWidth}, Height: ${m.barHeight});\n            BarTexturePath: "${p.fill}";\n            Bar: (Color: ${TINT[n]});\n            Value: 0;\n          }\n\n`
+            + `          Group #${n}FillTrack {
+            LayoutMode: Left;
+
+              Group #${n}Fill {
+              FlexWeight: 0;
+              Background: (TexturePath: "${p.fill}", HorizontalBorder: ${FILL_CAP}, Color: ${TINT[n]});
+            }
+
+            Group #${n}Empty {
+              FlexWeight: ${SCALE};
+            }
+          }
+
+`
             + `          Group #${n}AlertGroup {
             Visible: false;
+            LayoutMode: Left;
 
-            ProgressBar #${n}Alert {
-              Anchor: (Width: ${m.barWidth}, Height: ${m.barHeight});
-              BarTexturePath: "${DERIVED(NEUTRAL_OF[bar.shape][creative ? 1 : 0])}";
-              Bar: (Color: ${ALERT_RED});
-              Value: 0;
+            Group #${n}Alert {
+              FlexWeight: 0;
+              Background: (TexturePath: "${DERIVED(NEUTRAL_OF[bar.shape][creative ? 1 : 0])}", HorizontalBorder: ${FILL_CAP}, Color: ${ALERT_RED});
+            }
+
+            Group #${n}AlertEmpty {
+              FlexWeight: ${SCALE};
             }
           }
 

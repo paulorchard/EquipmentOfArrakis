@@ -203,8 +203,8 @@ final class HudRuntime {
             state.alert[i] = HudMath.alert(alerting, state.bright);
             if (bar == HudBar.EXPOSURE) {
                 WaterApi.ExposureColors rules = exposureRules();
-                fill[i] = HudMath.exposureColor(Double.isNaN(percent) ? 0 : percent, rules.redStartPercent(), rules.orange(), rules.red());
-                icon[i] = HudMath.exposureIconColor(percent, cfg.getExposureIconLow(), cfg.getExposureIconHigh());
+                fill[i] = HudMath.safeColor(HudMath.exposureColor(Double.isNaN(percent) ? 0 : percent, rules.redStartPercent(), rules.orange(), rules.red()), "#ff8a1f");
+                icon[i] = HudMath.safeColor(HudMath.exposureIconColor(percent, HudMath.safeColor(cfg.getExposureIconLow(), "#ffd23f"), HudMath.safeColor(cfg.getExposureIconHigh(), "#ff8a1f")), "#ffd23f");
             }
         }
         state.view.refresh(state.percent, fill, icon, state.alert);

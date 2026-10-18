@@ -107,13 +107,40 @@ class HudAssetsTest {
     void theBarsUseTheVanillaProgressBarAndTheVanillaMetrics() throws IOException {
         for (String document : concat(DOCUMENTS, REFERENCE)) {
             String ui = ui(document);
-            assertEquals(4 * 3, count(ui, "ProgressBar #"), document + ": a fill, an alert fill and an effect for each bar");
+            assertEquals(4, count(ui, "ProgressBar #"), document + ": only the vanilla effect layer of each bar is a ProgressBar");
+            assertEquals(8, count(ui, "HorizontalBorder: 9"), document + ": the fill and the alert fill of each bar are 9 pixel border groups (the slanted cap of the vanilla fills)");
+            assertEquals(8, count(ui, "FlexWeight: 1000;"), document + ": each fill group has an empty partner sharing the bar length");
             assertTrue(ui.contains("Bottom: 120"), document + ": the bottom row is where the vanilla bars are");
             assertTrue(ui.contains("Bottom: 146"), document + ": the top row is the default gap above it");
             assertTrue(ui.contains("Width: 318, Height: 12"), document);
             assertTrue(ui.contains("Width: 24, Height: 24"), document);
             assertTrue(ui.contains("Top: -8"), document + ": the vanilla icon offset");
-            assertFalse(ui.contains("FlexWeight: 1000"), document + ": no FlexWeight fill split any more");
+        }
+    }
+
+    /**
+     * Rules learned on a client: Bar.Color does not tint a textured ProgressBar fill (the bars came out grey); Background.Color on a Group does.
+     * A colour with an alpha, or any string the client cannot convert, set at run time disconnects the player.
+     */
+    @Test
+    void noTexturedProgressBarSetsBarAndNoCodeSetsABarColor() throws IOException {
+        for (String document : concat(DOCUMENTS, REFERENCE)) {
+            String ui = ui(document);
+            Matcher m = Pattern.compile("ProgressBar #\\w+ \\{[^}]*\\}").matcher(ui);
+            while (m.find()) {
+                String block = m.group();
+                assertFalse(block.contains("BarTexturePath") && block.contains("Bar:"), document + ": a textured ProgressBar must not set Bar: (it is ignored): " + block);
+            }
+            assertFalse(ui.contains("Bar: ("), document + ": Bar: ( is not used anywhere");
+        }
+        try (java.util.stream.Stream<java.nio.file.Path> files = java.nio.file.Files.list(java.nio.file.Path.of("src/main/java/com/paulorchard/islandcraft/equipmentofarrakis/hud"))) {
+            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) files.filter(f -> f.toString().endsWith(".java"))::iterator) {
+                String code = java.nio.file.Files.readString(file);
+                if (file.getFileName().toString().endsWith("Test.java")) {
+                    continue;
+                }
+                assertFalse(code.contains("Bar.Color"), file + " mentions a Bar.Color selector");
+            }
         }
     }
 

@@ -33,21 +33,30 @@ Group #PowerRow {
             Background: PatchStyle(TexturePath: "VanillaDerived/ErrorLeft.png", Color: #ffffff);
           }
 
-          ProgressBar #PowerFill {
-            Anchor: (Width: 318, Height: 12);
-            BarTexturePath: "VanillaDerived/NeutralHealthBarFill.png";
-            Bar: (Color: #57bbaf);
-            Value: 0;
+          Group #PowerFillTrack {
+            LayoutMode: Left;
+
+              Group #PowerFill {
+              FlexWeight: 0;
+              Background: (TexturePath: "VanillaDerived/NeutralHealthBarFill.png", HorizontalBorder: 9, Color: #57bbaf);
+            }
+
+            Group #PowerEmpty {
+              FlexWeight: 1000;
+            }
           }
 
           Group #PowerAlertGroup {
             Visible: false;
+            LayoutMode: Left;
 
-            ProgressBar #PowerAlert {
-              Anchor: (Width: 318, Height: 12);
-              BarTexturePath: "VanillaDerived/NeutralHealthBarFill.png";
-              Bar: (Color: #e6004f);
-              Value: 0;
+            Group #PowerAlert {
+              FlexWeight: 0;
+              Background: (TexturePath: "VanillaDerived/NeutralHealthBarFill.png", HorizontalBorder: 9, Color: #e6004f);
+            }
+
+            Group #PowerAlertEmpty {
+              FlexWeight: 1000;
             }
           }
 
@@ -109,21 +118,30 @@ Group #HealthRow {
             Background: PatchStyle(TexturePath: "VanillaDerived/ErrorLeft.png", Color: #ffffff);
           }
 
-          ProgressBar #HealthFill {
-            Anchor: (Width: 318, Height: 12);
-            BarTexturePath: "VanillaDerived/HealthBarFill.png";
-            Bar: (Color: #ffffff);
-            Value: 0;
+          Group #HealthFillTrack {
+            LayoutMode: Left;
+
+              Group #HealthFill {
+              FlexWeight: 0;
+              Background: (TexturePath: "VanillaDerived/HealthBarFill.png", HorizontalBorder: 9, Color: #ffffff);
+            }
+
+            Group #HealthEmpty {
+              FlexWeight: 1000;
+            }
           }
 
           Group #HealthAlertGroup {
             Visible: false;
+            LayoutMode: Left;
 
-            ProgressBar #HealthAlert {
-              Anchor: (Width: 318, Height: 12);
-              BarTexturePath: "VanillaDerived/NeutralHealthBarFill.png";
-              Bar: (Color: #e6004f);
-              Value: 0;
+            Group #HealthAlert {
+              FlexWeight: 0;
+              Background: (TexturePath: "VanillaDerived/NeutralHealthBarFill.png", HorizontalBorder: 9, Color: #e6004f);
+            }
+
+            Group #HealthAlertEmpty {
+              FlexWeight: 1000;
             }
           }
 
@@ -184,21 +202,30 @@ Group #ExposureRow {
             Background: PatchStyle(TexturePath: "VanillaDerived/ManaBackgroundError.png", Color: #ffffff);
           }
 
-          ProgressBar #ExposureFill {
-            Anchor: (Width: 318, Height: 12);
-            BarTexturePath: "VanillaDerived/NeutralManaFill.png";
-            Bar: (Color: #d49c1b);
-            Value: 0;
+          Group #ExposureFillTrack {
+            LayoutMode: Left;
+
+              Group #ExposureFill {
+              FlexWeight: 0;
+              Background: (TexturePath: "VanillaDerived/NeutralManaFill.png", HorizontalBorder: 9, Color: #d49c1b);
+            }
+
+            Group #ExposureEmpty {
+              FlexWeight: 1000;
+            }
           }
 
           Group #ExposureAlertGroup {
             Visible: false;
+            LayoutMode: Left;
 
-            ProgressBar #ExposureAlert {
-              Anchor: (Width: 318, Height: 12);
-              BarTexturePath: "VanillaDerived/NeutralManaFill.png";
-              Bar: (Color: #e6004f);
-              Value: 0;
+            Group #ExposureAlert {
+              FlexWeight: 0;
+              Background: (TexturePath: "VanillaDerived/NeutralManaFill.png", HorizontalBorder: 9, Color: #e6004f);
+            }
+
+            Group #ExposureAlertEmpty {
+              FlexWeight: 1000;
             }
           }
 
@@ -260,21 +287,30 @@ Group #WaterRow {
             Background: PatchStyle(TexturePath: "VanillaDerived/ManaBackgroundError.png", Color: #ffffff);
           }
 
-          ProgressBar #WaterFill {
-            Anchor: (Width: 318, Height: 12);
-            BarTexturePath: "VanillaDerived/ManaFill.png";
-            Bar: (Color: #ffffff);
-            Value: 0;
+          Group #WaterFillTrack {
+            LayoutMode: Left;
+
+              Group #WaterFill {
+              FlexWeight: 0;
+              Background: (TexturePath: "VanillaDerived/ManaFill.png", HorizontalBorder: 9, Color: #ffffff);
+            }
+
+            Group #WaterEmpty {
+              FlexWeight: 1000;
+            }
           }
 
           Group #WaterAlertGroup {
             Visible: false;
+            LayoutMode: Left;
 
-            ProgressBar #WaterAlert {
-              Anchor: (Width: 318, Height: 12);
-              BarTexturePath: "VanillaDerived/NeutralManaFill.png";
-              Bar: (Color: #e6004f);
-              Value: 0;
+            Group #WaterAlert {
+              FlexWeight: 0;
+              Background: (TexturePath: "VanillaDerived/NeutralManaFill.png", HorizontalBorder: 9, Color: #e6004f);
+            }
+
+            Group #WaterAlertEmpty {
+              FlexWeight: 1000;
             }
           }
 

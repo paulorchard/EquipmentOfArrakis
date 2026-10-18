@@ -15,7 +15,25 @@ final class HudMath {
         DIM
     }
 
+    /** FlexWeight is an integer in the client, so a fill is split into SCALE parts: 1000 gives 0.1% steps. A part with weight 0 has no length. */
+    static final int SCALE = 1000;
+
     private HudMath() {
+    }
+
+    /** The FlexWeights of (fill part, empty part) for a percent 0..100. They always add up to SCALE; 0 and 100 are exact. */
+    static int[] split(double percent) {
+        double v = Double.isNaN(percent) ? 0.0 : Math.max(0.0, Math.min(1.0, percent / 100.0));
+        int fill = (int) Math.round(v * SCALE);
+        return new int[] {fill, SCALE - fill};
+    }
+
+    /**
+     * A colour string that is safe to send to the client at run time: exactly #rrggbb. The client disconnects the player on a string it cannot
+     * convert (it refused #ffffff(0.5)), so a bad value from the config is replaced by the fallback before it is ever sent.
+     */
+    static String safeColor(String value, String fallback) {
+        return value != null && value.matches("^#[0-9a-fA-F]{6}$") ? value.toLowerCase(Locale.ROOT) : fallback;
     }
 
     /** The value of a vanilla ProgressBar for a percent: 0..1 (NaN is 0). */
@@ -67,8 +85,8 @@ final class HudMath {
     }
 
     static String blend(String from, String to, double t) {
-        int a = parse(from);
-        int b = parse(to);
+        int a = parse(safeColor(from, "#ffffff"));
+        int b = parse(safeColor(to, "#ffffff"));
         t = Math.max(0.0, Math.min(1.0, t));
         return String.format(Locale.ROOT, "#%02x%02x%02x", lerp((a >> 16) & 0xff, (b >> 16) & 0xff, t),
                 lerp((a >> 8) & 0xff, (b >> 8) & 0xff, t), lerp(a & 0xff, b & 0xff, t));

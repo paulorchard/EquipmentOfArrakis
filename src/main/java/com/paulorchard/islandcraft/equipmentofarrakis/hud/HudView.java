@@ -69,18 +69,17 @@ final class HudView extends CustomUIHud {
             HudConfig.Nudge nudge = config.nudges().of(bar);
             ui.setObject("#" + n + "Row.Anchor", row(HudLayout.rowBottom(bar, config.getRowGap(), config.getBarsLift(), nudge.getY())));
             ui.setObject("#" + n + "Pad.Anchor", width(HudLayout.pad(bar, nudge.getX())));
-            ui.set("#" + n + "Alert.Bar.Color", config.getAlertColor());
             boolean shown = bar.left || rightHalf;
             ui.set("#" + n + "Row.Visible", shown);
             switch (bar) {
                 case POWER -> {
-                    ui.set("#PowerFill.Bar.Color", config.getPowerColor());
-                    ui.set("#PowerIcon.Background.Color", config.getPowerIconColor());
+                    ui.set("#PowerFill.Background.Color", HudMath.safeColor(config.getPowerColor(), "#57bbaf"));
+                    ui.set("#PowerIcon.Background.Color", HudMath.safeColor(config.getPowerIconColor(), "#7fd0ff"));
                 }
-                case WATER -> ui.set("#WaterIcon.Background.Color", config.getWaterIconColor());
+                case WATER -> ui.set("#WaterIcon.Background.Color", HudMath.safeColor(config.getWaterIconColor(), "#4da3ff"));
                 case EXPOSURE -> {
-                    ui.set("#ExposureFill.Bar.Color", HudMath.exposureColor(0, config.getExposureRedStartPercent(), config.getExposureColorOrange(), config.getExposureColorRed()));
-                    ui.set("#ExposureIcon.Background.Color", config.getExposureIconLow());
+                    ui.set("#ExposureFill.Background.Color", HudMath.safeColor(HudMath.exposureColor(0, config.getExposureRedStartPercent(), config.getExposureColorOrange(), config.getExposureColorRed()), "#ff8a1f"));
+                    ui.set("#ExposureIcon.Background.Color", HudMath.safeColor(config.getExposureIconLow(), "#ffd23f"));
                 }
                 default -> {
                 }
@@ -112,13 +111,16 @@ final class HudView extends CustomUIHud {
                 ui = new UICommandBuilder();
             }
             if (fillChanged) {
-                float value = HudMath.value(percent[i]);
-                ui.set("#" + n + "Fill.Value", value);
-                ui.set("#" + n + "Effect.Value", value);
+                int[] parts = HudMath.split(percent[i]);
+                ui.set("#" + n + "Fill.FlexWeight", parts[0]);
+                ui.set("#" + n + "Empty.FlexWeight", parts[1]);
+                ui.set("#" + n + "Effect.Value", HudMath.value(percent[i]));
                 sentPercent[i] = percent[i];
             }
             if (alert[i] != HudMath.Alert.NONE && (fillChanged || alertChanged)) {
-                ui.set("#" + n + "Alert.Value", HudMath.value(percent[i]));
+                int[] alertParts = HudMath.split(percent[i]);
+                ui.set("#" + n + "Alert.FlexWeight", alertParts[0]);
+                ui.set("#" + n + "AlertEmpty.FlexWeight", alertParts[1]);
             }
             if (alertChanged) {
                 ui.set("#" + n + "AlertGroup.Visible", alert[i] != HudMath.Alert.NONE);
@@ -129,7 +131,7 @@ final class HudView extends CustomUIHud {
                 sentAlert[i] = alert[i];
             }
             if (tintChanged) {
-                ui.set("#" + n + "Fill.Bar.Color", fill[i]);
+                ui.set("#" + n + "Fill.Background.Color", fill[i]);
                 sentFill[i] = fill[i];
             }
             if (iconChanged) {
