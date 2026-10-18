@@ -7,6 +7,7 @@
     "Description": "server.items.Arrakis_Weapon_Maula_Pistol.description"
   },
   "Categories": [
+    "Items.Weapons",
     "IslandCraft.Weapons"
   ],
   "Recipe": null,

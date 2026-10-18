@@ -51,7 +51,7 @@ class WeaponAssetsTest {
     void everyWeaponIsInTheIslandCraftWeaponsTabHasNoRecipeAndNeverWearsOut() throws IOException {
         for (String id : WeaponIds.all()) {
             JsonObject item = weapon(id);
-            assertEquals(List.of("IslandCraft.Weapons"), strings(item.getAsJsonArray("Categories")), id);
+            assertEquals(List.of("Items.Weapons", "IslandCraft.Weapons"), strings(item.getAsJsonArray("Categories")), id);
             assertTrue(item.has("Recipe") && item.get("Recipe").isJsonNull(), id + ": Recipe must be null (the parent has one)");
             assertEquals(0, item.get("MaxDurability").getAsInt(), id);
             assertEquals(1, item.get("MaxStack").getAsInt(), id);

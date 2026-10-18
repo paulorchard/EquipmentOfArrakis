@@ -14,6 +14,7 @@
   "DurabilityLossOnHit": 0,
   "MaxStack": 1,
   "Categories": [
+    "Items.Weapons",
     "IslandCraft.Weapons"
   ],
   "Interactions": {

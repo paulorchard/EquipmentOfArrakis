@@ -338,6 +338,9 @@ not lost through the Weapon block, the tags, the HUD fields or the interaction v
 3. `maxDurability 0` (a weapon with no durability): least likely, the HUD shows abilities, not wear.
 **Next step (needs a client):** three throw-away daggers, one with `Items.Weapons` added to the categories, one without Ability4, one with durability 120, to see which brings the HUD back.
 
+**Change made (first test):** all ten weapons now list `"Categories": ["Items.Weapons", "IslandCraft.Weapons"]` (generator and items; nothing else changed). Headless boot and self-check accept it; `/arrakis weapons diff` on the daggers shows categories `[Items.Weapons]  |  [Items.Weapons, IslandCraft.Weapons]`, and the other differing fields are Ability4, the durability fields, the translation keys, the recipe and `data`.
+**Expected client result (needs a client):** holding an Arrakis weapon shows the vanilla ability HUD as the Crude weapon does, H still toggles the shield, and the weapons also appear in the vanilla Weapons creative tab as well as IslandCraft > Weapons (expected, not confirmed). If the HUD does not return, stop and plan the next suspect. The Cutter Ray is a Weapon_Gun clone listed only in IslandCraft.Tools, so it has the same situation and would need the same change if this works.
+
 ### Human test sheet, weapons and the H key (a client; `/arrakis weapons give`, survival and creative)
 
 11. Creative menu, IslandCraft tab, Weapons: eight melee and the Maula Pistol and Dartgun, with icons and names; each type has its own vanilla look (Crude, Thorium, Cobalt, Adamantite models).

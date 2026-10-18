@@ -27,6 +27,7 @@ const DAMAGE = 1;               // damage of one dart (the projectile's Damage i
 const COST_PER_SHOT = 0;        // what the gate asks for each shot: nothing for now (see GunCost.java)
 const TRANSIENT_DB = -6;        // added to the volume (dB) of the first layer, the Transient crack: -6 dB is half the amplitude
 const SMOKE_OFFSET = { X: 0.0, Y: 0.3, Z: -0.08 };   // the vanilla offset of Rifle_Smoke in RifleShooting
+const VANILLA_TAB = 'Items.Weapons';
 const TAB = 'IslandCraft.Weapons';
 const ABILITY4 = 'Arrakis_Root_Toggle_Holtzman';
 // ------------------------------------------------------------------
@@ -92,7 +93,7 @@ for (const k of KINDS) {
             MaxDurability: 0,
             DurabilityLossOnHit: 0,
             MaxStack: 1,
-            Categories: [TAB],
+            Categories: [VANILLA_TAB, TAB],
             Interactions: interactions,
         });
         lang.push([id, 'Arrakis ' + k.noun + ' (' + h.house + ')', k.description.replace('%H', h.house).replace('%T', h.tier)]);
@@ -143,7 +144,7 @@ for (const gun of GUNS) {
             Name: 'server.items.' + gun.item + '.name',
             Description: 'server.items.' + gun.item + '.description',
         },
-        Categories: [TAB],
+        Categories: [VANILLA_TAB, TAB],
         Recipe: null,
         MaxDurability: 0,
         MaxStack: 1,
