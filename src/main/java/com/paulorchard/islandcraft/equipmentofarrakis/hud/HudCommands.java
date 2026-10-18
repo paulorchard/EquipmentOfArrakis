@@ -65,6 +65,7 @@ final class HudCommands {
             say(c, "All four nudges cleared and saved.");
         }, "word"));
         hud.addSubCommand(WorldPositional.build("art", LANG + "art.desc", (c, w, s, a) -> art(c, ctx, a), "route"));
+        hud.addSubCommand(WorldPositional.build("probe", LANG + "probe.desc", (c, w, s, a) -> player(c, ref -> probe(c, s, ref))));
         return hud;
     }
 
@@ -105,15 +106,36 @@ final class HudCommands {
         String word = args.length == 0 ? "state" : args[0].toLowerCase(Locale.ROOT);
         switch (word) {
             case "reference", "copy" -> {
+                if (word.equals("reference") && !HudDocs.routeAvailable(false, false, HudRuntime::packHas)) {
+                    say(c, "The reference route is not in the pack: its documents broke the client join of the first build (see EXPERIMENT_LOG.md). The copy route stays. "
+                            + "To test the reference documents build with -PhudExtra=reference.");
+                    return;
+                }
                 config.setArtSource(word);
                 changed(ctx);
                 say(c, "Art route now " + word + " (saved, every player's bars are built again)."
                         + (word.equals("reference") ? " If nothing shows on your client, type /arrakis hud art copy." : " The copies in VanillaDerived are used."));
             }
-            case "state" -> say(c, "Art route: " + config.getArtSource() + " (" + (config.copyArt()
-                    ? "VanillaDerived copies" : "the vanilla client paths; icons of Misc and Natural-Fluid from the Assets.zip path") + ")");
+            case "state" -> say(c, "Art route: " + config.getArtSource() + " (" + (config.copyArt() ? "VanillaDerived copies" : "the vanilla client paths") + "); the pack has the Reference documents: "
+                    + HudDocs.routeAvailable(false, false, HudRuntime::packHas) + ", the Copy documents: " + HudDocs.routeAvailable(true, false, HudRuntime::packHas));
             default -> say(c, "Usage: arrakis hud art reference|copy|state");
         }
+    }
+
+    // ---- probe (development: the bisect of a client join failure)
+
+    private static final String PROBE_DOCUMENT = "Hud/Equipment_of_Arrakis/Hud/Arrakis_Hud_Probe.ui";
+
+    /** Appends the throw-away probe document, but only when the jar was built with -PhudExtra=probe (the pack has it). */
+    private static void probe(CommandContext c, Store<EntityStore> store, Ref<EntityStore> entity) {
+        if (!HudRuntime.packHas("UI/Custom/Hud/Equipment_of_Arrakis/Hud/Arrakis_Hud_Probe.ui")) {
+            say(c, "The probe document is not in the pack (build with -PhudExtra=probe). Nothing was appended.");
+            return;
+        }
+        Player player = store.getComponent(entity, Player.getComponentType());
+        PlayerRef ref = store.getComponent(entity, PlayerRef.getComponentType());
+        player.getHudManager().addCustomHud(ref, new HudProbe(ref, PROBE_DOCUMENT));
+        say(c, "Probe appended: a bar-shaped background (HealthBackground by the outside path) 200 pixels above the bottom of the screen. If you can see it, the path resolves. Remove it with a respawn or /arrakis hud off then on.");
     }
 
     // ---- state, demo, component
@@ -126,7 +148,7 @@ final class HudCommands {
         var visible = player.getHudManager().getVisibleHudComponents();
         TreeSet<String> names = new TreeSet<>();
         visible.forEach(component -> names.add(component.name()));
-        say(c, "module " + (HudRuntime.enabled() ? "ON" : "OFF") + ", our HUD " + (state.view != null ? "added (" + HudView.document(state.view.copy(), state.view.creative()) + ")" : "not added")
+        say(c, "module " + (HudRuntime.enabled() ? "ON" : "OFF") + ", our HUD " + (state.view != null ? "added (" + state.view.document() + ")" : "not added")
                 + ", vanilla Health " + (visible.contains(HudComponent.Health) ? "SHOWN" : "hidden")
                 + ", Mana " + (visible.contains(HudComponent.Mana) ? "SHOWN" : "hidden") + ", hidden by us " + state.hidden
                 + ", game mode " + (player.getGameMode() == GameMode.Creative ? "Creative (creative fills)" : player.getGameMode() + " (adventure fills)"));

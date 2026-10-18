@@ -26,7 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class HudAssetsTest {
 
     private static final String BASE = "/Common/UI/Custom/Hud/Equipment_of_Arrakis/Hud/";
-    private static final String[] DOCUMENTS = {"Arrakis_Hud_Reference.ui", "Arrakis_Hud_Reference_Creative.ui", "Arrakis_Hud_Copy.ui", "Arrakis_Hud_Copy_Creative.ui"};
+    /** The documents in the pack. The Reference documents are not: they broke the client join of the first build and live under tools/assets/hud/variants. */
+    private static final String[] DOCUMENTS = {"Arrakis_Hud_Copy.ui", "Arrakis_Hud_Copy_Creative.ui"};
+    private static final String[] REFERENCE = {"Arrakis_Hud_Reference.ui", "Arrakis_Hud_Reference_Creative.ui"};
+    private static final java.nio.file.Path VARIANTS = java.nio.file.Path.of("tools/assets/hud/variants");
     /** Pixel sizes of the images in VanillaDerived/ (the @2x file of each name), the vanilla sizes. */
     private static final Map<String, int[]> SIZES = Map.ofEntries(
             Map.entry("StaminaIconWhite", new int[] {48, 48}),
@@ -51,7 +54,16 @@ class HudAssetsTest {
     }
 
     private static String ui(String name) throws IOException {
+        if (name.contains("Reference")) {
+            return java.nio.file.Files.readString(VARIANTS.resolve("reference/resources/Common/UI/Custom/Hud/Equipment_of_Arrakis/Hud/" + name));
+        }
         return new String(bytes(name), StandardCharsets.UTF_8);
+    }
+
+    private static String[] concat(String[] a, String[] b) {
+        String[] all = java.util.Arrays.copyOf(a, a.length + b.length);
+        System.arraycopy(b, 0, all, a.length, b.length);
+        return all;
     }
 
     private static List<String> paths(String document) throws IOException {
@@ -64,8 +76,24 @@ class HudAssetsTest {
     }
 
     @Test
+    void thePackHasOnlyTheCopyDocumentsAndNoByteDuplicateOfAVanillaIcon() throws IOException {
+        for (String name : REFERENCE) {
+            assertTrue(HudAssetsTest.class.getResource(BASE + name) == null, name + " must not be in the pack: the client refused to join with it");
+        }
+        assertTrue(HudAssetsTest.class.getResource(BASE + "Arrakis_Hud_Probe.ui") == null, "the probe is for a test jar only");
+        assertTrue(HudAssetsTest.class.getResource(BASE + "VanillaDerived/Misc-Dup.png") == null);
+        for (String name : new String[] {"Misc.png", "Natural-Fluid.png"}) {
+            String text = new String(bytes("VanillaDerived/" + name), StandardCharsets.ISO_8859_1);
+            assertFalse(text.contains("tEXt") || text.contains("iCCP") || text.contains("pHYs"), name + " must be our re-encode");
+        }
+        for (String variant : new String[] {"reference", "refinpack", "dupicons", "probe"}) {
+            assertTrue(java.nio.file.Files.isDirectory(VARIANTS.resolve(variant + "/resources")), "the bisect variant " + variant);
+        }
+    }
+
+    @Test
     void everyDocumentHasEveryIdTheViewSets() throws IOException {
-        for (String document : DOCUMENTS) {
+        for (String document : concat(DOCUMENTS, REFERENCE)) {
             String ui = ui(document);
             for (HudBar bar : HudBar.values()) {
                 for (String part : new String[] {"Row", "Pad", "Error", "Fill", "AlertGroup", "Alert", "Effect", "Outline", "Icon"}) {
@@ -77,7 +105,7 @@ class HudAssetsTest {
 
     @Test
     void theBarsUseTheVanillaProgressBarAndTheVanillaMetrics() throws IOException {
-        for (String document : DOCUMENTS) {
+        for (String document : concat(DOCUMENTS, REFERENCE)) {
             String ui = ui(document);
             assertEquals(4 * 3, count(ui, "ProgressBar #"), document + ": a fill, an alert fill and an effect for each bar");
             assertTrue(ui.contains("Bottom: 120"), document + ": the bottom row is where the vanilla bars are");
@@ -121,7 +149,7 @@ class HudAssetsTest {
 
     @Test
     void theReferenceRouteShipsNoCopyOfAVanillaFileOnlyTheListedExceptions() throws IOException {
-        for (String document : new String[] {"Arrakis_Hud_Reference.ui", "Arrakis_Hud_Reference_Creative.ui"}) {
+        for (String document : REFERENCE) {
             for (String path : paths(document)) {
                 if (path.startsWith("VanillaDerived/")) {
                     String name = path.substring("VanillaDerived/".length(), path.length() - ".png".length());

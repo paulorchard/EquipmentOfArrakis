@@ -180,9 +180,11 @@ for (const name of Object.keys(VANILLA)) {
     write(path.join(derived, name + '@2x.png'), fs.readFileSync(vanillaFile(name)));
     report.push([name + '@2x.png', 'plain copy (Copy route only)', 'byte copy of the client file, so the Copy route does not depend on the client interface path']);
 }
+// The two Assets.zip icons are re-encoded (the same pixels, written by our own PNG writer), not byte copied: a byte copy has the same hash as
+// the vanilla file and the server counts it as a duplicated asset (the join failure of the first build raised that count from 725 to 727).
 for (const [name, entry] of Object.entries(ZIP_ICONS)) {
-    write(path.join(derived, name + '.png'), zipEntry(entry));
-    report.push([name + '.png', 'plain copy (Copy route only)', 'byte copy of ' + entry + ' from Assets.zip']);
+    write(path.join(derived, name + '.png'), encodePng(readPng(zipEntry(entry))));
+    report.push([name + '.png', 'copy, re-encoded (Copy route only)', 'the pixels of ' + entry + ' from Assets.zip, re-encoded so the pack has no byte-identical duplicate of a vanilla asset']);
 }
 
 // ---------------------------------------------------------------- the documents
@@ -264,12 +266,46 @@ function document(route, creative) {
     }
     return ui.trimEnd() + '\n';
 }
-for (const route of ['Reference', 'Copy']) {
-    for (const creative of [false, true]) {
-        write(path.join(out, `Arrakis_Hud_${route}${creative ? '_Creative' : ''}.ui`), document(route, creative));
-    }
+for (const creative of [false, true]) {
+    write(path.join(out, `Arrakis_Hud_Copy${creative ? '_Creative' : ''}.ui`), document('Copy', creative));
 }
-fs.rmSync(path.join(out, 'Arrakis_Hud.ui'), { force: true });
+for (const old of ['Arrakis_Hud.ui', 'Arrakis_Hud_Reference.ui', 'Arrakis_Hud_Reference_Creative.ui']) {
+    fs.rmSync(path.join(out, old), { force: true });
+}
+
+// ---------------------------------------------------------------- documents that are NOT in the pack
+// The first build shipped the Reference documents in the pack and the client refused to join ("Could not find document ...Arrakis_Hud_Reference.ui").
+// They are written here instead, and a build flag adds one variant to the jar for a test:  gradlew jar deployMod -PhudExtra=<variant>
+//   reference   the two Reference documents, texture paths outside our pack (the first build)
+//   refinpack   documents of the same names whose texture paths all stay inside our pack (tests "extra documents" without "paths outside")
+//   dupicons    byte copies of the two Assets.zip icons (tests the duplicated-asset hypothesis alone)
+//   probe       one small document with one outside path, appended only by /arrakis hud probe
+const variants = path.join(__dirname, 'variants');
+fs.rmSync(variants, { recursive: true, force: true });
+const inPack = variant => path.join(variants, variant, 'resources', 'Common', 'UI', 'Custom', 'Hud', 'Equipment_of_Arrakis', 'Hud');
+for (const creative of [false, true]) {
+    const name = `Arrakis_Hud_Reference${creative ? '_Creative' : ''}.ui`;
+    write(path.join(inPack('reference'), name), document('Reference', creative));
+    write(path.join(inPack('refinpack'), name), document('Copy', creative).replace('route Copy', 'route Reference (paths inside the pack)'));
+}
+for (const [name, entry] of Object.entries(ZIP_ICONS)) {
+    write(path.join(inPack('dupicons'), 'VanillaDerived', name + '-Dup.png'), zipEntry(entry));
+}
+const PROBE = [
+    '// Throw-away probe, built only with -PhudExtra=probe: one outside texture path (three folders up is the client Interface root, if that guess is right).',
+    'Group #ProbeRow {',
+    '  Anchor: (Left: 0, Right: 0, Bottom: 200, Height: 12);',
+    '  LayoutMode: Left;',
+    '',
+    '  Group #ProbeBar {',
+    '    Anchor: (Width: 318, Height: 12);',
+    '    Background: "../../../InGame/Hud/Health/HealthBackground.png";',
+    '  }',
+    '}',
+    '',
+].join('\n');
+write(path.join(inPack('probe'), 'Arrakis_Hud_Probe.ui'), PROBE);
+
 for (const old of fs.readdirSync(out)) {
     if (/^Arrakis_Hud_(Bar|Icon)_.*@2x\.png$/.test(old)) fs.rmSync(path.join(out, old));   // the first, self-drawn art
 }

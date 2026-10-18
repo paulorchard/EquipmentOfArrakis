@@ -57,6 +57,7 @@ final class HudRuntime {
     private static volatile HudConfig config = new HudConfig();
     private static volatile WaterApi.ExposureColors exposureRules;
     private static volatile boolean exposureRulesFromWater;
+    private static volatile boolean warnedNoDocument;
     /** Bumped when the nudges or the art route change: every view built with an older one is built again. */
     private static final java.util.concurrent.atomic.AtomicInteger GENERATION = new java.util.concurrent.atomic.AtomicInteger();
 
@@ -74,6 +75,12 @@ final class HudRuntime {
     /** The settings that shape the document changed (a nudge, the art route): every player gets a new view on their next tick. */
     static void rebuildAll() {
         GENERATION.incrementAndGet();
+    }
+
+    /** Whether the pack has a file (the same registry the self-check uses). */
+    static boolean packHas(String path) {
+        return com.hypixel.hytale.server.core.asset.common.CommonAssetRegistry.hasCommonAsset(path)
+                || com.hypixel.hytale.server.core.asset.common.CommonAssetRegistry.hasCommonAsset("Common/" + path);
     }
 
     static boolean enabled() {
@@ -137,11 +144,19 @@ final class HudRuntime {
     static void tick(Player player, PlayerRef ref, Ref<EntityStore> entity, ComponentAccessor<EntityStore> accessor) {
         HudManager hud = player.getHudManager();
         PlayerHud state = of(ref.getUuid());
+        HudConfig cfg = config;
         Set<HudComponent> visible = hud.getVisibleHudComponents();
+        boolean creative = player.getGameMode() == GameMode.Creative;
+        // Only a document the pack really has is ever appended (the client refuses to join otherwise); with none, the vanilla bars stay.
+        String document = HudDocs.pick(cfg.copyArt(), creative, HudRuntime::packHas);
+        if (document == null && !warnedNoDocument) {
+            warnedNoDocument = true;
+            LOG.at(Level.WARNING).log("Hud: the pack has no HUD document (not even the Copy one): the four bars are not shown and the vanilla bars stay");
+        }
         // The bars sit above the hotbar: they follow it (a spectator has none, and the vanilla bars are not drawn there either).
-        boolean show = enabled && visible.contains(HudComponent.Hotbar);
+        boolean show = enabled && document != null && visible.contains(HudComponent.Hotbar);
 
-        if (!enabled) {
+        if (!enabled || document == null) {
             if (state.hidden) {
                 hud.showHudComponents(ref, REPLACED);
                 state.hidden = false;
@@ -159,16 +174,14 @@ final class HudRuntime {
             return;
         }
         WaterApi water = WaterLink.api();
-        HudConfig cfg = config;
-        boolean creative = player.getGameMode() == GameMode.Creative;
         int generation = GENERATION.get();
-        if (state.view != null && (state.view.creative() != creative || state.view.copy() != cfg.copyArt() || state.generation != generation)) {
+        if (state.view != null && (!state.view.document().equals(document) || state.generation != generation)) {
             // The game mode, the art route or a nudge changed: the document is built again (a texture path is not changed on a live one).
             hud.removeCustomHud(ref, HudView.KEY);
             state.view = null;
         }
         if (state.view == null || hud.getCustomHud(HudView.KEY) != state.view) {
-            state.view = new HudView(ref, cfg, water != null, creative);
+            state.view = new HudView(ref, cfg, water != null, creative, document);
             state.generation = generation;
             hud.addCustomHud(ref, state.view);
         }

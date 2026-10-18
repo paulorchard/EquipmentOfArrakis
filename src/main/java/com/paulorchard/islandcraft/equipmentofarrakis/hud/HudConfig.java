@@ -25,8 +25,8 @@ public final class HudConfig {
     private double barsLift = 0;
     /** From the bottom of the lower row (where the vanilla Health and Mana bars sit) to the bottom of the upper row. */
     private double rowGap = 26;
-    /** "reference": texture paths point at the vanilla files; "copy": at the derived copies shipped with the mod. */
-    private String artSource = "reference";
+    /** "copy" (default): the copies shipped with the mod; "reference": the vanilla texture paths, only if the pack has the Reference documents (it does not by default: they broke the client join). */
+    private String artSource = "copy";
 
     // ---- colours
     private String powerColor = "#57bbaf";
@@ -136,7 +136,7 @@ public final class HudConfig {
                 .documentation("The four-bar HUD above the hotbar (Power, Health, Heat Exposure, Water), drawn with the vanilla Health and Mana bar art.");
         b = num(b, "BarsLift", (c, v) -> c.barsLift = v, c -> c.barsLift, "Raises both rows by this many pixels (to clear the held item name, for example).");
         b = num(b, "RowGap", (c, v) -> c.rowGap = v, c -> c.rowGap, "From the bottom of the lower row (where the vanilla Health and Mana bars sit) to the bottom of the upper row.");
-        b = str(b, "ArtSource", (c, v) -> c.artSource = v, c -> c.artSource, "reference: the vanilla texture paths (follows texture packs); copy: the derived copies shipped with the mod (use it if reference shows nothing).");
+        b = str(b, "ArtSource", (c, v) -> c.artSource = v, c -> c.artSource, "copy: the copies shipped with the mod (default); reference: the vanilla texture paths, used only if the pack has the Reference documents (it does not by default).");
         b = str(b, "PowerColor", (c, v) -> c.powerColor = v, c -> c.powerColor, "Power fill colour (a tint of a neutral copy of the vanilla fill).");
         b = str(b, "PowerIconColor", (c, v) -> c.powerIconColor = v, c -> c.powerIconColor, "Power icon colour.");
         b = str(b, "WaterIconColor", (c, v) -> c.waterIconColor = v, c -> c.waterIconColor, "Water icon colour.");
@@ -206,8 +206,8 @@ public final class HudConfig {
         };
     }
 
-    /** True for the copy route, false (the default) for the reference route. */
+    /** True for the copy route (the default), false only when the word reference is set. */
     boolean copyArt() {
-        return "copy".equalsIgnoreCase(artSource);
+        return !"reference".equalsIgnoreCase(artSource);
     }
 }

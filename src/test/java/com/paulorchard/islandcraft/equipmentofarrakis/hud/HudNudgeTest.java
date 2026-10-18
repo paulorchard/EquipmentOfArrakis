@@ -118,19 +118,20 @@ class HudNudgeTest {
         }
         assertEquals(0.0, read.getBarsLift(), 0.0);
         assertEquals(26.0, read.getRowGap(), 0.0);
-        assertEquals("reference", read.getArtSource());
-        assertFalse(read.copyArt());
+        assertEquals("copy", read.getArtSource(), "the Reference documents are not in the pack");
+        assertTrue(read.copyArt());
     }
 
     @Test
-    void theArtSourceIsChosenByTheWordCopy() {
+    void theCopyRouteIsTheDefaultAndReferenceNeedsItsWord() {
         HudConfig config = new HudConfig();
-        config.setArtSource("copy");
-        assertTrue(config.copyArt());
-        config.setArtSource("COPY");
         assertTrue(config.copyArt());
         config.setArtSource("reference");
         assertFalse(config.copyArt());
-        assertFalse(HudConfig.CODEC.decode(BsonDocument.parse("{\"ArtSource\": \"something\"}")).copyArt(), "anything but copy is the reference route");
+        config.setArtSource("REFERENCE");
+        assertFalse(config.copyArt());
+        config.setArtSource("copy");
+        assertTrue(config.copyArt());
+        assertTrue(HudConfig.CODEC.decode(BsonDocument.parse("{\"ArtSource\": \"something\"}")).copyArt(), "anything but reference is the copy route");
     }
 }

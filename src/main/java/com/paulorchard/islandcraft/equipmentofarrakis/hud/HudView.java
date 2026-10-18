@@ -27,18 +27,20 @@ final class HudView extends CustomUIHud {
     private final boolean rightHalf;
     private final boolean creative;
     private final boolean copy;
+    private final String document;
     private final double[] sentPercent = new double[HudBar.values().length];
     private final String[] sentFill = new String[HudBar.values().length];
     private final String[] sentIcon = new String[HudBar.values().length];
     private final HudMath.Alert[] sentAlert = new HudMath.Alert[HudBar.values().length];
 
     /** {@code rightHalf} false: the Water mod is not there, so the Heat Exposure and Water bars are not drawn. */
-    HudView(PlayerRef playerRef, HudConfig config, boolean rightHalf, boolean creative) {
+    HudView(PlayerRef playerRef, HudConfig config, boolean rightHalf, boolean creative, String document) {
         super(playerRef, KEY);
         this.config = config;
         this.rightHalf = rightHalf;
         this.creative = creative;
-        this.copy = config.copyArt();
+        this.document = document;
+        this.copy = document.contains("_Copy");
     }
 
     boolean creative() {
@@ -49,13 +51,13 @@ final class HudView extends CustomUIHud {
         return copy;
     }
 
-    static String document(boolean copy, boolean creative) {
-        return "Hud/Equipment_of_Arrakis/Hud/Arrakis_Hud_" + (copy ? "Copy" : "Reference") + (creative ? "_Creative" : "") + ".ui";
+    String document() {
+        return document;
     }
 
     @Override
     protected void build(UICommandBuilder ui) {
-        ui.append(document(copy, creative));
+        ui.append(document);
         // A fresh document starts at its defaults on the client: forget what was sent before.
         Arrays.fill(sentPercent, Double.NaN);
         Arrays.fill(sentFill, null);

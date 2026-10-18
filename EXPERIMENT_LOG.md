@@ -556,6 +556,59 @@ alpha (`#ffffff(0.50)`) are accepted when set from the server, and the nudge fee
 27. Resize the window and change resolution: the bars keep their place against the hotbar. Compare with the vanilla Health and Mana bars with `/arrakis hud off`.
 28. Look at the colours: are the neutral-fill bars (Power, Heat Exposure) as bright as the vanilla ones? Note the numbers to change (`PowerColor`, the generator `NEUTRAL_BODY`, `TINT`).
 
+### The client could not join with the vanilla-art HUD (commit ce873f4): evidence, the change, how to bisect
+
+**Symptom (from the client log `2026-10-18_11-30-20_client.log`).** At 13:44:05 `Disconnecting with error during stage GameLoading: Failed to apply CustomUI HUD commands (Could not find document
+Hud/Water_of_Arrakis/Arrakis_Bars.ui for Custom UI Append command)`; at 13:44:43, with Water disabled, the same for `Hud/Equipment_of_Arrakis/Hud/Arrakis_Hud_Reference.ui`. The runs of 13:40 and 13:41 (before the build) joined.
+
+**What the logs show (read, not assumed).**
+- The self-check lists the four new `.ui` and every `VanillaDerived` image with no PROBLEM, and the client registered them: 23 `Added cached reference to asset` lines for exactly our new files (4 documents and the 19
+  images), in the failing run and not in the good one. `Misc.png` and `Natural-Fluid.png` are missing from that list: the client only logs hashes it did not already have, and those two were byte copies of
+  Assets.zip files. So the files reached the client; the client could not find the document **by name** when the HUD was applied at the join.
+- The server counted `Duplicated Asset Count` 727 in the failing runs (724 / 725 in every earlier run): two new byte-identical assets, which are those two icons.
+- The first failing run named **Water own unchanged document**; the second, with Water disabled, named ours. The Water HUD is applied before ours, so the first missing name is whichever the client was asked for
+  first. This fits one explanation better than the others: **the client registers the pack documents in order and stops at the first one it cannot accept**, so every document after it is missing. Sorted by
+  path, `Hud/Equipment_of_Arrakis/...` comes before `Hud/Water_of_Arrakis/...`, and in `Equipment_of_Arrakis` the order is `Arrakis_Hud_Copy.ui`, `Arrakis_Hud_Copy_Creative.ui`, `Arrakis_Hud_Reference.ui`: the
+  Reference document is the first one that fails, as the second run says. (A hypothesis from the order of the names; the client prints no parse error.)
+- Why that document could be rejected: it names texture paths outside the pack (`../../../InGame/Hud/Health/HealthBackground.png`, a guess that the pack `UI/Custom/` root and the client `Interface/` root are one
+  tree, taken from `Hud/ReturnToHubButton.ui` in Assets.zip). The Copy documents name only files inside the pack. The client log has no line about it ("nothing available": the only client logs are
+  `...\UserData\Logs\*_client.log`, which embeds the server log; there is no verbose switch for document compile errors that was found, and the singleplayer launch line has no debug flag).
+
+**What was changed (the prompt step 2, all at once, because there is no client here to bisect with; the bisect is set up below).**
+1. The Reference documents are no longer in the pack. `make_hud.js` writes them (and the bisect variants) to `tools/assets/hud/variants/<variant>/resources/...`; only `Arrakis_Hud_Copy.ui` and
+   `Arrakis_Hud_Copy_Creative.ui` are in `src/main/resources`. `ArtSource` now defaults to `copy`.
+2. `Misc.png` and `Natural-Fluid.png` in `VanillaDerived/` are re-encoded (the same pixels, written by the generator own PNG writer), so they are no longer byte-identical to the Assets.zip files. I did not use the
+   prompt option of referencing the two vanilla icon paths from a Copy document: that would put an outside path into the one route that must be safe.
+   `Duplicated Asset Count` of the headless boot is 724 / 725 again (727 before).
+3. **The module can no longer append a document the pack does not have** (`HudDocs.pick`, unit tested): it asks the pack registry (`CommonAssetRegistry`) and picks the route asked for, else the Copy one, else
+   nothing. With no document it shows no bars, leaves the vanilla Health and Mana bars alone, and logs a warning once. `/arrakis hud art reference` is refused while the pack has no Reference documents, and `art state` says
+   what the pack has. A document that is in the pack but that the client rejects cannot be detected from the server; that is what the bisect is for.
+4. `HudAssetsTest` checks that the Reference documents are not in the pack, that the two icons are our re-encode, and still checks the Reference documents under `variants/` for ids and paths.
+
+**What the player must test now:** join the world with this jar (Water on and off). If it joins, the Reference documents (outside paths) or the duplicate icons were the cause. If it still fails, see "if it still fails".
+
+**Bisect, one change per build** (`gradlew jar deployMod -PhudExtra=<variant>` adds one variant to the jar; a normal build never contains them; stop at the first one that breaks the join):
+| variant | adds to the pack | answers |
+|---|---|---|
+| `dupicons` | `VanillaDerived/Misc-Dup.png` and `Natural-Fluid-Dup.png`, byte copies of the vanilla icons | do duplicate hashes alone break the join (the asset count goes back to 727) |
+| `refinpack` | documents named `Arrakis_Hud_Reference*.ui` whose texture paths all stay inside the pack | do extra documents, or those names, break it (paths are not the cause) |
+| `reference` | the two Reference documents with outside paths (the first build) | do outside texture paths break it |
+| `probe` | `Arrakis_Hud_Probe.ui` (one outside path), appended only by `/arrakis hud probe` | does the guess "pack `UI/Custom` root = client `Interface` root" resolve (the bar-shaped background shows) |
+Results: **none recorded yet** (no client was available while this was written); fill the table in after the tests.
+
+**If it still fails with only the Copy documents** (not done yet): diff `Arrakis_Hud_Copy.ui` against the last document that joined (`5959df3`, `Arrakis_Hud.ui`) and bisect the new constructs in a minimal document: `ProgressBar` with `BarTexturePath`,
+`Value`, `Bar: (Color: ...)`; `PatchStyle(TexturePath: ..., Color: #ffffff(0))`; `Background: (TexturePath: ..., Color: ...)`; `Visible: false`; the file name with a hyphen (`Natural-Fluid.png`); ids that are the
+same in two documents (the four documents share every id); two documents with nearly the same content. The Water mod `Arrakis_Bars.ui` and the vanilla `Common.ui` `@ProgressBar` are the references for forms the client
+accepts from a pack document (`Common.ui` uses `ProgressBar { Anchor; Background; BarTexturePath; EffectTexturePath; EffectWidth; EffectHeight; EffectOffset }`; a `Value:` is set in the UI gallery document).
+
+**What the reference route needs, and its status (honest).** *Untested; the evidence points at it as the cause of the join failure, but that is not proven.* A pack document naming paths outside the pack
+(`../../../InGame/Hud/...`) was in the build that could not join. Whether the client resolves such a path from a pack document, and whether an unresolved path rejects the whole document (and then every document
+after it), is exactly what the `reference` and `probe` variants decide. Until then the art rule "use the vanilla art by reference" is **not met by the HUD**: the Copy route ships copies (`VanillaDerived/`), which
+is the documented exception. The earlier notes ("Reference ... confirmed/inferred") above describe the design, not a working route.
+
+**Human test sheet additions.** 29. Join with the new jar, Water on and Water off: it joins and the four bars show with the Copy art. 30. `/arrakis hud art state` says the pack has the Copy documents and not the Reference ones;
+`/arrakis hud art reference` is refused. 31. If it still cannot join, say which build variant (none / `dupicons` / `refinpack` / `reference` / `probe`) and quote the client log line.
+
 ## Harness notes
 
 - `tools/headless/run.sh "wait 35" "arrakis modules" ...` boots the server with this jar; world commands from the console run in world `default`.
