@@ -10,6 +10,13 @@ final class HudItemName {
 
     static final String SELECTOR = "#ActiveItemNameLabel";
 
+    /**
+     * Whether a selector of a custom HUD reaches the vanilla label: NO. Tested on a client: "Selected element in CustomUI command was not found. Selector:
+     * #ActiveItemNameLabel.Anchor", and the player was disconnected. Nothing is sent for this selector any more (build or command); the code stays for a
+     * future game version that lets a HUD reach built-in elements.
+     */
+    static final boolean REACHABLE = false;
+
     /** The sides of an Anchor; null means that side is not set. */
     record Spec(Integer top, Integer left, Integer bottom, Integer width, Integer height) {
     }
@@ -34,6 +41,6 @@ final class HudItemName {
 
     /** True when the move is sent as the HUD is built (once per build, never on a tick): only when the config asks for it. */
     static boolean sendAtBuild(HudConfig config) {
-        return config.isItemNameMove();
+        return REACHABLE && config.isItemNameMove();
     }
 }

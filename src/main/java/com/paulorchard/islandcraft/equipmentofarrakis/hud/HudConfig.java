@@ -58,7 +58,7 @@ public final class HudConfig {
     private double demoSeconds = 6;
 
     // ---- the held item name (a client label; see HudItemName)
-    /** Send the moved anchor for the vanilla item name label when the HUD is built. Leave false until /arrakis hud itemname move showed on a client that the selector resolves. */
+    /** Ignored: a custom HUD cannot reach the vanilla item name label (tested on a client), so nothing is sent. Kept for a future game version. */
     private boolean itemNameMove = false;
     private double itemNameTop = 16;
     private double itemNameLeft = 16;

@@ -140,6 +140,11 @@ final class HudCommands {
                     + ", Height " + HudMetrics.ITEM_NAME_HEIGHT + ", centred. Last sent to you: " + (state.view == null ? "(your HUD is not added)" : state.view.itemNameSent()));
             return;
         }
+        if (!HudItemName.REACHABLE) {
+            say(c, "Not sent: a custom HUD cannot reach the vanilla item name label (the client answered 'Selected element in CustomUI command was not found. Selector: "
+                    + HudItemName.SELECTOR + ".Anchor' and ended the session). Raise the bars with BarsLift instead: 50 clears the name, 64 clears the stamina bar too.");
+            return;
+        }
         if (state.view == null) {
             say(c, "Your HUD is not added (is the module on?), so there is nothing to send through.");
             return;

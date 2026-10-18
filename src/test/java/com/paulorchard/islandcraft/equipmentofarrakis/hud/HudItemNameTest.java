@@ -60,9 +60,10 @@ class HudItemNameTest {
     }
 
     @Test
-    void nothingIsSentAtBuildByDefaultAndOnlyWhenTheConfigAsks() {
+    void nothingIsSentAtBuildBecauseTheClientCannotReachTheVanillaLabel() {
         assertFalse(HudItemName.sendAtBuild(new HudConfig()), "the default sends nothing: a selector that does not resolve ends the session");
-        assertTrue(HudItemName.sendAtBuild(HudConfig.CODEC.decode(BsonDocument.parse("{\"ItemNameMove\": true}"))));
+        assertFalse(HudItemName.sendAtBuild(HudConfig.CODEC.decode(BsonDocument.parse("{\"ItemNameMove\": true}"))), "the selector does not reach the vanilla label on a client: never sent, even if asked");
+        assertFalse(HudItemName.REACHABLE);
         assertFalse(new HudConfig().isItemNameMove());
     }
 
