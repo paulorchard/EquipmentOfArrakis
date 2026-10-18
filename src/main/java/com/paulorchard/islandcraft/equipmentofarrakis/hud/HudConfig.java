@@ -57,6 +57,15 @@ public final class HudConfig {
     /** Seconds a /arrakis hud demo value is held. */
     private double demoSeconds = 6;
 
+    // ---- the held item name (a client label; see HudItemName)
+    /** Send the moved anchor for the vanilla item name label when the HUD is built. Leave false until /arrakis hud itemname move showed on a client that the selector resolves. */
+    private boolean itemNameMove = false;
+    private double itemNameTop = 16;
+    private double itemNameLeft = 16;
+    private double itemNameWidth = 420;
+    /** 40 is the vanilla height. */
+    private double itemNameHeight = 40;
+
     private Nudges nudges = new Nudges();
 
     /** An offset of one bar in virtual pixels: x + moves right, y + moves up. */
@@ -152,6 +161,11 @@ public final class HudConfig {
         b = bool(b, "FlashWater", (c, v) -> c.flashWater = v, c -> c.flashWater, "Water turns red and flashes when low.");
         b = num(b, "MinPercentChange", (c, v) -> c.minPercentChange = v, c -> c.minPercentChange, "A fill is sent to the client only when it moved by this many percent (always at 0 and 100).");
         b = num(b, "DemoSeconds", (c, v) -> c.demoSeconds = v, c -> c.demoSeconds, "Seconds a /arrakis hud demo value is held.");
+        b = bool(b, "ItemNameMove", (c, v) -> c.itemNameMove = v, c -> c.itemNameMove, "Move the held item name label to ItemNameTop / ItemNameLeft when the HUD is built. Off until the dev command showed that it works on a client.");
+        b = num(b, "ItemNameTop", (c, v) -> c.itemNameTop = v, c -> c.itemNameTop, "Distance of the moved item name from the top of the screen.");
+        b = num(b, "ItemNameLeft", (c, v) -> c.itemNameLeft = v, c -> c.itemNameLeft, "Distance of the moved item name from the left of the screen.");
+        b = num(b, "ItemNameWidth", (c, v) -> c.itemNameWidth = v, c -> c.itemNameWidth, "Width of the moved item name box.");
+        b = num(b, "ItemNameHeight", (c, v) -> c.itemNameHeight = v, c -> c.itemNameHeight, "Height of the item name box (vanilla: 40).");
         b = b.append(new KeyedCodec<>("Nudges", Nudges.CODEC, false), (c, v) -> c.nudges = v, c -> c.nudges)
                 .documentation("The hand placement of each bar, written by /arrakis hud lb|rb|lt|rt (pixels; x + right, y + up).").add();
         return b.build();
@@ -189,6 +203,11 @@ public final class HudConfig {
     public double getAlertFlipSeconds() { return alertFlipSeconds; }
     public double getMinPercentChange() { return minPercentChange; }
     public double getDemoSeconds() { return demoSeconds; }
+    public boolean isItemNameMove() { return itemNameMove; }
+    public double getItemNameTop() { return itemNameTop; }
+    public double getItemNameLeft() { return itemNameLeft; }
+    public double getItemNameWidth() { return itemNameWidth; }
+    public double getItemNameHeight() { return itemNameHeight; }
     public Nudges nudges() { return nudges; }
 
     /** The alert switch of a bar. */

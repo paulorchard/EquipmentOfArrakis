@@ -36,6 +36,11 @@ final class HudMetrics {
     /** From the middle of the screen to the inner end of a bar: half the hotbar width less the block. */
     static final int INNER_GAP = HOTBAR_WIDTH / 2 - BLOCK_WIDTH;
 
+    // Hotbar.ui, the last element: Label #ActiveItemNameLabel { Anchor: (Bottom: @DefaultItemSlotSpacing + @DefaultItemSlotSize + 50, Height: 40); Style: (Alignment: Center); Visible: false; }
+    static final int ITEM_NAME_SLOT_SPACING = 2;
+    static final int ITEM_NAME_BOTTOM = ITEM_NAME_SLOT_SPACING + SLOT_SIZE + 50;
+    static final int ITEM_NAME_HEIGHT = 40;
+
     // StaminaPanel.ui: the low alert the bars copy (the Mana pulse in Mana.ui is a one-shot error event, not a state)
     static final double ALERT_FLIP_SECONDS = 0.25;
     static final double ALERT_OUTLINE_OPACITY_START = 0.5;

@@ -138,6 +138,7 @@ commands.arrakis.hud.state.desc = Hidden components, the four values, the flash 
 commands.arrakis.hud.demo.desc = Pins a bar to a percent for a few seconds: arrakis hud demo <power|health|exposure|water> <percent>
 commands.arrakis.hud.component.desc = Development: hide, show or reset one vanilla HUD part for you: arrakis hud component hide|show <Name> | reset
 commands.arrakis.hud.probe.desc = Development: appends the throw-away probe document (only in a jar built with -PhudExtra=probe)
+commands.arrakis.hud.itemname.desc = Development: move the held item name label (a client label) once for you: arrakis hud itemname move [top left] | reset | state | align left|center
 
 # EXPERIMENT BEGIN
 items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter

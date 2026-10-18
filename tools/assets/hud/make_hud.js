@@ -84,6 +84,14 @@ const metrics = {
     manaIconLeft: number(manaUi, /Width: 24, Height: 24, Left: (\d+), Top: -8/, 'mana icon gap'),
     barAboveHotbar: number(healthUi, /@HotbarHeight \+ (\d+),/, 'health bottom offset'),
 };
+// The held item name: Label #ActiveItemNameLabel, the last element of Hotbar.ui (the client shows it when the active item changes).
+const B = String.fromCharCode(92);   // a backslash, to build the patterns below without escapes
+const itemName = hotbar.match(new RegExp(['Label #ActiveItemNameLabel '+B+'{'+B+'s*Anchor: '+B+'(Bottom: '+B+'$InGame'+B+'.@DefaultItemSlotSpacing '+B+'+ '+B+'$InGame'+B+'.@DefaultItemSlotSize '+B+'+ ('+B+'d+), Height: ('+B+'d+)'+B+');'+B+'s*Style: '+B+'(Alignment: ('+B+'w+)'+B+');'+B+'s*Visible: false;'].join('')));
+if (!itemName) throw new Error('vanilla layout changed: the ActiveItemNameLabel element is not the one this script knows');
+metrics.itemNameSpacing = number(common, new RegExp('@DefaultItemSlotSpacing'+B+'s*='+B+'s*('+B+'d+)'), '@DefaultItemSlotSpacing');
+metrics.itemNameBottom = metrics.itemNameSpacing + metrics.slotSize + Number(itemName[1]);
+metrics.itemNameHeight = Number(itemName[2]);
+metrics.itemNameAlignment = itemName[3];
 metrics.rowBottom = metrics.closedContainerMargin + metrics.hotbarHeight + metrics.barAboveHotbar;
 metrics.blockWidth = metrics.iconSize + metrics.healthIconRight + metrics.barWidth;      // icon, gap, bar
 metrics.innerGap = metrics.hotbarWidth / 2 - metrics.blockWidth;                          // from the centre to the inner end of a bar

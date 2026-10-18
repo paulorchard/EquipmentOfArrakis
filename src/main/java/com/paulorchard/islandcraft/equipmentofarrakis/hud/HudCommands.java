@@ -65,6 +65,7 @@ final class HudCommands {
             say(c, "All four nudges cleared and saved.");
         }, "word"));
         hud.addSubCommand(WorldPositional.build("art", LANG + "art.desc", (c, w, s, a) -> art(c, ctx, a), "route"));
+        hud.addSubCommand(WorldPositional.build("itemname", LANG + "itemname.desc", (c, w, s, a) -> player(c, ref -> itemName(c, s, ref, a)), "action", "top", "left"));
         hud.addSubCommand(WorldPositional.build("probe", LANG + "probe.desc", (c, w, s, a) -> player(c, ref -> probe(c, s, ref))));
         return hud;
     }
@@ -119,6 +120,65 @@ final class HudCommands {
             case "state" -> say(c, "Art route: " + config.getArtSource() + " (" + (config.copyArt() ? "VanillaDerived copies" : "the vanilla client paths") + "); the pack has the Reference documents: "
                     + HudDocs.routeAvailable(false, false, HudRuntime::packHas) + ", the Copy documents: " + HudDocs.routeAvailable(true, false, HudRuntime::packHas));
             default -> say(c, "Usage: arrakis hud art reference|copy|state");
+        }
+    }
+
+    // ---- the held item name (development: it is a client label, see HudItemName)
+
+    /**
+     * move [top left] / reset / state / align left|center. Sends to the calling player only, through their own HUD (CustomUIHud.update). A selector
+     * that does not resolve on the client ends the session ("Failed to apply CustomUI HUD commands"): that is the answer, read the client log.
+     */
+    private static void itemName(CommandContext c, Store<EntityStore> store, Ref<EntityStore> entity, String[] args) {
+        PlayerRef ref = store.getComponent(entity, PlayerRef.getComponentType());
+        HudRuntime.PlayerHud state = HudRuntime.of(ref.getUuid());
+        HudConfig config = HudRuntime.config();
+        String action = args.length == 0 ? "state" : args[0].toLowerCase(Locale.ROOT);
+        if (action.equals("state")) {
+            say(c, "ItemNameMove " + config.isItemNameMove() + " (sent at build only when true), Top " + config.getItemNameTop() + ", Left " + config.getItemNameLeft()
+                    + ", Width " + config.getItemNameWidth() + ", Height " + config.getItemNameHeight() + ". Vanilla anchor: Bottom " + HudMetrics.ITEM_NAME_BOTTOM
+                    + ", Height " + HudMetrics.ITEM_NAME_HEIGHT + ", centred. Last sent to you: " + (state.view == null ? "(your HUD is not added)" : state.view.itemNameSent()));
+            return;
+        }
+        if (state.view == null) {
+            say(c, "Your HUD is not added (is the module on?), so there is nothing to send through.");
+            return;
+        }
+        switch (action) {
+            case "move" -> {
+                double top = config.getItemNameTop();
+                double left = config.getItemNameLeft();
+                try {
+                    if (args.length > 1) {
+                        top = Double.parseDouble(args[1]);
+                    }
+                    if (args.length > 2) {
+                        left = Double.parseDouble(args[2]);
+                    }
+                } catch (NumberFormatException e) {
+                    say(c, "Not numbers: " + String.join(" ", args));
+                    return;
+                }
+                HudItemName.Spec spec = HudItemName.moved(top, left, config);
+                state.view.sendItemName(spec, "moved: " + spec);
+                say(c, "Sent once to you: Anchor " + spec + " for " + HudItemName.SELECTOR + ". Now switch the active hotbar slot: the name should appear at the top left. "
+                        + "If the session ends instead, the selector does not reach the vanilla label: read the client log and leave ItemNameMove false.");
+            }
+            case "reset" -> {
+                HudItemName.Spec spec = HudItemName.vanilla();
+                state.view.sendItemName(spec, "reset to vanilla: " + spec);
+                say(c, "Sent once to you: the vanilla anchor " + spec + ".");
+            }
+            case "align" -> {
+                String word = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "";
+                if (!word.equals("left") && !word.equals("center")) {
+                    say(c, "Usage: arrakis hud itemname align left|center (Style.HorizontalAlignment Start or Center; untested: a bad style property can end the session).");
+                    return;
+                }
+                state.view.sendItemNameAlignment(word.equals("left") ? "Start" : "Center");
+                say(c, "Sent once to you: HorizontalAlignment " + (word.equals("left") ? "Start" : "Center") + ". Switch the active slot to see it.");
+            }
+            default -> say(c, "Usage: arrakis hud itemname move [top left] | reset | state | align left|center");
         }
     }
 

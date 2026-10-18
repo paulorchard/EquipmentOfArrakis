@@ -1268,6 +1268,38 @@ amber `#d49c1b` = `#d0991b` (creative `#cc961a`), x red `#e0201a` = `#dc1f1a`; a
 Those are averages over the opaque pixels; the rim stays at 1.0 and reads slightly lighter. A plain tint of the vanilla fills for comparison: health x teal `#4b3f45`, mana x amber `#515f17`, mana x alert `#580044`.
 **Only a client can show:** the colours against the reference screenshot, the slanted end when a bar is partly full (check at 10%, 50%, 90%), whether the Heat Exposure fill and icon change smoothly, and that `/arrakis hud demo health 3` and `water 3` flash red.
 
+### The held-item name text: what it is and the safe test (supersedes the "held-item name text" paragraph above)
+
+**What it is (confirmed, read from the client install).** The client draws it: the last element of `...\Client\Data\Game\Interface\InGame\Hud\Hotbar.ui` is
+`Label #ActiveItemNameLabel { Anchor: (Bottom: $InGame.@DefaultItemSlotSpacing + $InGame.@DefaultItemSlotSize + 50, Height: 40); Style: (Alignment: Center); Visible: false; }`, with `@DefaultItemSlotSpacing` 2 and
+`@DefaultItemSlotSize` 74 (`InGame/Common.ui`): **Bottom 126, Height 40, centred, hidden until the client shows it when the active item changes.** The generator reads these and writes `itemNameBottom` 126, `itemNameHeight` 40,
+`itemNameAlignment` Center to `vanilla-metrics.json`; `HudItemNameTest` compares them with `HudMetrics`. The server has no field for it (not a `HudComponent`, not in `PlayerSettings`, not an item field), and a hide from the server would be
+undone at the next item change, so it is **moved, not hidden**. That the client leaves our Anchor alone when it re-shows the label is **inferred**.
+
+**The open question, and how it is tested without risk.** Do selectors of a custom HUD reach a vanilla element (`#ActiveItemNameLabel` in `Hotbar.ui`)? A selector that does not resolve disconnects the player (the same class as the `#WaterError` colour
+crash), so nothing is sent at join by default. `ItemNameMove` (Hud section, default **false**) sends the moved anchor when the HUD is built (once per build: join, respawn, world change, game mode change, `/arrakis hud on`; never on a tick; a test checks that the tick code
+and `refresh` never mention it). Settings: `ItemNameTop` 16, `ItemNameLeft` 16, `ItemNameWidth` 420, `ItemNameHeight` 40 (the vanilla height). The moved anchor is `(Top, Left, Width, Height)` with **no Bottom**, so the vanilla bottom anchor is
+replaced and not combined (the vanilla file anchors one side and the height; a missing side is free). Dev commands, to the calling player only, through the existing `CustomUIHud.update` path:
+`/arrakis hud itemname move [top left]` (sends the anchor once), `reset` (sends the vanilla anchor back: Bottom 126, Height 40), `state` (the settings and what was last sent), `align left|center` (see below).
+**Result: none yet** (no client available while this was written). If the session ends with `Failed to apply CustomUI HUD commands (...)` the selector does not resolve: record the exact line from `%APPDATA%\Hytale\UserData\Logs\<date>_client.log`, leave `ItemNameMove` false and use the fallback.
+Every run-time selector of the HUD is now listed in `HudItemNameTest.everyRuntimeSelectorIsOneWeKnow` (our own elements: proven; the two vanilla ones, `#ActiveItemNameLabel.Anchor` and `.Style.HorizontalAlignment`: "verified only on a client"), and the test fails on any
+other selector or any `Bar.Color`.
+
+**Alignment (separate, not part of the move).** The vanilla label sets `Style: (Alignment: Center)`; other client labels use `HorizontalAlignment: Start | Center | End` (3, 38 and 23 uses in `Interface/InGame`) and `Alignment: Center | Right | TopLeft`. `align left` sends
+`#ActiveItemNameLabel.Style.HorizontalAlignment = "Start"` (and `center` sends `Center`). **Untested and a possible disconnect** (a bad style property); do the move first, report, then try it. The vanilla label has `Alignment: Center`, which may be the property that decides, in which case the
+`HorizontalAlignment` set has no effect.
+
+**What the client draws at the top left (read from `Interface/InGame/Hud`).** `KillFeed.ui`: `Left 20, Top 90, Width 500` (kill entries, only after kills): the default `Top 16, Left 16` is above it, and a 420 wide, 40 high name at the top left ends at 56, clear of it.
+Chat is at the bottom left (`Left @Margin, Bottom ...`); `ObjectivePanel` is at the right (`Right 10, Top 100`); `NotificationFeed` bottom right; `Notification` rows `Top 4` laid out to the right; `BossBar` `Top 57, Width 624` (centred); event titles around `Top 200`. The compass has no `.ui` (`CompassBackground.png`, `CompassMask.png` only), so its place is
+not known from the files; it is probably top centre. A 420 wide box from `Left 16` ends at 436, short of the centre on screens wider than about 900 virtual pixels.
+
+**Fallback if the label cannot be reached: make room (numbers, nothing applied; `BarsLift` stays at its default 0 until you decide).** The label occupies 126 to 166 above the bottom, centred. Our rows are centred around the middle with their inner ends 5 from it, so they clash: the bottom
+row (120 to 132) overlaps the label from 126, the top row (146 to 158) is inside it. Lift needed to clear the label by 4 pixels: 166 + 4 - 120 = **50** (bottom row 170 to 182, top row 196 to 208). The vanilla stamina panel is `Bottom @InventoryClosedContainerMargin + @HotbarHeight + 56` = 36 + 78 + 56 = 170, height 10, centred 260 wide (170 to 180): a lift of 50 puts the
+bottom row exactly on it, so clearing both needs **64** (bottom row 184 to 196, top row 210 to 222). The ability HUD is on the right edge and the status icons (`Bottom 44 + 2 + 74` = 120, centred) are in the same band as the vanilla bars, so they are unaffected by the lift but sit under our bottom row today. The user chooses.
+
+**Human test sheet additions.** 32. With the defaults nothing changes: join, switch items, the name shows above the hotbar as in vanilla. 33. `/arrakis hud itemname move`, then switch the active hotbar slot: the name appears at the top left, or the session ends and the client log line is the answer
+(report it). `reset` puts it back. 34. If it worked: set `ItemNameMove` true, restart; join, respawn, change world, switch game mode and `/arrakis hud off` then `on`: the name is at the top left each time, no errors, no overlap with the bars. 35. Then `/arrakis hud itemname align left`.
+
 ## Harness notes
 
 - `tools/headless/run.sh "wait 35" "arrakis modules" ...` boots the server with this jar; world commands from the console run in world `default`.
