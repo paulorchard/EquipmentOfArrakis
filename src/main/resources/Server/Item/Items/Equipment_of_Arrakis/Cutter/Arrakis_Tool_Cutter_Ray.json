@@ -25,7 +25,8 @@
   },
   "Interactions": {
     "Primary": "Arrakis_Cutter_Primary",
-    "Secondary": "Arrakis_Picker_Secondary"
+    "Secondary": "Arrakis_Picker_Secondary",
+    "Ability4": "Arrakis_Root_Toggle_Holtzman"
   },
   "IconProperties": {
     "Scale": 0.37,

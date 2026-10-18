@@ -1,0 +1,6 @@
+{
+  "$Comment": "The H key (Ability4) on an Arrakis weapon or hand tool: flips the Holtzman Shield toggle through the registry in core. No cost, no stat; does nothing when the shield module is off.",
+  "Type": "Arrakis_Toggle",
+  "ToggleId": "Holtzman",
+  "DebounceSeconds": 0.2
+}

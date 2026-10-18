@@ -12,12 +12,20 @@
   "Icon": "Icons/ItemsGenerated/Potion_Signature.png",
   "IconProperties": {
     "Scale": 0.9,
-    "Rotation": [22.5, 45, 22.5],
-    "Translation": [0, -9]
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -9
+    ]
   },
   "Interactions": {
     "Primary": "Arrakis_Litrejon_Primary",
-    "Secondary": "Arrakis_Picker_Secondary"
+    "Secondary": "Arrakis_Picker_Secondary",
+    "Ability4": "Arrakis_Root_Toggle_Holtzman"
   },
   "BlockType": {
     "CustomModel": "Items/Consumables/Potions/Potion_Normal.blockymodel",

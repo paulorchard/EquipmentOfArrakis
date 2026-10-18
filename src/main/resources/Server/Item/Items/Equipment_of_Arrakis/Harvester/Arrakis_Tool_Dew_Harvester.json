@@ -26,7 +26,8 @@
   "Quality": "Common",
   "Interactions": {
     "Primary": "Arrakis_Harvester_Primary",
-    "Secondary": "Arrakis_Picker_Secondary"
+    "Secondary": "Arrakis_Picker_Secondary",
+    "Ability4": "Arrakis_Root_Toggle_Holtzman"
   },
   "DroppedItemAnimation": "Items/Animations/Dropped/Dropped_Diagonal_Left.blockyanim",
   "MaxDurability": 0,

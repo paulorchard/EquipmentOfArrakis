@@ -13,7 +13,8 @@
   "Texture": "Items/Tools/Pickaxe/Crude_Texture.png",
   "PlayerAnimationsId": "Pickaxe",
   "Interactions": {
-    "Secondary": "Arrakis_Picker_Secondary"
+    "Secondary": "Arrakis_Picker_Secondary",
+    "Ability4": "Arrakis_Root_Toggle_Holtzman"
   },
   "IconProperties": {
     "Scale": 0.45,

@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,8 +84,48 @@ public final class ToggleRegistry {
         return now;
     }
 
+    /** What a press did: nothing known by that id, ignored as too soon after the last press, or the new state. */
+    public enum Outcome {
+        UNKNOWN, DEBOUNCED, ON, OFF
+    }
+
+    private final Map<String, Long> lastPress = new HashMap<>();
+
+    /**
+     * The one way a player flips a toggle: the picker page clicks it (no debounce) and the Ability4 key reaches it through the
+     * {@code Arrakis_Toggle} interaction (a short debounce, so a held key does not flicker it). A press of an id nobody registered
+     * (its module is off) does nothing.
+     */
+    public Outcome press(String id, Store<EntityStore> store, Ref<EntityStore> ref, PlayerRef player, long nowNanos, long minGapNanos) {
+        return pressWith(id, player.getUuid(), nowNanos, minGapNanos, on -> find(id).on().set(store, ref, player, on));
+    }
+
+    /** {@link #press} with the switching left to {@code apply}, which gets the new state (the tests). */
+    Outcome pressWith(String id, UUID player, long nowNanos, long minGapNanos, java.util.function.Consumer<Boolean> apply) {
+        Toggle toggle = find(id);
+        if (toggle == null) {
+            return Outcome.UNKNOWN;
+        }
+        synchronized (this) {
+            String key = player + "/" + id;
+            Long last = lastPress.get(key);
+            if (last != null && minGapNanos > 0 && nowNanos - last < minGapNanos) {
+                return Outcome.DEBOUNCED;
+            }
+            if (minGapNanos > 0) {
+                lastPress.put(key, nowNanos);
+            }
+        }
+        boolean now = !toggle.isOn(player);
+        apply.accept(now);
+        return now ? Outcome.ON : Outcome.OFF;
+    }
+
     /** The player is gone: every toggle forgets them. A failing hook does not stop the others. */
     public void forget(UUID player) {
+        synchronized (this) {
+            lastPress.keySet().removeIf(key -> key.startsWith(player + "/"));
+        }
         for (Toggle toggle : all()) {
             try {
                 toggle.reset().forget(player);

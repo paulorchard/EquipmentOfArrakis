@@ -1,0 +1,10 @@
+{
+  "$Comment": "Ability4 of every Arrakis weapon and hand tool. RequireNewClick: a held key fires once. The engine cooldown is the 0.2 s debounce. No Rules: it neither blocks nor interrupts the swing or the shot in progress.",
+  "RequireNewClick": true,
+  "Cooldown": {
+    "Cooldown": 0.2
+  },
+  "Interactions": [
+    "Arrakis_Toggle_Holtzman"
+  ]
+}

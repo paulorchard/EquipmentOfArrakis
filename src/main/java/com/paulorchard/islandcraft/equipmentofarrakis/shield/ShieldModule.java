@@ -23,7 +23,7 @@ import java.util.List;
 public final class ShieldModule implements EquipmentModule {
 
     public static final String ID = "shield";
-    public static final String TOGGLE = "shield";
+    public static final String TOGGLE = "Holtzman";
     private static final int ORDER = 10;
 
     private static HytaleLogger logger;
@@ -32,7 +32,7 @@ public final class ShieldModule implements EquipmentModule {
 
     public ShieldModule(JavaPlugin plugin) {
         logger = plugin.getLogger();
-        guard = ModuleAssets.guard(plugin, ID, id -> id.contains("Holtzman"));
+        guard = ModuleAssets.guard(plugin, ID, id -> id.startsWith("Arrakis_Holtzman_") || id.startsWith("SFX_Arrakis_Holtzman_"));
     }
 
     static HytaleLogger logger() {

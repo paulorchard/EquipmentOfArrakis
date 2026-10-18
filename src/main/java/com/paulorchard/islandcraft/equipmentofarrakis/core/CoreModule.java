@@ -19,8 +19,10 @@ public final class CoreModule implements EquipmentModule {
 
     private final Modules modules;
 
-    public CoreModule(Modules modules) {
+    public CoreModule(Modules modules, com.hypixel.hytale.server.core.plugin.JavaPlugin plugin) {
         this.modules = modules;
+        plugin.getCodecRegistry(com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction.CODEC)
+                .register(ToggleInteraction.TYPE, ToggleInteraction.class, ToggleInteraction.CODEC);
     }
 
     @Override
@@ -57,7 +59,11 @@ public final class CoreModule implements EquipmentModule {
     @Override
     public List<String> selfCheck() {
         return List.of("modules loaded: " + modules.entries().stream().filter(Modules.Entry::running).count() + " of "
-                + modules.entries().size());
+                + modules.entries().size(),
+                com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction.getAssetMap().getAsset("Arrakis_Toggle_Holtzman") == null
+                        ? "PROBLEM interaction Arrakis_Toggle_Holtzman is not loaded" : "interaction Arrakis_Toggle_Holtzman loaded",
+                com.hypixel.hytale.server.core.modules.interaction.interaction.config.RootInteraction.getAssetMap().getAsset("Arrakis_Root_Toggle_Holtzman") == null
+                        ? "PROBLEM root interaction Arrakis_Root_Toggle_Holtzman is not loaded" : "root interaction Arrakis_Root_Toggle_Holtzman loaded");
     }
 
     private static void forgetHolder(com.hypixel.hytale.component.Holder<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> holder) {
