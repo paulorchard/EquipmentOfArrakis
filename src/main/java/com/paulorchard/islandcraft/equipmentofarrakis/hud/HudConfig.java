@@ -18,7 +18,7 @@ public final class HudConfig {
 
     // ---- layout
     /** Raises both rows by this much (for example to clear the held item name). */
-    private double barsLift = 0;
+    private double barsLift = 13;
     /** Bottom of the Health / Water row above the bottom of the screen: hotbar baseline 24 + slot 78 + gap 9. */
     private double bottomRowBottom = 111;
     /** From the bottom of one row to the bottom of the row above. */
