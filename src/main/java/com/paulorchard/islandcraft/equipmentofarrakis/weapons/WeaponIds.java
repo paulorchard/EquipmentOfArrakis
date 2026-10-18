@@ -34,8 +34,4 @@ public final class WeaponIds {
         ids.addAll(guns());
         return ids;
     }
-
-    public static boolean isWeapon(String itemId) {
-        return itemId != null && all().contains(itemId);
-    }
 }

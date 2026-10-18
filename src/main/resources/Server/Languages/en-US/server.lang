@@ -100,15 +100,12 @@ commands.arrakis.shield.hit.desc = Hits you with projectile damage through the r
 commands.arrakis.shield.state.desc = Shows the toggle, the field, Mana, whether the shield is broken and the cooldown
 commands.arrakis.shield.shot.desc = Counts as a shot of yours: the field drops and the cooldown starts
 commands.arrakis.shield.cooldown.desc = Shows or sets the cooldown in seconds (not saved): arrakis shield cooldown [seconds]
-commands.arrakis.shield.diag.desc = Logs every projectile creation with its creator: arrakis shield diag [on|off]
 customUI.arrakisPicker.shield = Holtzman Shield
 
 # ---- weapons
 commands.arrakis.weapons.desc = The weapons: give, state, trace
 commands.arrakis.weapons.give.desc = Give the ten weapons (the hotbar if there is room, else the inventory)
 commands.arrakis.weapons.state.desc = Show the held item, whether it has Ability4 (the H key), and the Holtzman toggle
-commands.arrakis.weapons.trace.desc = Log each Ability4 press that reaches the server: arrakis weapons trace [on|off]
-commands.arrakis.weapons.diff.desc = Development: lists the fields that differ between two loaded items: arrakis weapons diff <itemA> <itemB>
 items.Arrakis_Weapon_Sword_Crude.name = Arrakis Sword (Crude)
 items.Arrakis_Weapon_Sword_Crude.description = A sword of house Crude. It looks like the Crude sword and fights like the Crude one: the same swings, the same damage, the same sounds. Right click guards. It does not wear out. H toggles the Holtzman shield.
 items.Arrakis_Weapon_Sword_Atreides.name = Arrakis Sword (Atreides)

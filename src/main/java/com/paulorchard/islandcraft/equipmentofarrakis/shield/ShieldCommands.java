@@ -29,7 +29,6 @@ import java.util.function.Supplier;
  * /arrakis shield state            toggle, field, Mana, broken, cooldown
  * /arrakis shield shot             counts as a shot of yours (the field drops, the cooldown starts)
  * /arrakis shield cooldown [s]     read or set the cooldown (not saved)
- * /arrakis shield diag [on|off]    log every projectile creation with its creator (the shot hooks)
  * </pre>
  */
 final class ShieldCommands {
@@ -46,10 +45,6 @@ final class ShieldCommands {
         shield.addSubCommand(WorldPositional.build("state", LANG + "state.desc", (c, w, s, a) -> state(c, s, settings.get())));
         shield.addSubCommand(WorldPositional.build("shot", LANG + "shot.desc", (c, w, s, a) -> shot(c, s)));
         shield.addSubCommand(WorldPositional.build("cooldown", LANG + "cooldown.desc", (c, w, s, a) -> cooldown(c, a, settings.get()), "seconds"));
-        shield.addSubCommand(WorldPositional.build("diag", LANG + "diag.desc", (c, w, s, a) -> {
-            ShieldShots.trace = a.length > 0 ? "on".equalsIgnoreCase(a[0]) : !ShieldShots.trace;
-            say(c, "Projectile trace " + (ShieldShots.trace ? "ON: every projectile creation is logged with its creator" : "off"));
-        }, "onoff"));
         return shield;
     }
 

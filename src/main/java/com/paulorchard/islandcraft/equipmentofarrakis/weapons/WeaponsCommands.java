@@ -11,7 +11,6 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.CommandRoot;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.CoreModule;
-import com.paulorchard.islandcraft.equipmentofarrakis.core.ToggleInteraction;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.ToggleRegistry;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.WorldPositional;
 
@@ -19,7 +18,6 @@ import com.paulorchard.islandcraft.equipmentofarrakis.core.WorldPositional;
  * <pre>
  * /arrakis weapons give            the ten weapons: the hotbar if there is room, else the inventory
  * /arrakis weapons state           the held item, whether it has Ability4 (the H key) and the Holtzman toggle
- * /arrakis weapons trace [on|off]  log each Ability4 press that reaches the server (default on)
  * </pre>
  */
 final class WeaponsCommands {
@@ -34,17 +32,6 @@ final class WeaponsCommands {
         };
         weapons.addSubCommand(WorldPositional.build("give", LANG + "give.desc", (c, w, s, a) -> player(c, ref -> give(c, s, ref))));
         weapons.addSubCommand(WorldPositional.build("state", LANG + "state.desc", (c, w, s, a) -> player(c, ref -> state(c, s, ref))));
-        weapons.addSubCommand(WorldPositional.build("trace", LANG + "trace.desc", (c, w, s, a) -> {
-            ToggleInteraction.trace = a.length > 0 ? "on".equalsIgnoreCase(a[0]) : !ToggleInteraction.trace;
-            CoreModule.say(c, "Ability4 trace " + (ToggleInteraction.trace ? "ON: one log line per press that arrives" : "off"));
-        }, "onoff"));
-        weapons.addSubCommand(WorldPositional.build("diff", LANG + "diff.desc", (c, w, s, a) -> {
-            if (a.length < 2) {
-                CoreModule.say(c, "Usage: arrakis weapons diff <itemA> <itemB>");
-                return;
-            }
-            ItemDiff.run(a[0], a[1], line -> CoreModule.say(c, line));
-        }, "itemA", "itemB"));
         return weapons;
     }
 
@@ -73,7 +60,7 @@ final class WeaponsCommands {
         }
         ToggleRegistry.Toggle toggle = ToggleRegistry.get().find("Holtzman");
         CoreModule.say(c, "toggle Holtzman: " + (toggle == null ? "not registered (the shield module is off)" : toggle.isOn(player.getUuid()) ? "ON" : "OFF")
-                + ", trace " + (ToggleInteraction.trace ? "on" : "off"));
+);
     }
 
     private static void player(CommandContext c, Action action) {

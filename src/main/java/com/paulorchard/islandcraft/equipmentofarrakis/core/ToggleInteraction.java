@@ -5,17 +5,14 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInstantInteraction;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-import java.util.logging.Level;
 
 /**
  * Interaction type {@code Arrakis_Toggle}: flips the toggle {@code ToggleId} of the player who runs it, through the same
@@ -39,10 +36,6 @@ public class ToggleInteraction extends SimpleInstantInteraction {
             .add()
             .build();
 
-    private static final HytaleLogger LOG = HytaleLogger.getLogger();
-    /** Development: one log line per arriving press (the proof that the key reaches the server on each kind of item). */
-    public static volatile boolean trace = true;
-
     private String toggleId = "Holtzman";
     private float debounceSeconds = 0.2f;
 
@@ -54,13 +47,8 @@ public class ToggleInteraction extends SimpleInstantInteraction {
         if (player == null) {
             return;
         }
-        ItemStack held = context.getHeldItem();
         ToggleRegistry.Outcome outcome = ToggleRegistry.get().press(toggleId, buffer.getStore(), ref, player,
                 System.nanoTime(), (long) (debounceSeconds * 1e9));
-        if (trace) {
-            LOG.at(Level.INFO).log("%s arrived for %s holding %s: toggle %s -> %s", type, player.getUsername(),
-                    held == null ? "nothing" : held.getItemId(), toggleId, outcome);
-        }
         if (outcome == ToggleRegistry.Outcome.ON || outcome == ToggleRegistry.Outcome.OFF) {
             ToggleRegistry.Toggle toggle = ToggleRegistry.get().find(toggleId);
             player.sendMessage(Message.translation(toggle.labelKey()).insert(": " + (outcome == ToggleRegistry.Outcome.ON ? "ON" : "OFF")));

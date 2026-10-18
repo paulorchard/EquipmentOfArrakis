@@ -210,12 +210,6 @@ final class HudRuntime {
         state.view.refresh(state.percent, fill, icon, state.alert);
     }
 
-    /** The fill tint of the Heat Exposure bar at a percent: orange, then a blend to red (the Water mod rules, or the config fallback). */
-    static String exposureTint(double percent) {
-        WaterApi.ExposureColors rules = exposureRules();
-        return HudMath.exposureColor(Double.isNaN(percent) ? 0 : percent, rules.redStartPercent(), rules.orange(), rules.red());
-    }
-
     /** The four values in percent (NaN for a bar that cannot be read, which is then not drawn). */
     static void readValues(PlayerRef ref, Ref<EntityStore> entity, ComponentAccessor<EntityStore> accessor, WaterApi water, double[] out) {
         Power power = Power.get();

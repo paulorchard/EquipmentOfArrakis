@@ -26,9 +26,6 @@ import java.util.function.Supplier;
  */
 final class DartRangeDamageSystem extends DamageEventSystem {
 
-    /** Development: the self-test sets this to have every dart hit logged with the distances the rule saw. */
-    static volatile boolean trace;
-
     private final Supplier<WeaponsConfig> settings;
 
     DartRangeDamageSystem(Supplier<WeaponsConfig> settings) {
@@ -51,9 +48,6 @@ final class DartRangeDamageSystem extends DamageEventSystem {
         if (!(damage.getSource() instanceof Damage.ProjectileSource source)) {
             return;
         }
-        if (trace) {
-            WeaponsModule.logger().atInfo().log("dart damage event: projectile %s", source.getProjectile());
-        }
         Ref<EntityStore> projectile = source.getProjectile();
         if (projectile == null || !projectile.isValid()) {
             return;
@@ -67,10 +61,6 @@ final class DartRangeDamageSystem extends DamageEventSystem {
         Vector3d at = transform.getPosition();
         if (DartMath.beyond(flight.launch, new double[] {at.x, at.y, at.z}, range)) {
             damage.setCancelled(true);
-            if (trace) {
-                WeaponsModule.logger().atInfo().log("dart hit cancelled: the dart at %s is beyond %s from %s", at, range,
-                        java.util.Arrays.toString(flight.launch));
-            }
             return;
         }
         // The projectile's own position is where it was at the start of the tick it hit in: it lags the hit by up to a whole step (3.3
@@ -83,10 +73,6 @@ final class DartRangeDamageSystem extends DamageEventSystem {
             Vector3d max = box.getBoundingBox().max;
             double reach = DartMath.distanceToBox(flight.launch, new double[] {feet.x + min.x, feet.y + min.y, feet.z + min.z},
                     new double[] {feet.x + max.x, feet.y + max.y, feet.z + max.z});
-            if (trace) {
-                WeaponsModule.logger().atInfo().log("dart hit: launch %s, dart at %s, target feet %s, reach %s of %s",
-                        java.util.Arrays.toString(flight.launch), at, feet, reach, range);
-            }
             if (reach > range) {
                 damage.setCancelled(true);
             }

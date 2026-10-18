@@ -6,7 +6,6 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.UUID;
-import java.util.logging.Level;
 
 /**
  * The one place a shot is turned into "this player shot": it stamps the time on the player {@link HoltzmanState}, which keeps their
@@ -19,9 +18,6 @@ import java.util.logging.Level;
  * the first, has nothing more to drop, so the power-down sound (played only when the field really goes down) is played once.
  */
 final class ShieldShots {
-
-    /** Development: log every projectile creation with who made it and whether that counts. */
-    static volatile boolean trace;
 
     private ShieldShots() {
     }
@@ -41,10 +37,6 @@ final class ShieldShots {
      */
     static boolean record(Store<EntityStore> store, UUID creator, String kind, String asset) {
         PlayerRef player = playerOf(store, creator);
-        if (trace) {
-            ShieldModule.logger().at(Level.INFO).log("projectile created: %s %s, creator %s, %s", kind, asset, creator,
-                    player != null ? "a player: the field drops" : "not a player: ignored");
-        }
         if (player != null) {
             HoltzmanState.of(player.getUuid()).shot(System.nanoTime());
         }

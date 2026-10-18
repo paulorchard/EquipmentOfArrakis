@@ -129,10 +129,6 @@ public final class WorldAccess {
         return section == null ? null : chunks.getStore().getComponent(section, ChunkSection.getComponentType());
     }
 
-    public ChunkStore chunkStore() {
-        return chunks;
-    }
-
     // ---- loading
 
     /**

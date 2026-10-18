@@ -73,17 +73,6 @@ public final class ToggleRegistry {
         return list;
     }
 
-    /** Flips a toggle for a player and returns the new state; false for an unknown id. */
-    public boolean flip(String id, Store<EntityStore> store, Ref<EntityStore> ref, PlayerRef player) {
-        Toggle toggle = find(id);
-        if (toggle == null) {
-            return false;
-        }
-        boolean now = !toggle.isOn(player.getUuid());
-        toggle.on().set(store, ref, player, now);
-        return now;
-    }
-
     /** What a press did: nothing known by that id, ignored as too soon after the last press, or the new state. */
     public enum Outcome {
         UNKNOWN, DEBOUNCED, ON, OFF

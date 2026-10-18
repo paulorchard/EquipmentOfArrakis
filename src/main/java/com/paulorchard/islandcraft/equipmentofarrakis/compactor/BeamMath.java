@@ -57,11 +57,6 @@ final class BeamMath {
         return new Entry(distance, new Vector3i(normal[0], normal[1], normal[2]), center);
     }
 
-    /** Distance along the ray to the face of the unit block at {@code block} that it enters through. */
-    static double entryDistance(Vector3d origin, Vector3d dir, Vector3i block) {
-        return entry(origin, dir, block).distance();
-    }
-
     /** The point {@code clearance} out from the middle of a face, along its normal. */
     static Vector3d offFace(Entry entry, double clearance) {
         return new Vector3d(entry.faceCenter()).fma(clearance, new Vector3d(entry.normal().x, entry.normal().y,

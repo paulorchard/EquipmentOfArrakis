@@ -58,10 +58,6 @@ final class DartFlightSystem extends RefSystem<EntityStore> {
         } else {
             direction.set(0, 0, 0);
         }
-        if (DartRangeDamageSystem.trace) {
-            WeaponsModule.logger().atInfo().log("dart added at %s facing yaw %s pitch %s, %s ahead of the eye along %s", at,
-                    rotation.yaw(), rotation.pitch(), ahead, direction);
-        }
         commandBuffer.addComponent(ref, DartFlight.type, new DartFlight(new double[] {at.x - direction.x, at.y - direction.y, at.z - direction.z}));
     }
 
