@@ -247,6 +247,86 @@ leaves no trace of the trial names in the sources and `gradlew build` passes.
 9. Personal Light: ON gives a torch-equivalent cool white light that other players see (compare with a held `Furniture_Crude_Torch` in the dark); OFF removes it; relog and death leave it OFF.
 10. Vehicle Summoner and Build/Repair: appear in the picker, show a pickaxe, left click does nothing.
 
+## Module notes: the weapons and the H key
+
+Same labels as above: **confirmed** (headless boot, unit test, javap), **inferred** (reasoned from bytecode or vanilla data), **needs a client**. Two commits: core (the toggle key), then the
+`weapons` module. The headless boot loads all ten weapons with no PROBLEM line, with the module on, and with `weapons` and `shield` both removed from `Modules` (the weapons module removes
+21 assets of its own; the toggle interaction stays and does nothing without the shield).
+
+### core: the Ability4 toggle (the H key)
+
+- `ToggleRegistry.press(id, store, ref, player, now, minGap)` is the one way a player flips a toggle: the picker page calls it with no debounce, the key through `Arrakis_Toggle` with 0.2 s.
+  Outcomes `UNKNOWN` (nothing registered under the id: the module is off) / `DEBOUNCED` / `ON` / `OFF`. A press with gap 0 leaves no debounce stamp, so a click and then H are independent.
+  The shield toggle id is now `Holtzman` (was `shield`); the shield module's asset guard was narrowed to ids starting `Arrakis_Holtzman_` / `SFX_Arrakis_Holtzman_`, because it used to drop
+  anything containing "Holtzman", which would have dropped the core root with the shield module.
+- Interaction type `Arrakis_Toggle` (`ToggleInteraction`, registered by the core module): fields `ToggleId`, `DebounceSeconds`. Interaction asset `Arrakis_Toggle_Holtzman`
+  (`ToggleId Holtzman`), root `Arrakis_Root_Toggle_Holtzman`: `RequireNewClick`, `Cooldown 0.2`, `Rules {"BlockedBy": []}`. It sends the same chat line as the page ("Holtzman Shield: ON") and logs
+  one INFO line per press that arrives (`Arrakis_Toggle arrived for <name> holding <item>: toggle Holtzman -> ON/OFF/DEBOUNCED/UNKNOWN`); `/arrakis weapons trace off` silences it.
+  No item glow, particle or HUD was added: the bubble on the character is the only indicator.
+- `Ability4 = Arrakis_Root_Toggle_Holtzman` is on the seven hand tools (Cutter Ray, Blood Extractor, Compactor, Dew Harvester, LitreJon, Vehicle Summoner, Build/Repair Tool) and on the ten
+  weapons; not on the Blood Bag (unit test and the boot log). Their right click is unchanged: the picker on tools, the vanilla guard / bash on weapons.
+
+**Gate analysis: what can stop an Ability4 chain.** The client binds H to Ability4 (the user's finding). On the server (javap of `InteractionManager`, `InteractionRules`, `InteractionTypeUtils`):
+1. **The item must have an Ability4 entry.** `Item.getInteractions()` is looked up by type; no entry, nothing runs. (confirmed: the boot log lists `Ability4=Arrakis_Root_Toggle_Holtzman` on all 17.)
+2. **Nothing unlocks it.** There is no ability-unlock list or client setting in the server path. The vanilla signature gate is not on the slot: it is the first interaction of the Ability1 chain, a
+   `StatsCondition` with `Costs {SignatureEnergy: 100}` (`Weapon_Sword_Signature_Vortexstrike`), and the `Weapon` block's `StatModifiers` / `EntityStatsToClear` only fill and clear that stat; the glow is
+   `ItemAppearanceConditions`. Our root has none of these. (confirmed from the vanilla data and the bytecode.)
+3. **The root cooldown.** `RootInteraction.Cooldown` is per root; with none the engine uses a default 0.35 s (`InteractionTypeUtils.DEFAULT_COOLDOWN`). Ours is set to 0.2 s, which is the debounce.
+4. **The default rules block it while another hand chain runs.** `InteractionTypeUtils.DEFAULT_INTERACTION_BLOCKED_BY` makes every standard input type (Primary, Secondary, Ability1 to 4, Use, Pick, SwapTo,
+   SwapFrom) blocked by every other one while its chain is running, so by default H pressed during a swing, a shot or a held guard is silently dropped (the swing is not cancelled, but H is lost). We set
+   `Rules.BlockedBy` to an empty list on the root (the boot log shows `blockedBy=[]`, `interrupting=null`, `interruptedBy=null`), so H works mid-swing and mid-shot and cancels neither (nothing interrupts:
+   the codec fields `Interrupting` / `InterruptedBy` are unset). **Inferred:** the other direction (a click arriving while the instant toggle chain is alive) is blocked by the click's default rules for the
+   one tick the toggle lives; it is on the test sheet.
+5. **Not verifiable here:** whether the client sends Ability4 at all for each kind of item, and whether it does with a page open (a client concern; the server never sees it). The result of pressing H on a
+   melee weapon, a gun and a tool is therefore **needs a client**: press H and read the log line above; if it never appears for an item kind, the client is not sending it for that kind (a missing piece
+   would then be on the client side, not in the item data, and this note must be updated with what it was). Holding the Blood Bag or nothing: the item has no Ability4, so nothing arrives (by design).
+
+### weapons
+
+- **Melee (8), built as children:** `Arrakis_Weapon_Sword_{Crude,Atreides,Choam,Harkonnen}` and `Arrakis_Weapon_Daggers_{...}`. Each has `Parent: Weapon_Sword_Crude` (or `Weapon_Daggers_Crude`), so the whole
+  `InteractionVars` (every damage number, `DamageEffects`, swing effects and sounds), `ItemSoundSetId`, the `Weapon` block (signature energy), the appearance conditions and the icon properties are the Crude
+  item's and the template's, byte for byte, with nothing copied. Overridden by `tools/assets/weapons/make_weapons.js` (it reads the vanilla files from Assets.zip): `Model`, `Texture`, `Icon`, `Quality` of the
+  house's own vanilla tier (Atreides = Thorium, Choam = Cobalt, Harkonnen = Adamantite; Crude = Crude), `Recipe: null`, `MaxDurability 0`, `DurabilityLossOnHit 0`, `MaxStack 1`, `Categories
+  ["IslandCraft.Weapons"]`, the names, and the `Interactions` map written out in full (the template's Primary, Secondary, Ability1, plus Ability4) so no merge rule has to be trusted.
+  **Proof that all eight deal the Crude damage (confirmed):** the unit test requires that no melee file has an `InteractionVars`, `ItemSoundSetId` or `Weapon` of its own and that its `Parent` is the Crude
+  item; the boot self-check compares the resolved `Item.getInteractionVars()` map of each of the eight with the Crude item's and prints `InteractionVars same as Weapon_Sword_Crude: true` (swords) and
+  `... Weapon_Daggers_Crude: true` (daggers) for all eight (the map holds the interaction ids, so they are the same generated damage interactions). `Recipe: null` removed the inherited recipe
+  (`hasRecipesToGenerate` false), durability 0 and the tab are in the same self-check line. Left as vanilla: the Primary swing chain, the Secondary guard / bash and its animation, the Ability1
+  signature move, `Utility.Compatible` (swords true, daggers false, from the templates), the animations. Not a picker tool: weapons keep the vanilla right click.
+- **Guns (2), ported from v1 (tag equipment-v1-final):** `Arrakis_Weapon_Maula_Pistol` (`Parent: Weapon_Handgun`, `Utility.Compatible false`) and `Arrakis_Weapon_Dartgun` (`Parent: Weapon_Assault_Rifle`,
+  two-handed as vanilla). Roots / interactions renamed `Arrakis_Weapon_Maula_*` / `Arrakis_Weapon_Dartgun_*` (Primary, Gate, Shoot). **Kept in the v1 form:** the projectiles `Arrakis_Maula_Dart` /
+  `Arrakis_Dartgun_Dart`, the sounds `SFX_Arrakis_Maula_Fire(_Local)` / `SFX_Arrakis_Dartgun_Fire(_Local)` and the particle `Arrakis_Dart_Shot` (smoke only: the vanilla `Rifle_Smoke` spawner; no muzzle
+  flash, no brass). The fire sound events are copies of the vanilla ones with the first layer 6 dB quieter (a sound event cannot inherit layers); they name the vanilla clips by path. Behaviour as v1:
+  `RequireNewClick`, cooldown 0.33 s on the shared `Shoot` id (about 3 a second at most), dart damage 1, speed 100, the Secondary `Gun_Attack` bash and its animation, the `Handgun_Shoot` camera shake.
+  The range rule is ported unchanged (`DartMath`, `DartFlight`, `DartFlightSystem`, `DartRangeSystem`, `DartRangeDamageSystem`): a dart is removed 40 blocks from where it was launched and a hit past
+  40 blocks does no damage; the settings are the `Weapons` section (`Range`, `ProjectileIds`). The component is now registered by the module (`ctx.plugin().getEntityStoreRegistry()`).
+- **The removed ammo gate and where a cost goes:** `DartAmmoGateInteraction`, `Arrakis_Ammo` and the arrow `ModifyInventory` are gone. Each Primary root still runs one gate interaction,
+  `Arrakis_Weapon_<Gun>_Gate` of type `Arrakis_Gun_Gate` with `Cost 0` (generator constant `COST_PER_SHOT`): it calls `GunCost.charge(buffer, shooter, cost)` and goes to the shot, or ends as Failed and runs the
+  vanilla dry click `Gun_Shoot_Fail`. `GunCost.charge` returns true for a cost of 0 and false for any cost above 0 (there is no ammo system yet, so a priced gate refuses rather than firing free). An ammo system
+  later raises `Cost` and fills in `GunCost.charge`; nothing else changes. No Mana and no ammo are used.
+- **Holtzman interplay (inferred, by reading the code; needs a client):** the shield drops on any projectile entity a player creates (`ShieldShotSystem` / `ShieldShotLegacySystem`, plus `ToolUse.fired`); a
+  `LaunchProjectile` dart is such an entity with the player as creator, so firing drops the field for 1 s with no extra code. A melee swing creates no projectile and calls no `ToolUse`, so it never drops
+  it. `/arrakis shield diag on` logs each projectile and its creator to check this. The weapons module never imports the shield: the key goes through core.
+- Operator helpers: `/arrakis weapons give` (all ten), `/arrakis weapons state` (held item, its Ability4, the Holtzman toggle, the trace flag), `/arrakis weapons trace [on|off]`, and the existing
+  `/arrakis shield state`.
+- Unit tests: `TogglePressTest` (flip, unknown id, module off, debounce window and its edge, picker gap 0, per-player, forget), `DartMathTest` (the v1 range rule), `WeaponAssetsTest` (ids, tab, no recipe, no
+  durability, the eight children of the Crude items with no damage of their own, the look of each tier, Primary / Secondary / Ability1 kept, Ability4 on ten weapons and seven tools and absent from the Blood Bag,
+  the semi-auto root and the 0.33 s cooldown, the gate cost 0 and its hook, smoke only, dart damage 1 and speed 100, no picker on weapons, the toggle root: 0.2 s, empty `BlockedBy`, no interrupt).
+  The catalog test (every item in the tab names an existing child and has an Icon of its own) covers the ten as well. Self-check lines for every item, interaction, root, sound and particle.
+  A Projectile asset is not removed when the module is off (`ModuleAssets` does not handle that type); the two dart projectiles stay loaded and unreferenced.
+
+### Human test sheet, weapons and the H key (a client; `/arrakis weapons give`, survival and creative)
+
+11. Creative menu, IslandCraft tab, Weapons: eight melee and the Maula Pistol and Dartgun, with icons and names; each type has its own vanilla look (Crude, Thorium, Cobalt, Adamantite models).
+12. Swing each sword and each dagger set at the same target: the same damage for all four houses (equal to the Crude weapon), the T1 swing and impact sounds, right click guards or bashes as vanilla, the
+    signature move on its own key still works when its energy is full, no durability bar, nothing breaks.
+13. Maula Pistol and Dartgun: one click one dart, no more than 3 a second, 1 damage, nothing past 40 blocks, smoke only, the bash works, no ammo or Mana used, firing drops the Holtzman field for 1 s if it is on.
+    Melee swings never drop it.
+14. H key, holding each of the ten weapons and the seven tools: the shield toggles (field, hum and power sounds as from the picker) and the chat line appears; the picker page shows the same ON / OFF; the server log
+    has one `Arrakis_Toggle arrived` line per press. Holding the Blood Bag or an empty hand: nothing. H during a swing and during a shot: it toggles and the swing / shot goes on. Holding H or tapping it fast:
+    no flicker and no sound spam (0.2 s). Right click on a weapon: vanilla guard, no picker; on a tool: the picker. After death, respawn and relog the toggle is OFF and H still works. H with a page open: nothing.
+    If H never arrives on some item kind, note which and read gate 5 above.
+
 ## Harness notes
 
 - `tools/headless/run.sh "wait 35" "arrakis modules" ...` boots the server with this jar; world commands from the console run in world `default`.

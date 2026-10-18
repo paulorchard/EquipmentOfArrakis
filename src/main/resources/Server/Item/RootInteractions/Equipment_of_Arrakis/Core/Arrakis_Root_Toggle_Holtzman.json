@@ -1,8 +1,11 @@
 {
-  "$Comment": "Ability4 of every Arrakis weapon and hand tool. RequireNewClick: a held key fires once. The engine cooldown is the 0.2 s debounce. No Rules: it neither blocks nor interrupts the swing or the shot in progress.",
+  "$Comment": "Ability4 of every Arrakis weapon and hand tool (the H key). RequireNewClick: a held key fires once. The engine cooldown is the 0.2 s debounce. Rules: the engine blocks an Ability chain by default while any other hand chain (a swing, a shot, a guard) is running; an empty BlockedBy lets H toggle during them. Nothing is interrupted: Interrupting and InterruptedBy are left unset.",
   "RequireNewClick": true,
   "Cooldown": {
     "Cooldown": 0.2
+  },
+  "Rules": {
+    "BlockedBy": []
   },
   "Interactions": [
     "Arrakis_Toggle_Holtzman"

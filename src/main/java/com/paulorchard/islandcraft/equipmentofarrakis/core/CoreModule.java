@@ -63,7 +63,7 @@ public final class CoreModule implements EquipmentModule {
                 com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction.getAssetMap().getAsset("Arrakis_Toggle_Holtzman") == null
                         ? "PROBLEM interaction Arrakis_Toggle_Holtzman is not loaded" : "interaction Arrakis_Toggle_Holtzman loaded",
                 com.hypixel.hytale.server.core.modules.interaction.interaction.config.RootInteraction.getAssetMap().getAsset("Arrakis_Root_Toggle_Holtzman") == null
-                        ? "PROBLEM root interaction Arrakis_Root_Toggle_Holtzman is not loaded" : "root interaction Arrakis_Root_Toggle_Holtzman loaded");
+                        ? "PROBLEM root interaction Arrakis_Root_Toggle_Holtzman is not loaded" : "root interaction Arrakis_Root_Toggle_Holtzman loaded, rules " + com.hypixel.hytale.server.core.modules.interaction.interaction.config.RootInteraction.getAssetMap().getAsset("Arrakis_Root_Toggle_Holtzman").getRules());
     }
 
     private static void forgetHolder(com.hypixel.hytale.component.Holder<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> holder) {

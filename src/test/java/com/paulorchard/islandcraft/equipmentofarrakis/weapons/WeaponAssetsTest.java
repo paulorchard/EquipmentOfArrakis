@@ -186,10 +186,11 @@ class WeaponAssetsTest {
     }
 
     @Test
-    void theToggleRootHasAShortDebounceAndNoCostOrRules() throws IOException {
+    void theToggleRootHasAShortDebounceNoCostAndIsNotBlockedByASwing() throws IOException {
         JsonObject root = json(SERVER + "Item/RootInteractions/Equipment_of_Arrakis/Core/" + ABILITY4 + ".json");
         assertEquals(0.2, root.getAsJsonObject("Cooldown").get("Cooldown").getAsDouble(), 1e-9);
-        assertFalse(root.has("Rules"), "no rules: it neither blocks nor interrupts a swing or a shot");
+        assertEquals(0, root.getAsJsonObject("Rules").getAsJsonArray("BlockedBy").size(), "H runs even while a swing or a shot is in progress");
+        assertFalse(root.getAsJsonObject("Rules").has("Interrupting") || root.getAsJsonObject("Rules").has("InterruptedBy"), "it never cancels a swing or a shot");
         assertEquals("Arrakis_Toggle_Holtzman", root.getAsJsonArray("Interactions").get(0).getAsString());
         JsonObject interaction = json(SERVER + "Item/Interactions/Equipment_of_Arrakis/Core/Arrakis_Toggle_Holtzman.json");
         assertEquals("Arrakis_Toggle", interaction.get("Type").getAsString());
