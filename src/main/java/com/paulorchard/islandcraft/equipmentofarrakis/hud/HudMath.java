@@ -2,23 +2,25 @@ package com.paulorchard.islandcraft.equipmentofarrakis.hud;
 
 import java.util.Locale;
 
-/** The engine-free rules of the HUD: fill weights, the change threshold, the flash phase, colours. */
+/** The engine-free rules of the HUD: the ProgressBar value, the change threshold, the alert phase, colours. */
 final class HudMath {
 
-    /**
-     * FlexWeight is an integer in the client (a float is refused), so a fill is split into SCALE parts: 1000 gives 0.1% steps. A part
-     * with weight 0 has no length.
-     */
-    static final int SCALE = 1000;
+    /** What the error overlay and its outline are doing on a bar. */
+    enum Alert {
+        /** Not alerting: both overlays invisible, the alert fill hidden. */
+        NONE,
+        /** Alerting, bright phase: the error overlay and its outline fully visible. */
+        BRIGHT,
+        /** Alerting, dim phase: the error overlay invisible, the outline at its minimum opacity. */
+        DIM
+    }
 
     private HudMath() {
     }
 
-    /** The FlexWeights of (empty part, fill part) for a percent 0..100. They always add up to SCALE; 0 and 100 are exact. */
-    static int[] split(double percent) {
-        double v = Double.isNaN(percent) ? 0.0 : Math.max(0.0, Math.min(1.0, percent / 100.0));
-        int fill = (int) Math.round(v * SCALE);
-        return new int[] {SCALE - fill, fill};
+    /** The value of a vanilla ProgressBar for a percent: 0..1 (NaN is 0). */
+    static float value(double percent) {
+        return Double.isNaN(percent) ? 0f : (float) Math.max(0.0, Math.min(1.0, percent / 100.0));
     }
 
     /** True the first time, when the value moved by at least {@code min} percent, or when it reaches 0 or 100. */
@@ -32,25 +34,39 @@ final class HudMath {
         return Math.abs(now - sent) >= min || now <= 0.0 || now >= 100.0;
     }
 
-    /** A bar flashes while it is below {@code below} percent (and only if it is a flashing bar). */
-    static boolean flashing(boolean flashingBar, double percent, double below) {
-        return flashingBar && percent < below;
+    /** A bar alerts while its switch is on and its value is below {@code below} percent. */
+    static boolean alerting(boolean switchOn, double percent, double below) {
+        return switchOn && !Double.isNaN(percent) && percent < below;
     }
 
     /**
-     * The phase of the flash at {@code seconds}: false is the normal colour, true the bright one. It flips {@code hz} times a second
-     * (bright for 1/hz, normal for 1/hz), from a clock all bars share so that they flash together.
+     * The phase of the alert flash at {@code seconds}: false is the dim phase, true the bright one. It flips every {@code flipSeconds}
+     * (the vanilla stamina low alert flips every 0.25 s), from a clock all bars share so that they flash together; it starts bright.
      */
-    static boolean bright(double seconds, double hz) {
-        if (hz <= 0) {
-            return false;
+    static boolean bright(double seconds, double flipSeconds) {
+        if (flipSeconds <= 0) {
+            return true;
         }
-        return ((long) Math.floor(seconds * hz)) % 2 != 0;
+        return ((long) Math.floor(seconds / flipSeconds)) % 2 == 0;
     }
 
-    /** The colour of a bar: its own, or moved {@code tintPercent} toward white in the bright phase of a flash. */
-    static String colorOf(String base, boolean flashing, boolean bright, double tintPercent) {
-        return flashing && bright ? blend(base, "#ffffff", tintPercent / 100.0) : base;
+    static Alert alert(boolean alerting, boolean bright) {
+        return !alerting ? Alert.NONE : bright ? Alert.BRIGHT : Alert.DIM;
+    }
+
+    /** The colour string of a white overlay at an opacity, in the .ui form: #ffffff(0.50). */
+    static String white(double opacity) {
+        return String.format(Locale.ROOT, "#ffffff(%.2f)", Math.max(0.0, Math.min(1.0, opacity)));
+    }
+
+    /** Opacity of the error overlay for an alert state. */
+    static double errorOpacity(Alert alert) {
+        return alert == Alert.BRIGHT ? 1.0 : 0.0;
+    }
+
+    /** Opacity of the error outline for an alert state: never below {@code outlineMinimum} while alerting. */
+    static double outlineOpacity(Alert alert, double outlineMinimum) {
+        return alert == Alert.NONE ? 0.0 : alert == Alert.BRIGHT ? 1.0 : outlineMinimum;
     }
 
     static String blend(String from, String to, double t) {
@@ -77,5 +93,10 @@ final class HudMath {
     static String exposureColor(double percent, double redStart, String orange, String red) {
         double t = percent <= redStart ? 0.0 : Math.min(1.0, (percent - redStart) / Math.max(1e-6, 100.0 - redStart));
         return blend(orange, red, t);
+    }
+
+    /** The Heat Exposure icon colour: the low colour at 0 percent, the high one at 100. */
+    static String exposureIconColor(double percent, String low, String high) {
+        return blend(low, high, Double.isNaN(percent) ? 0.0 : percent / 100.0);
     }
 }

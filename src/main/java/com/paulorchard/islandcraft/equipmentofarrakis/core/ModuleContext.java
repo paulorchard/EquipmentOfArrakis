@@ -18,11 +18,18 @@ public final class ModuleContext {
     private final JavaPlugin plugin;
     private final CommandRoot root;
     private final Function<String, Object> sections;
+    private final Runnable saveConfig;
 
-    public ModuleContext(JavaPlugin plugin, CommandRoot root, Function<String, Object> sections) {
+    public ModuleContext(JavaPlugin plugin, CommandRoot root, Function<String, Object> sections, Runnable saveConfig) {
         this.plugin = plugin;
         this.root = root;
         this.sections = sections;
+        this.saveConfig = saveConfig;
+    }
+
+    /** Writes the whole config file now (a module that changes its own section at run time, such as the HUD nudges). */
+    public void saveConfig() {
+        saveConfig.run();
     }
 
     public JavaPlugin plugin() {

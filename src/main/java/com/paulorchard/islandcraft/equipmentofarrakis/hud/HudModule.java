@@ -43,7 +43,7 @@ public final class HudModule implements EquipmentModule {
         HudRuntime.setEnabled(true);
         ctx.system(new HudSystem());
         ctx.events().registerGlobal(PlayerDisconnectEvent.class, event -> HudRuntime.forget(event.getPlayerRef().getUuid()));
-        ctx.command(HudCommands.build());
+        ctx.command(HudCommands.build(ctx));
     }
 
     @Override
@@ -108,15 +108,20 @@ public final class HudModule implements EquipmentModule {
     public List<String> selfCheck() {
         List<String> lines = new ArrayList<>();
         String base = "UI/Custom/Hud/Equipment_of_Arrakis/Hud/";
-        lines.add(common(base + "Arrakis_Hud.ui"));
-        for (String side : new String[] {"Left", "Right"}) {
-            for (String kind : new String[] {"Background", "Fill", "Sheen"}) {
-                lines.add(common(base + "Arrakis_Hud_Bar_" + kind + "_" + side + "@2x.png"));
-            }
+        for (String route : new String[] {"Reference", "Copy"}) {
+            lines.add(common(base + "Arrakis_Hud_" + route + ".ui"));
+            lines.add(common(base + "Arrakis_Hud_" + route + "_Creative.ui"));
         }
-        for (HudBar bar : HudBar.values()) {
-            lines.add(common(base + "Arrakis_Hud_Icon_" + bar.id + "@2x.png"));
+        for (String name : HudArt.DERIVED) {
+            lines.add(common(base + "VanillaDerived/" + name + "@2x.png"));
         }
+        for (String name : HudArt.COPIES) {
+            lines.add(common(base + "VanillaDerived/" + name + "@2x.png"));
+        }
+        for (String name : new String[] {"Misc", "Natural-Fluid"}) {
+            lines.add(common(base + "VanillaDerived/" + name + ".png"));
+        }
+        lines.add("art route: " + HudRuntime.config().getArtSource() + " (the reference route names the vanilla client files, which this check cannot see)");
         lines.add("exposure colour rules: " + (HudRuntime.exposureRulesFromWater() ? "from the Water mod" : "Hud config fallback (the Water defaults)"));
         lines.add("water link: " + WaterLink.status());
         return lines;

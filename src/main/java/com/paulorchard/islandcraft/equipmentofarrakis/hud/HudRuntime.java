@@ -3,6 +3,7 @@ package com.paulorchard.islandcraft.equipmentofarrakis.hud;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.packets.interface_.HudComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
@@ -41,8 +42,10 @@ final class HudRuntime {
         HudView view;
         /** True while this module has hidden the vanilla bars for the player (so that off can give them back). */
         boolean hidden;
+        /** The generation of the settings (nudges, art route) the view was built with. */
+        int generation;
         final double[] percent = {Double.NaN, Double.NaN, Double.NaN, Double.NaN};
-        final boolean[] flashing = new boolean[4];
+        final HudMath.Alert[] alert = {HudMath.Alert.NONE, HudMath.Alert.NONE, HudMath.Alert.NONE, HudMath.Alert.NONE};
         boolean bright;
         Pin pin;
     }
@@ -54,6 +57,8 @@ final class HudRuntime {
     private static volatile HudConfig config = new HudConfig();
     private static volatile WaterApi.ExposureColors exposureRules;
     private static volatile boolean exposureRulesFromWater;
+    /** Bumped when the nudges or the art route change: every view built with an older one is built again. */
+    private static final java.util.concurrent.atomic.AtomicInteger GENERATION = new java.util.concurrent.atomic.AtomicInteger();
 
     private HudRuntime() {
     }
@@ -64,6 +69,11 @@ final class HudRuntime {
 
     static HudConfig config() {
         return config;
+    }
+
+    /** The settings that shape the document changed (a nudge, the art route): every player gets a new view on their next tick. */
+    static void rebuildAll() {
+        GENERATION.incrementAndGet();
     }
 
     static boolean enabled() {
@@ -149,8 +159,17 @@ final class HudRuntime {
             return;
         }
         WaterApi water = WaterLink.api();
+        HudConfig cfg = config;
+        boolean creative = player.getGameMode() == GameMode.Creative;
+        int generation = GENERATION.get();
+        if (state.view != null && (state.view.creative() != creative || state.view.copy() != cfg.copyArt() || state.generation != generation)) {
+            // The game mode, the art route or a nudge changed: the document is built again (a texture path is not changed on a live one).
+            hud.removeCustomHud(ref, HudView.KEY);
+            state.view = null;
+        }
         if (state.view == null || hud.getCustomHud(HudView.KEY) != state.view) {
-            state.view = new HudView(ref, config, water != null);
+            state.view = new HudView(ref, cfg, water != null, creative);
+            state.generation = generation;
             hud.addCustomHud(ref, state.view);
         }
         long now = System.nanoTime();
@@ -161,29 +180,27 @@ final class HudRuntime {
         if (state.pin != null) {
             state.percent[state.pin.bar().ordinal()] = state.pin.percent();
         }
-        HudConfig cfg = config;
-        state.bright = HudMath.bright(now / 1e9, cfg.getFlashHz());
-        String[] colors = new String[4];
+        state.bright = HudMath.bright(now / 1e9, cfg.getAlertFlipSeconds());
+        String[] fill = new String[4];
+        String[] icon = new String[4];
         for (HudBar bar : HudBar.values()) {
             int i = bar.ordinal();
             double percent = state.percent[i];
-            state.flashing[i] = !Double.isNaN(percent) && HudMath.flashing(bar.flashes, percent, cfg.getFlashBelowPercent());
-            colors[i] = colorOf(bar, percent, state.flashing[i], state.bright, cfg);
+            boolean alerting = HudMath.alerting(cfg.flashes(bar), percent, cfg.getFlashBelowPercent());
+            state.alert[i] = HudMath.alert(alerting, state.bright);
+            if (bar == HudBar.EXPOSURE) {
+                WaterApi.ExposureColors rules = exposureRules();
+                fill[i] = HudMath.exposureColor(Double.isNaN(percent) ? 0 : percent, rules.redStartPercent(), rules.orange(), rules.red());
+                icon[i] = HudMath.exposureIconColor(percent, cfg.getExposureIconLow(), cfg.getExposureIconHigh());
+            }
         }
-        state.view.refresh(state.percent, colors);
+        state.view.refresh(state.percent, fill, icon, state.alert);
     }
 
-    static String colorOf(HudBar bar, double percent, boolean flashing, boolean bright, HudConfig cfg) {
-        String base = switch (bar) {
-            case POWER -> cfg.getPowerColor();
-            case HEALTH -> cfg.getHealthColor();
-            case WATER -> cfg.getWaterColor();
-            case EXPOSURE -> {
-                WaterApi.ExposureColors rules = exposureRules();
-                yield HudMath.exposureColor(Double.isNaN(percent) ? 0 : percent, rules.redStartPercent(), rules.orange(), rules.red());
-            }
-        };
-        return HudMath.colorOf(base, flashing, bright, cfg.getFlashTintPercent());
+    /** The fill tint of the Heat Exposure bar at a percent: orange, then a blend to red (the Water mod rules, or the config fallback). */
+    static String exposureTint(double percent) {
+        WaterApi.ExposureColors rules = exposureRules();
+        return HudMath.exposureColor(Double.isNaN(percent) ? 0 : percent, rules.redStartPercent(), rules.orange(), rules.red());
     }
 
     /** The four values in percent (NaN for a bar that cannot be read, which is then not drawn). */

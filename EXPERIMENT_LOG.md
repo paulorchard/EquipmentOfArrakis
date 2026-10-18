@@ -356,7 +356,7 @@ Labels as above: **confirmed** (boot, unit test, javap, the reference screenshot
 whole look, the placement against the hotbar and everything the per-player tick does are on the test sheet at the end. The headless boot is clean with the module on and off, without Water, with the
 Water jar that exists today (no `setHudHidden`, no colour rules) and with a scratch copy of that jar that has the prompt 06 methods (the real Water repo was not edited).
 
-### What it draws
+### What it draws (first version; the art and layout are replaced by the section "The HUD rebuilt on the vanilla art" below)
 
 Two rows above the hotbar, each split in half at the middle of the screen: Power (teal, bolt) over Health (red, heart) on the left, Heat Exposure (amber to red, sun) over Water (blue, drop) on the
 right, a round icon at the outer end of each bar, no numbers. `HudView` (a `CustomUIHud` with its own key `EquipmentOfArrakisBars`, so it sits beside the Water HUD) builds
@@ -455,6 +455,106 @@ the exposure colour and its midpoint, the command words), `HudAssetsTest` (every
     over the hotbar and never overlap it.
 21. The held-item name text: does it collide with the bars? If so try `/arrakis hud component hide InputBindings` (then `show`, `reset`) and the other parts to find what draws it, or raise
     `BarsLift`, and write the answer here.
+
+### The HUD rebuilt on the vanilla art (replaces "What it draws", "The art and the numbers" and the flash notes above)
+
+The first version drew its own bars (`make_hud.js` with a pixel rasteriser); they looked crude. This version builds the four bars from the game own Health and Mana bar art, laid out like the vanilla
+Health.ui and Mana.ui, with the vanilla `ProgressBar` element. Labels as before: **confirmed** (read from the client files, a boot, a unit test), **inferred**, **needs a client**. Nothing was seen on
+a client. Everything else of the module is unchanged (hiding only Health and Mana, the data sources, the Water link and the colour rule, the stop hook, `on|off|state|demo|component`).
+
+**Where the vanilla numbers come from (confirmed).** The generator reads the client `Interface` folder (`...\Client\Data\Game\Interface`, a variable at the top of `make_hud.js`) and writes what it read to
+`tools/assets/hud/vanilla-metrics.json`; `HudMetricsTest` fails if `HudMetrics.java` disagrees with it. `InGame/Common.ui`: `@DefaultItemSlotSize` 74, `@DefaultItemSlotsPerRow` 9, `@DefaultItemGridPadding` 2.
+`InGame/Hud/Hotbar.ui`: `@BottomMargin` 30, `@ContainerMargin` 6, `@HotbarSlotSpacingHud` 4, so `@HotbarWidthHud` = 74 * 9 + 4 * 9 = **702**, `@HotbarHeight` = 74 + 2 * 2 = **78**,
+`@InventoryClosedContainerMargin` = **36**. `Health/Health.ui` and `Mana/Mana.ui`: the group is `Width: @HotbarWidthHud, Height: 12` with `Bottom: 36 + 78 + 6` = **120**; the bar is 318 x 12;
+the icon is 24 x 24, `Top: -8`, a 4 gap (`Right: 4` for Health with the icon at the left end, `Left: 4` for Mana with the icon at the right end). So a block (icon, gap, bar) is 346 wide and its
+inner end is 351 - 346 = **5** from the middle of the screen. The first version put the bottom row at 111; the vanilla row is at **120** (`BarsLift` is now 0 by default, see the config note below).
+The top row is `RowGap` above (26, measured from the reference screenshot: 22 screenshot pixels at 0.847 per virtual pixel; editable).
+
+**ProgressBar (confirmed that it takes server updates).** The server jar sets `#MemoriesProgressBar.Value` as a float (0..1) in the Memories page and `#ProgressBar.Value` in the prefab editor pages
+(`UICommandBuilder.set(String, float)`), and the vanilla documents declare `ProgressBar #X { BarTexturePath: "..."; }`. Properties seen in the client binary and the vanilla `.ui` files: `BarTexturePath`,
+`EffectTexturePath`, `EffectWidth`, `EffectHeight`, `EffectOffset`, `Direction` (Start), `Alignment` (Vertical / Horizontal), `Value`, and `Bar: (Color: #...)` (in `VoiceInputLevelSetting.ui`); `EffectTexturePath`
+is the glow at the tip of the fill (used by the Memories bar and `Common.ui @ProgressBar`), while the Health and Mana bars use a second ProgressBar with `HealthBarEffect` / `ManaEffect` as its bar texture,
+which is what is copied here. So the FlexWeight split was dropped: each bar sets `#XFill.Value` and `#XEffect.Value`. The fill direction is left to the engine default, as in the vanilla files (no
+`Direction` is set there). **Inferred, needs a client:** that `Bar.Color` multiplies the bar texture the way `Background.Color` does on a group, and that `ui.set("#XFill.Bar.Color", ...)` is accepted at run time;
+if the tint is ignored the Power and Heat Exposure bars show the grey neutral fill.
+
+**The two routes (reference and copy), four documents.** `make_hud.js` writes `Arrakis_Hud_Reference.ui`, `Arrakis_Hud_Reference_Creative.ui`, `Arrakis_Hud_Copy.ui` and `Arrakis_Hud_Copy_Creative.ui` (same ids,
+anchors and layout; only the texture paths differ). One more pair than the prompt asked for: a texture path set at run time on a live document is not something that can be relied on, so the creative fills
+are separate documents and the view is rebuilt (removed and added) when the game mode changes.
+- **Reference:** `../../../InGame/Hud/Health/HealthBackground.png` and so on. **Why that path (inferred from vanilla data):** the Assets.zip document `Hud/ReturnToHubButton.ui` names
+  `../InGame/Pages/MapIcons/ReturnToCrossroads.png`, which only makes sense if `Common/UI/Custom` and the client `Interface` folder are one virtual tree (`Common/UI/Custom` holds `Common.ui`, `Common/`, `Hud/`,
+  `Pages/`, `Sounds.ui`, the client `Interface` holds the same names beside `InGame/`), so three folders up from `Hud/Equipment_of_Arrakis/Hud/` is the Interface root and `InGame/Hud/...` follows. The client appends `@2x`
+  to a name (the files are `HealthBackground@2x.png`, the documents say `HealthBackground.png`). Whether a texture pack that overrides the built-in path also changes ours cannot be tested here.
+- **Assets.zip art** (`Common/Icons/ItemCategories/Misc.png`, `Natural-Fluid.png`, 48 x 48 white glyphs): referenced as `../../../../../Icons/ItemCategories/Misc.png` (five folders up from our document is the `Common`
+  asset root of the zip). **This is the least certain path:** no vanilla document reaches the `Icons` folder by a relative path, and the virtual tree above suggests the UI root is `Interface`, not the asset root.
+  If the Heat Exposure and Water icons are missing on a client while the bars show, that is why; `/arrakis hud art copy` uses copies.
+- **Copy:** `VanillaDerived/<Name>.png` for everything (plain copies and the derived images), so it works whatever the client does with the paths. `ArtSource` in the Hud section (`reference` default or `copy`) and
+  `/arrakis hud art reference|copy|state` (live for everyone, saved, every view rebuilt).
+
+**Files in `VanillaDerived/` (one folder, listed with the reason; they come from Hypixel client art and Assets.zip: the user decides what ships when the mod is published).** Derived, used by both routes:
+`StaminaIconWhite@2x.png` (white silhouette of `StaminaIcon@2x.png`, alpha kept: the vanilla bolt is orange and a tint would multiply to a dark colour); `NeutralHealthBarFill@2x.png`,
+`NeutralCreativeHealthBarFill@2x.png` (grey copies with the shading of the Health fills, for the Power bar and its alert layer), `NeutralManaFill@2x.png`, `NeutralCreativeManaFill@2x.png` (the same from the Mana fills,
+for the Heat Exposure bar and its alert layer); `ErrorLeft@2x.png`, `ErrorOutlineLeft@2x.png` (mirror images of `ManaBackgroundError` and its outline: the vanilla overlay is slanted at the right end and the
+Health-shaped bars are slanted at the left, which the prompt did not expect, so the overlays could not be shared by all four bars). Plain byte copies, used by the Copy documents only: `HealthBackground`,
+`HealthBarFill`, `HealthBarEffect`, `CreativeHealthBarFill`, `HealthIcon`, `CreativeHealthIcon`, `ManaBackground`, `ManaFill`, `ManaEffect`, `CreativeManaFill`, `ManaBackgroundError`, `ManaBackgroundErrorOutline`
+(`@2x.png`), and `Misc.png`, `Natural-Fluid.png` from Assets.zip. The Reference documents use only the seven derived ones from our pack (unit test: no other `VanillaDerived/` path appears in them). Sizes are the
+vanilla sizes (636 x 24, 635 x 24 for the Mana files, 522 x 16 for the effects, 48 x 48 icons: `HudAssetsTest`). A derived image will not follow a texture pack; the other textures in the Reference documents will.
+
+**Colour judged from pixels (the generator prints these).** A multiply cannot brighten. Vanilla Health fill x teal `#57bbaf` = `#4b3f45` (a dull brown): unusable, so Power uses a neutral copy (x teal = `#4ea89e`).
+Vanilla Mana fill x amber `#d49c1b` = `#515f17` (olive): unusable, so Heat Exposure uses a neutral copy (x amber = `#bb8a18`, x red `#c61c17`). Health uses the vanilla pink-red fill untinted and Water the
+vanilla blue Mana fill untinted. **Neutral copies are not as bright as the target** (about 10% darker than the tint colour) because the median pixel maps to 0.88; if they look dull raise `PowerColor` or
+`NEUTRAL_BODY` in the generator. The creative fills need their own neutral copies for the tinted bars (the creative Health and Mana fills are lavender gradients with different shading), so there are four neutral
+fills. Tinted icons: Power = the white silhouette of the vanilla bolt, `#7fd0ff`; Water = `Natural-Fluid.png`, `#4da3ff`; Heat Exposure = `Misc.png` going from `#ffd23f` at 0% to `#ff8a1f` at 100% (config
+`ExposureIconLow` / `ExposureIconHigh`); Health = the vanilla `HealthIcon` untinted. The Heat Exposure bar keeps the orange-to-red rule (Water API colours or the config fallback).
+
+**The low alert (Health and Water by default).** Read from the vanilla files: `Mana.ui` has `@ErrorPulseThreshold` 0.1667, `@ErrorPulseSpeed` 10, `@ErrorPulseFlips` 4, a one-shot pulse on the error overlay when a use
+of Mana fails (the comment says it is matched to the ability icon error overlay); `StaminaPanel.ui` has `@LowAlertFlashTimer` 0.25, `@LowAlertAnimationSpeed` 20, `@LowAlertOutlineOpacityStart` 0.5, a repeating
+alert while the value is low. **The stamina low alert was copied**, because it is a state that lasts while the value is low, like the bars here; the Mana pulse is an event. Below `FlashBelowPercent` (5) a bar
+whose switch is on (`FlashHealth` and `FlashWater` true; `FlashPower` and `FlashExposure` false, but the mechanism exists on all four) shows a red fill layer and flips every `AlertFlipSeconds` = 0.25 s
+(4 updates a second at most, from one clock all bars share, starting bright): bright phase = the error overlay at full opacity and its outline at full; dim phase = the overlay at 0 and the outline at
+`AlertOutlineOpacity` 0.5 (the vanilla outline start opacity, so the outline never goes away while alerting). The red fill is a second ProgressBar (`#XAlert`, in a group that is hidden otherwise) made from the
+neutral fill of that shape tinted `AlertColor` `#e6004f` (the vanilla error rim `#bf0046` brightened a fifth); it is a separate layer because a red tint of the vanilla blue Mana fill gives `#580044`, dark
+purple (the generator prints the check), while the neutral fill x alert red gives `#cb0046`. The overlays use the vanilla error textures. **Differences from the client alert:** the vanilla bars fade (animation speed
+20), ours switch at once because the server sets the opacity on each flip. The alert stops the moment the value is 5% or more.
+
+**Creative mode (confirmed how it is read).** `Creative.json` and `Adventure.json` carry no `HudComponents`, and `Player.getGameMode()` (the protocol `GameMode`, which `Power.isCreative` already uses) is the
+signal. The runtime reads it every tick; when it differs from the mode the view was built for, the view is removed and built again from the `_Creative` document: the two left bars use `CreativeHealthBarFill`
+(neutral copy for Power) and the Health icon becomes `CreativeHealthIcon`; the two right bars use `CreativeManaFill` (neutral copy for Heat Exposure). The tinted icons are the same in both modes.
+
+**Nudges.** `/arrakis hud lb|rb|lt|rt [x[,] y]` (lb Health, rb Water, lt Power, rt Heat Exposure; commas or spaces; a third number is ignored and the reply says so). The step is (value - 1) x 10 virtual pixels
+(1.1 = +1, 0.9 = -1, 1.5 = +5, 0.5 = -5, 1 = 0); x + moves right, y + moves up; they accumulate and are rounded to hundredths. No numbers prints the offsets; `reset` clears that bar; `/arrakis hud nudge reset`
+clears all four. Stored in the config (`Hud.Nudges.LeftBottom|RightBottom|LeftTop|RightTop`, `X` and `Y` in pixels), written on every change through the new `ModuleContext.saveConfig()`, loaded at start, and applied to
+every player at once (the views are built again on their next tick) and to later joiners. x moves a left bar by shrinking the pad between the middle of the screen and the bar (a right bar by growing it), so a
+bar cannot be pushed past the middle of the screen (the reply says so); y moves the row. `state` prints the four nudges. The parsing, the step rule, accumulation and the saved format are unit tested
+(`HudNudgeTest`), the layout arithmetic in `HudLayoutTest`.
+
+**Config keys.** Removed: `BarThickness`, `TopOuter`, `BottomOuter`, `InnerGap`, `IconSize`, `TopIconCentre`, `BottomIconCentre`, `BottomRowBottom`, `RowPitch` (now `RowGap`), `HealthColor`, `WaterColor`
+(the vanilla fills are used untinted), `FlashHz`, `FlashTintPercent` (replaced by the alert keys) and the slant numbers that only the first art had. Kept: `BarsLift`, `PowerColor`, the exposure fallback colours,
+`FlashBelowPercent`, `MinPercentChange`, `DemoSeconds`. New: `ArtSource`, `RowGap`, `PowerIconColor`, `WaterIconColor`, `ExposureIconLow`, `ExposureIconHigh`, `AlertColor`, `AlertFlipSeconds`,
+`AlertOutlineOpacity`, `FlashPower`, `FlashHealth`, `FlashExposure`, `FlashWater`, `Nudges`. **`BarsLift` default is now 0** (the bottom row is where the vanilla bars were); the test save had 13 from the first
+geometry, which sat 9 below the vanilla row, so it was set to 0 there too.
+
+**The generator.** `tools/assets/hud/make_hud.js` (with `png.js`, a small 8-bit PNG reader and writer that also reads the palette files the vanilla art uses) reads the client Interface folder and Assets.zip, and writes
+the four documents, `VanillaDerived/` and `vanilla-metrics.json`; it removes the files of the first version. Re-run on this machine it gives byte-identical output (checked with a hash of every file). If a
+game update changes the vanilla formulas the script stops with "vanilla layout changed" instead of writing wrong numbers.
+
+**Not verifiable without a client:** the look against the vanilla bars and the reference screenshot, that the reference paths and the Assets.zip icon paths resolve (the unit tests and the boot only see our
+pack), that `Bar.Color` tints and can be set at run time, the fill direction of the right bars, the dimness of the neutral fills, the 0.25 s flip, that `Visible` on the alert group and the colour strings with an
+alpha (`#ffffff(0.50)`) are accepted when set from the server, and the nudge feel.
+
+### Human test sheet, the vanilla-art HUD (replaces items 15 to 21 where they differ; a client)
+
+22. Four bars above the hotbar as in the screenshot but with the vanilla art: Power (teal, light-blue bolt) over Health (vanilla pink-red, vanilla heart) on the left, Heat Exposure (amber, yellow glyph) over Water
+    (vanilla blue, blue drop) on the right. The bottom row is exactly where the vanilla Health and Mana bars were; the vanilla ones are gone; stamina, the Z slot and the ability HUD are untouched. If a bar or
+    icon is missing, `/arrakis hud state` and then `/arrakis hud art copy`; say which parts were missing with `reference`.
+23. `/arrakis hud demo health 3` and `water 3`: the fill turns red and the red overlay and outline pulse every quarter second, and it stops at 5. `power 3` and `exposure 3` do nothing (their switches are off);
+    set `FlashPower` or `FlashExposure` to true in the Hud section, restart, and they do it.
+24. Switch to creative and back: the left bars use the creative health fill and the creative heart, the right bars the creative mana fill; in survival they return. Power and Heat Exposure keep their colours.
+25. `/arrakis hud lt 1.1,1` moves the Power bar one pixel right, `lt 0.9,1` back, `lt 1,1.5` five pixels up, `lt 1,1,7` ignores the third number, `lt` shows the offsets, `lt reset` clears it, `nudge reset` clears
+    all. Restart the server: the offsets are still there. A second player sees them at once. Check that nudging a left bar right stops at the middle of the screen.
+26. Heat Exposure: the icon is yellow at low exposure and orange at high, the bar goes orange to red as before; Water drops as it should; no duplicate Water edge bars (needs the Water jar with its prompt 06 change).
+27. Resize the window and change resolution: the bars keep their place against the hotbar. Compare with the vanilla Health and Mana bars with `/arrakis hud off`.
+28. Look at the colours: are the neutral-fill bars (Power, Heat Exposure) as bright as the vanilla ones? Note the numbers to change (`PowerColor`, the generator `NEUTRAL_BODY`, `TINT`).
 
 ## Harness notes
 

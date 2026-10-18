@@ -2,7 +2,6 @@ package com.paulorchard.islandcraft.equipmentofarrakis.hud;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -12,23 +11,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class HudMathTest {
 
     @Test
-    void aFillIsSplitIntoWeightsThatAlwaysAddUpToTheScale() {
-        for (double percent = -5; percent <= 105; percent += 0.1) {
-            int[] s = HudMath.split(percent);
-            assertEquals(HudMath.SCALE, s[0] + s[1], "percent " + percent);
-            assertTrue(s[0] >= 0 && s[1] >= 0);
-        }
-    }
-
-    @Test
-    void zeroAndOneHundredAreExactAndTheMiddleIsHalf() {
-        assertArrayEquals(new int[] {1000, 0}, HudMath.split(0));
-        assertArrayEquals(new int[] {0, 1000}, HudMath.split(100));
-        assertArrayEquals(new int[] {500, 500}, HudMath.split(50));
-        assertArrayEquals(new int[] {1000, 0}, HudMath.split(-3), "below 0 is empty");
-        assertArrayEquals(new int[] {0, 1000}, HudMath.split(250), "above 100 is full");
-        assertArrayEquals(new int[] {1000, 0}, HudMath.split(Double.NaN));
-        assertArrayEquals(new int[] {999, 1}, HudMath.split(0.1), "0.1% is one step");
+    void theProgressBarValueIsTheFractionAndStaysInRange() {
+        assertEquals(0f, HudMath.value(0), 0f);
+        assertEquals(1f, HudMath.value(100), 0f);
+        assertEquals(0.5f, HudMath.value(50), 1e-6f);
+        assertEquals(0f, HudMath.value(-3), 0f, "below 0 is empty");
+        assertEquals(1f, HudMath.value(250), 0f, "above 100 is full");
+        assertEquals(0f, HudMath.value(Double.NaN), 0f);
+        assertEquals(0.001f, HudMath.value(0.1), 1e-6f);
     }
 
     @Test
@@ -44,42 +34,61 @@ class HudMathTest {
     }
 
     @Test
-    void onlyAFlashingBarBelowTheLimitFlashesAndItStopsAtTheLimit() {
-        assertTrue(HudMath.flashing(true, 0, 5));
-        assertTrue(HudMath.flashing(true, 4.99, 5));
-        assertFalse(HudMath.flashing(true, 5, 5), "at 5% it stops");
-        assertFalse(HudMath.flashing(true, 80, 5));
-        assertFalse(HudMath.flashing(false, 1, 5), "Health and Heat Exposure never flash");
-        assertTrue(HudBar.POWER.flashes && HudBar.WATER.flashes);
-        assertFalse(HudBar.HEALTH.flashes || HudBar.EXPOSURE.flashes);
+    void aBarAlertsOnlyWithItsSwitchOnAndBelowTheLimitAndItStopsAtTheLimit() {
+        assertTrue(HudMath.alerting(true, 0, 5));
+        assertTrue(HudMath.alerting(true, 4.99, 5));
+        assertFalse(HudMath.alerting(true, 5, 5), "at 5% it stops");
+        assertFalse(HudMath.alerting(true, 80, 5));
+        assertFalse(HudMath.alerting(false, 1, 5), "a bar whose switch is off never alerts, even at 0");
+        assertFalse(HudMath.alerting(true, Double.NaN, 5), "a bar that is not drawn does not alert");
     }
 
     @Test
-    void theFlashPhaseFlipsHzTimesASecondAndStartsNormal() {
-        assertFalse(HudMath.bright(0.0, 2));
-        assertFalse(HudMath.bright(0.49, 2));
-        assertTrue(HudMath.bright(0.5, 2));
-        assertTrue(HudMath.bright(0.99, 2));
-        assertFalse(HudMath.bright(1.0, 2));
+    void theDefaultSwitchesAlertHealthAndWaterOnly() {
+        HudConfig config = new HudConfig();
+        assertTrue(config.flashes(HudBar.HEALTH));
+        assertTrue(config.flashes(HudBar.WATER));
+        assertFalse(config.flashes(HudBar.POWER));
+        assertFalse(config.flashes(HudBar.EXPOSURE));
+        assertEquals(5.0, config.getFlashBelowPercent(), 0.0);
+    }
+
+    @Test
+    void theAlertFlipsEveryQuarterSecondLikeTheVanillaLowAlertAndStartsBright() {
+        double flip = HudMetrics.ALERT_FLIP_SECONDS;
+        assertEquals(0.25, flip, 0.0);
+        assertTrue(HudMath.bright(0.0, flip));
+        assertTrue(HudMath.bright(0.24, flip));
+        assertFalse(HudMath.bright(0.25, flip));
+        assertFalse(HudMath.bright(0.49, flip));
+        assertTrue(HudMath.bright(0.5, flip));
         int flips = 0;
-        boolean last = HudMath.bright(0, 2);
-        for (double t = 0.01; t < 10.0; t += 0.01) {
-            boolean now = HudMath.bright(t, 2);
+        boolean last = HudMath.bright(0, flip);
+        for (double t = 0.001; t < 10.0; t += 0.001) {
+            boolean now = HudMath.bright(t, flip);
             if (now != last) {
                 flips++;
                 last = now;
             }
         }
-        assertTrue(flips >= 19 && flips <= 20, "2 flips a second over 10 s, was " + flips);
-        assertFalse(HudMath.bright(3.3, 0), "no rate: never bright");
+        assertTrue(flips >= 39 && flips <= 40, "4 flips a second over 10 s (at most 4 updates a second per bar), was " + flips);
     }
 
     @Test
-    void theBrightPhaseMovesTheColourTowardWhiteOnlyWhileFlashing() {
-        assertEquals("#57bbaf", HudMath.colorOf("#57bbaf", true, false, 55));
-        assertEquals("#57bbaf", HudMath.colorOf("#57bbaf", false, true, 55), "bright without a flash changes nothing");
-        assertEquals("#b3e0db", HudMath.colorOf("#57bbaf", true, true, 55));
-        assertEquals("#ffffff", HudMath.colorOf("#57bbaf", true, true, 100));
+    void theAlertStatesGiveTheOverlayAndOutlineOpacities() {
+        assertEquals(HudMath.Alert.NONE, HudMath.alert(false, true));
+        assertEquals(HudMath.Alert.NONE, HudMath.alert(false, false));
+        assertEquals(HudMath.Alert.BRIGHT, HudMath.alert(true, true));
+        assertEquals(HudMath.Alert.DIM, HudMath.alert(true, false));
+        assertEquals(1.0, HudMath.errorOpacity(HudMath.Alert.BRIGHT), 0.0);
+        assertEquals(0.0, HudMath.errorOpacity(HudMath.Alert.DIM), 0.0);
+        assertEquals(0.0, HudMath.errorOpacity(HudMath.Alert.NONE), 0.0);
+        assertEquals(1.0, HudMath.outlineOpacity(HudMath.Alert.BRIGHT, 0.5), 0.0);
+        assertEquals(0.5, HudMath.outlineOpacity(HudMath.Alert.DIM, 0.5), 0.0, "the vanilla outline start opacity while alerting");
+        assertEquals(0.0, HudMath.outlineOpacity(HudMath.Alert.NONE, 0.5), 0.0);
+        assertEquals("#ffffff(0.50)", HudMath.white(0.5));
+        assertEquals("#ffffff(0.00)", HudMath.white(-1));
+        assertEquals("#ffffff(1.00)", HudMath.white(3));
     }
 
     @Test
@@ -94,12 +103,25 @@ class HudMathTest {
     }
 
     @Test
-    void barsAreFoundByTheirCommandWord() {
+    void theExposureIconGoesFromYellowToOrange() {
+        assertEquals("#ffd23f", HudMath.exposureIconColor(0, "#ffd23f", "#ff8a1f"));
+        assertEquals("#ff8a1f", HudMath.exposureIconColor(100, "#ffd23f", "#ff8a1f"));
+        assertEquals(HudMath.blend("#ffd23f", "#ff8a1f", 0.5), HudMath.exposureIconColor(50, "#ffd23f", "#ff8a1f"));
+        assertEquals("#ffd23f", HudMath.exposureIconColor(Double.NaN, "#ffd23f", "#ff8a1f"));
+    }
+
+    @Test
+    void barsAreFoundByTheirCommandWordAndPositionCode() {
         assertSame(HudBar.POWER, HudBar.parse("Power"));
         assertSame(HudBar.EXPOSURE, HudBar.parse("exposure"));
         assertSame(HudBar.EXPOSURE, HudBar.parse("heat"));
         assertSame(HudBar.WATER, HudBar.parse("WATER"));
         assertNull(HudBar.parse("mana"));
         assertNull(HudBar.parse(null));
+        assertSame(HudBar.HEALTH, HudBar.ofCode("lb"));
+        assertSame(HudBar.WATER, HudBar.ofCode("rb"));
+        assertSame(HudBar.POWER, HudBar.ofCode("lt"));
+        assertSame(HudBar.EXPOSURE, HudBar.ofCode("RT"));
+        assertNull(HudBar.ofCode("xx"));
     }
 }

@@ -1,0 +1,29 @@
+{
+  "slotSize": 74,
+  "slotsPerRow": 9,
+  "gridPadding": 2,
+  "bottomMargin": 30,
+  "containerMargin": 6,
+  "slotSpacing": 4,
+  "hotbarWidth": 702,
+  "hotbarHeight": 78,
+  "closedContainerMargin": 36,
+  "barWidth": 318,
+  "barHeight": 12,
+  "iconSize": 24,
+  "healthIconRight": 4,
+  "iconTop": -8,
+  "manaIconLeft": 4,
+  "barAboveHotbar": 6,
+  "rowBottom": 120,
+  "blockWidth": 346,
+  "innerGap": 5,
+  "alert": {
+    "flipSeconds": 0.25,
+    "outlineOpacityStart": 0.5,
+    "animationSpeed": 20,
+    "manaPulseThreshold": 0.1667,
+    "manaPulseSpeed": 10,
+    "manaPulseFlips": 4
+  }
+}

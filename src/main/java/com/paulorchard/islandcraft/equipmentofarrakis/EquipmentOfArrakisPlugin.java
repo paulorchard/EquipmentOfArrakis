@@ -64,7 +64,7 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
     protected void setup() {
         writeConfig();
         EquipmentOfArrakisConfig settings = config.get();
-        context = new ModuleContext(this, root, settings::section);
+        context = new ModuleContext(this, root, settings::section, this::writeConfig);
         List<EquipmentModule> all = List.of(new CoreModule(modules, this), new PowerModule(), new CatalogModule(),
                 new PickerModule(this),
                 new CutterModule(this),

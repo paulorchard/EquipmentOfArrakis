@@ -8,83 +8,156 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
- * The "Hud" section of Equipment_of_Arrakis.json: every number of the four-bar HUD. Lengths are the HUD's virtual pixels (the unit the
- * vanilla hotbar is measured in), offsets are measured from the horizontal centre of the screen, which is the centre of the hotbar,
- * and vertical positions from the bottom of the screen. The defaults were measured from the reference screenshot (hotbar of nine
- * slots 360 virtual pixels either side of the centre, so one virtual pixel is 0.847 screenshot pixels). A change needs the document to
- * be built again: a restart, or {@code /arrakis hud off} and {@code on}.
+ * The "Hud" section of Equipment_of_Arrakis.json. The bars are the vanilla Health and Mana bars laid out like the vanilla ones, so their
+ * size and place come from the game's own numbers ({@link HudMetrics}); what is here is only what can be chosen: how far the top row is
+ * above the bottom one, a lift, the art route, the colours, which bars alert, and the nudge of each bar. Lengths are virtual pixels.
+ * A change to the layout or the art needs the document to be built again: a restart, or {@code /arrakis hud off} and {@code on}
+ * (the nudge and art commands rebuild it for everyone at once).
+ *
+ * <p>Removed against the first version (its own art): BarThickness, TopOuter, BottomOuter, InnerGap, IconSize, TopIconCentre,
+ * BottomIconCentre, BottomRowBottom, RowPitch (now RowGap), HealthColor and WaterColor (the vanilla fills are used untinted), FlashHz and
+ * FlashTintPercent (the alert copies the vanilla low alert: AlertFlipSeconds, AlertOutlineOpacity, AlertColor).
  */
 public final class HudConfig {
 
-    // ---- layout
+    // ---- layout and art
     /** Raises both rows by this much (for example to clear the held item name). */
-    private double barsLift = 13;
-    /** Bottom of the Health / Water row above the bottom of the screen: hotbar baseline 24 + slot 78 + gap 9. */
-    private double bottomRowBottom = 111;
-    /** From the bottom of one row to the bottom of the row above. */
-    private double rowPitch = 26;
-    /** Thickness of a bar; the art is drawn for 12 (tools/assets/hud/make_hud.js). */
-    private double barThickness = 12;
-    /** Outer end of the Power / Heat Exposure bars, from the centre. */
-    private double topOuter = 314;
-    /** Outer end of the Health / Water bars, from the centre. */
-    private double bottomOuter = 335;
-    /** Inner end of every bar, from the centre. */
-    private double innerGap = 7;
-    private double iconSize = 22;
-    /** Centre of the Power / Heat Exposure icons, from the centre of the screen. */
-    private double topIconCentre = 334;
-    /** Centre of the Health / Water icons, from the centre of the screen. */
-    private double bottomIconCentre = 350;
+    private double barsLift = 0;
+    /** From the bottom of the lower row (where the vanilla Health and Mana bars sit) to the bottom of the upper row. */
+    private double rowGap = 26;
+    /** "reference": texture paths point at the vanilla files; "copy": at the derived copies shipped with the mod. */
+    private String artSource = "reference";
 
     // ---- colours
     private String powerColor = "#57bbaf";
-    private String healthColor = "#d64d58";
-    private String waterColor = "#599de3";
+    private String powerIconColor = "#7fd0ff";
+    private String waterIconColor = "#4da3ff";
+    /** The Heat Exposure icon goes from the first to the second colour as exposure rises. */
+    private String exposureIconLow = "#ffd23f";
+    private String exposureIconHigh = "#ff8a1f";
     /** Exposure colour rules, used only when the Water mod does not give its own: the Water defaults. */
     private double exposureRedStartPercent = 75;
     private String exposureColorOrange = "#ff8a1f";
     private String exposureColorRed = "#e0201a";
-    /** How far a flashing bar moves toward white in its bright phase, percent. */
-    private double flashTintPercent = 55;
+
+    // ---- the low alert, copied from the vanilla stamina low alert (StaminaPanel.ui)
+    /** A bar whose switch is on turns red and flashes below this percent. */
+    private double flashBelowPercent = 5;
+    /** The fill colour while alerting (the vanilla error overlay red, brightened a fifth). */
+    private String alertColor = "#e6004f";
+    /** The vanilla @LowAlertFlashTimer: the error overlay flips this often (4 updates a second at most). */
+    private double alertFlipSeconds = 0.25;
+    /** The vanilla @LowAlertOutlineOpacityStart: the outline never goes below this while alerting. */
+    private double alertOutlineOpacity = 0.5;
+    private boolean flashPower = false;
+    private boolean flashHealth = true;
+    private boolean flashExposure = false;
+    private boolean flashWater = true;
 
     // ---- behaviour
-    /** Power and Water flash below this percent. */
-    private double flashBelowPercent = 5;
-    /** Colour changes a second while flashing: the bar is bright for 1/FlashHz s, then normal for 1/FlashHz s. */
-    private double flashHz = 2;
     /** A fill is sent only when it moved by this many percent (always at 0 and 100). */
     private double minPercentChange = 0.25;
     /** Seconds a /arrakis hud demo value is held. */
     private double demoSeconds = 6;
 
+    private Nudges nudges = new Nudges();
+
+    /** An offset of one bar in virtual pixels: x + moves right, y + moves up. */
+    public static final class Nudge {
+        double x;
+        double y;
+
+        public static final BuilderCodec<Nudge> CODEC = BuilderCodec.builder(Nudge.class, Nudge::new)
+                .append(new KeyedCodec<>("X", Codec.DOUBLE, false), (n, v) -> n.x = v, n -> n.x)
+                .documentation("Pixels to the right (negative: left).").add()
+                .append(new KeyedCodec<>("Y", Codec.DOUBLE, false), (n, v) -> n.y = v, n -> n.y)
+                .documentation("Pixels up (negative: down).").add()
+                .build();
+
+        public double getX() { return x; }
+        public double getY() { return y; }
+    }
+
+    /** The four nudges, by position: LeftBottom (Health), RightBottom (Water), LeftTop (Power), RightTop (Heat Exposure). */
+    public static final class Nudges {
+        Nudge leftBottom = new Nudge();
+        Nudge rightBottom = new Nudge();
+        Nudge leftTop = new Nudge();
+        Nudge rightTop = new Nudge();
+
+        public static final BuilderCodec<Nudges> CODEC = BuilderCodec.builder(Nudges.class, Nudges::new)
+                .append(new KeyedCodec<>("LeftBottom", Nudge.CODEC, false), (n, v) -> n.leftBottom = v, n -> n.leftBottom)
+                .documentation("Health.").add()
+                .append(new KeyedCodec<>("RightBottom", Nudge.CODEC, false), (n, v) -> n.rightBottom = v, n -> n.rightBottom)
+                .documentation("Water.").add()
+                .append(new KeyedCodec<>("LeftTop", Nudge.CODEC, false), (n, v) -> n.leftTop = v, n -> n.leftTop)
+                .documentation("Power.").add()
+                .append(new KeyedCodec<>("RightTop", Nudge.CODEC, false), (n, v) -> n.rightTop = v, n -> n.rightTop)
+                .documentation("Heat Exposure.").add()
+                .build();
+
+        Nudge of(HudBar bar) {
+            return switch (bar) {
+                case HEALTH -> leftBottom;
+                case WATER -> rightBottom;
+                case POWER -> leftTop;
+                case EXPOSURE -> rightTop;
+            };
+        }
+
+        /** Adds a movement in pixels to a bar (nudges accumulate). */
+        void add(HudBar bar, double dx, double dy) {
+            Nudge nudge = of(bar);
+            nudge.x = round(nudge.x + dx);
+            nudge.y = round(nudge.y + dy);
+        }
+
+        void reset(HudBar bar) {
+            Nudge nudge = of(bar);
+            nudge.x = 0;
+            nudge.y = 0;
+        }
+
+        void resetAll() {
+            for (HudBar bar : HudBar.values()) {
+                reset(bar);
+            }
+        }
+
+        private static double round(double value) {
+            return Math.round(value * 100.0) / 100.0;
+        }
+    }
+
     public static final BuilderCodec<HudConfig> CODEC = build();
 
     private static BuilderCodec<HudConfig> build() {
         BuilderCodec.Builder<HudConfig> b = BuilderCodec.builder(HudConfig.class, HudConfig::new)
-                .documentation("The four-bar HUD above the hotbar (Power, Health, Heat Exposure, Water).");
+                .documentation("The four-bar HUD above the hotbar (Power, Health, Heat Exposure, Water), drawn with the vanilla Health and Mana bar art.");
         b = num(b, "BarsLift", (c, v) -> c.barsLift = v, c -> c.barsLift, "Raises both rows by this many pixels (to clear the held item name, for example).");
-        b = num(b, "BottomRowBottom", (c, v) -> c.bottomRowBottom = v, c -> c.bottomRowBottom, "Bottom of the Health / Water row above the bottom of the screen.");
-        b = num(b, "RowPitch", (c, v) -> c.rowPitch = v, c -> c.rowPitch, "From the bottom of one row to the bottom of the row above.");
-        b = num(b, "BarThickness", (c, v) -> c.barThickness = v, c -> c.barThickness, "Thickness of a bar (the art is drawn for 12).");
-        b = num(b, "TopOuter", (c, v) -> c.topOuter = v, c -> c.topOuter, "Outer end of the Power and Heat Exposure bars, from the centre of the screen.");
-        b = num(b, "BottomOuter", (c, v) -> c.bottomOuter = v, c -> c.bottomOuter, "Outer end of the Health and Water bars, from the centre of the screen.");
-        b = num(b, "InnerGap", (c, v) -> c.innerGap = v, c -> c.innerGap, "Inner end of every bar, from the centre of the screen.");
-        b = num(b, "IconSize", (c, v) -> c.iconSize = v, c -> c.iconSize, "Size of the round icons.");
-        b = num(b, "TopIconCentre", (c, v) -> c.topIconCentre = v, c -> c.topIconCentre, "Centre of the Power and Heat Exposure icons, from the centre of the screen.");
-        b = num(b, "BottomIconCentre", (c, v) -> c.bottomIconCentre = v, c -> c.bottomIconCentre, "Centre of the Health and Water icons, from the centre of the screen.");
-        b = str(b, "PowerColor", (c, v) -> c.powerColor = v, c -> c.powerColor, "Power fill colour.");
-        b = str(b, "HealthColor", (c, v) -> c.healthColor = v, c -> c.healthColor, "Health fill colour.");
-        b = str(b, "WaterColor", (c, v) -> c.waterColor = v, c -> c.waterColor, "Water fill colour.");
+        b = num(b, "RowGap", (c, v) -> c.rowGap = v, c -> c.rowGap, "From the bottom of the lower row (where the vanilla Health and Mana bars sit) to the bottom of the upper row.");
+        b = str(b, "ArtSource", (c, v) -> c.artSource = v, c -> c.artSource, "reference: the vanilla texture paths (follows texture packs); copy: the derived copies shipped with the mod (use it if reference shows nothing).");
+        b = str(b, "PowerColor", (c, v) -> c.powerColor = v, c -> c.powerColor, "Power fill colour (a tint of a neutral copy of the vanilla fill).");
+        b = str(b, "PowerIconColor", (c, v) -> c.powerIconColor = v, c -> c.powerIconColor, "Power icon colour.");
+        b = str(b, "WaterIconColor", (c, v) -> c.waterIconColor = v, c -> c.waterIconColor, "Water icon colour.");
+        b = str(b, "ExposureIconLow", (c, v) -> c.exposureIconLow = v, c -> c.exposureIconLow, "Heat Exposure icon colour at 0 percent.");
+        b = str(b, "ExposureIconHigh", (c, v) -> c.exposureIconHigh = v, c -> c.exposureIconHigh, "Heat Exposure icon colour at 100 percent.");
         b = num(b, "ExposureRedStartPercent", (c, v) -> c.exposureRedStartPercent = v, c -> c.exposureRedStartPercent,
                 "Fallback only (used when the Water mod gives no colour rules): exposure percent where orange starts to blend to red.");
         b = str(b, "ExposureColorOrange", (c, v) -> c.exposureColorOrange = v, c -> c.exposureColorOrange, "Fallback only: heat exposure colour up to ExposureRedStartPercent.");
         b = str(b, "ExposureColorRed", (c, v) -> c.exposureColorRed = v, c -> c.exposureColorRed, "Fallback only: heat exposure colour at 100.");
-        b = num(b, "FlashTintPercent", (c, v) -> c.flashTintPercent = v, c -> c.flashTintPercent, "How far a flashing bar moves toward white in its bright phase, percent.");
-        b = num(b, "FlashBelowPercent", (c, v) -> c.flashBelowPercent = v, c -> c.flashBelowPercent, "Power and Water flash below this percent.");
-        b = num(b, "FlashHz", (c, v) -> c.flashHz = v, c -> c.flashHz, "Colour changes a second while flashing (2: bright half a second, normal half a second).");
+        b = num(b, "FlashBelowPercent", (c, v) -> c.flashBelowPercent = v, c -> c.flashBelowPercent, "A bar whose switch is on turns red and flashes below this percent.");
+        b = str(b, "AlertColor", (c, v) -> c.alertColor = v, c -> c.alertColor, "Fill colour while alerting (the vanilla error overlay red, brightened).");
+        b = num(b, "AlertFlipSeconds", (c, v) -> c.alertFlipSeconds = v, c -> c.alertFlipSeconds, "How often the error overlay flips while alerting (the vanilla stamina low alert: 0.25).");
+        b = num(b, "AlertOutlineOpacity", (c, v) -> c.alertOutlineOpacity = v, c -> c.alertOutlineOpacity, "Opacity of the error outline in its dim phase (the vanilla stamina low alert: 0.5).");
+        b = bool(b, "FlashPower", (c, v) -> c.flashPower = v, c -> c.flashPower, "Power turns red and flashes when low.");
+        b = bool(b, "FlashHealth", (c, v) -> c.flashHealth = v, c -> c.flashHealth, "Health turns red and flashes when low.");
+        b = bool(b, "FlashExposure", (c, v) -> c.flashExposure = v, c -> c.flashExposure, "Heat Exposure turns red and flashes when low.");
+        b = bool(b, "FlashWater", (c, v) -> c.flashWater = v, c -> c.flashWater, "Water turns red and flashes when low.");
         b = num(b, "MinPercentChange", (c, v) -> c.minPercentChange = v, c -> c.minPercentChange, "A fill is sent to the client only when it moved by this many percent (always at 0 and 100).");
         b = num(b, "DemoSeconds", (c, v) -> c.demoSeconds = v, c -> c.demoSeconds, "Seconds a /arrakis hud demo value is held.");
+        b = b.append(new KeyedCodec<>("Nudges", Nudges.CODEC, false), (c, v) -> c.nudges = v, c -> c.nudges)
+                .documentation("The hand placement of each bar, written by /arrakis hud lb|rb|lt|rt (pixels; x + right, y + up).").add();
         return b.build();
     }
 
@@ -98,25 +171,43 @@ public final class HudConfig {
         return b.append(new KeyedCodec<>(key, Codec.STRING, false), set::accept, get::apply).documentation(doc).add();
     }
 
+    private static BuilderCodec.Builder<HudConfig> bool(BuilderCodec.Builder<HudConfig> b, String key, BiConsumer<HudConfig, Boolean> set,
+            Function<HudConfig, Boolean> get, String doc) {
+        return b.append(new KeyedCodec<>(key, Codec.BOOLEAN, false), set::accept, get::apply).documentation(doc).add();
+    }
+
     public double getBarsLift() { return barsLift; }
-    public double getBottomRowBottom() { return bottomRowBottom; }
-    public double getRowPitch() { return rowPitch; }
-    public double getBarThickness() { return barThickness; }
-    public double getTopOuter() { return topOuter; }
-    public double getBottomOuter() { return bottomOuter; }
-    public double getInnerGap() { return innerGap; }
-    public double getIconSize() { return iconSize; }
-    public double getTopIconCentre() { return topIconCentre; }
-    public double getBottomIconCentre() { return bottomIconCentre; }
+    public double getRowGap() { return rowGap; }
+    public String getArtSource() { return artSource; }
+    public void setArtSource(String artSource) { this.artSource = artSource; }
     public String getPowerColor() { return powerColor; }
-    public String getHealthColor() { return healthColor; }
-    public String getWaterColor() { return waterColor; }
+    public String getPowerIconColor() { return powerIconColor; }
+    public String getWaterIconColor() { return waterIconColor; }
+    public String getExposureIconLow() { return exposureIconLow; }
+    public String getExposureIconHigh() { return exposureIconHigh; }
     public double getExposureRedStartPercent() { return exposureRedStartPercent; }
     public String getExposureColorOrange() { return exposureColorOrange; }
     public String getExposureColorRed() { return exposureColorRed; }
-    public double getFlashTintPercent() { return flashTintPercent; }
     public double getFlashBelowPercent() { return flashBelowPercent; }
-    public double getFlashHz() { return flashHz; }
+    public String getAlertColor() { return alertColor; }
+    public double getAlertFlipSeconds() { return alertFlipSeconds; }
+    public double getAlertOutlineOpacity() { return alertOutlineOpacity; }
     public double getMinPercentChange() { return minPercentChange; }
     public double getDemoSeconds() { return demoSeconds; }
+    public Nudges nudges() { return nudges; }
+
+    /** The alert switch of a bar. */
+    public boolean flashes(HudBar bar) {
+        return switch (bar) {
+            case POWER -> flashPower;
+            case HEALTH -> flashHealth;
+            case EXPOSURE -> flashExposure;
+            case WATER -> flashWater;
+        };
+    }
+
+    /** True for the copy route, false (the default) for the reference route. */
+    boolean copyArt() {
+        return "copy".equalsIgnoreCase(artSource);
+    }
 }
