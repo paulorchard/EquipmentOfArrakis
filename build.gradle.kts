@@ -54,10 +54,3 @@ tasks.register<Copy>("deployMod") {
     }
 }
 
-// Bisecting a client join failure of the HUD documents: -PhudExtra=<variant> adds the throw-away files that tools/assets/hud/make_hud.js wrote to
-// tools/assets/hud/variants/<variant>/resources (reference, refinpack, dupicons, probe) to the jar. Never part of a normal build.
-providers.gradleProperty("hudExtra").orNull?.let { variant ->
-    sourceSets.main {
-        resources.srcDir("tools/assets/hud/variants/$variant/resources")
-    }
-}

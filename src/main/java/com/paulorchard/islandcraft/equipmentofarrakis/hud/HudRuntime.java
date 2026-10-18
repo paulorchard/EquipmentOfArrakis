@@ -148,7 +148,7 @@ final class HudRuntime {
         Set<HudComponent> visible = hud.getVisibleHudComponents();
         boolean creative = player.getGameMode() == GameMode.Creative;
         // Only a document the pack really has is ever appended (the client refuses to join otherwise); with none, the vanilla bars stay.
-        String document = HudDocs.pick(cfg.copyArt(), creative, HudRuntime::packHas);
+        String document = HudDocs.pick(creative, HudRuntime::packHas);
         if (document == null && !warnedNoDocument) {
             warnedNoDocument = true;
             LOG.at(Level.WARNING).log("Hud: the pack has no HUD document (not even the Copy one): the four bars are not shown and the vanilla bars stay");

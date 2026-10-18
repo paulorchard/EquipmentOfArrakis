@@ -110,8 +110,6 @@ public final class HudModule implements EquipmentModule {
         String base = "UI/Custom/Hud/Equipment_of_Arrakis/Hud/";
         lines.add(common(base + "Arrakis_Hud_Copy.ui"));
         lines.add(common(base + "Arrakis_Hud_Copy_Creative.ui"));
-        boolean reference = HudRuntime.packHas(base + "Arrakis_Hud_Reference.ui");
-        lines.add("reference documents in the pack: " + reference + (reference ? " (a test jar built with -PhudExtra)" : " (by design: they broke the client join of the first build)"));
         for (String name : HudArt.DERIVED) {
             lines.add(common(base + "VanillaDerived/" + name + "@2x.png"));
         }
@@ -121,7 +119,6 @@ public final class HudModule implements EquipmentModule {
         for (String name : new String[] {"Misc", "Natural-Fluid"}) {
             lines.add(common(base + "VanillaDerived/" + name + ".png"));
         }
-        lines.add("art route: " + HudRuntime.config().getArtSource() + (HudRuntime.config().copyArt() ? " (the Copy documents)" : " (asked for; used only if the pack has the Reference documents)"));
         lines.add("exposure colour rules: " + (HudRuntime.exposureRulesFromWater() ? "from the Water mod" : "Hud config fallback (the Water defaults)"));
         lines.add("water link: " + WaterLink.status());
         return lines;

@@ -26,14 +26,11 @@ final class HudView extends CustomUIHud {
     private final HudConfig config;
     private final boolean rightHalf;
     private final boolean creative;
-    private final boolean copy;
     private final String document;
     private final double[] sentPercent = new double[HudBar.values().length];
     private final String[] sentFill = new String[HudBar.values().length];
     private final String[] sentIcon = new String[HudBar.values().length];
     private final HudMath.Alert[] sentAlert = new HudMath.Alert[HudBar.values().length];
-    /** What was last sent for the item name label (for the state command); not used for any decision. */
-    private volatile String itemNameSent = "nothing";
 
     /** {@code rightHalf} false: the Water mod is not there, so the Heat Exposure and Water bars are not drawn. */
     HudView(PlayerRef playerRef, HudConfig config, boolean rightHalf, boolean creative, String document) {
@@ -42,15 +39,10 @@ final class HudView extends CustomUIHud {
         this.rightHalf = rightHalf;
         this.creative = creative;
         this.document = document;
-        this.copy = document.contains("_Copy");
     }
 
     boolean creative() {
         return creative;
-    }
-
-    boolean copy() {
-        return copy;
     }
 
     String document() {
@@ -66,11 +58,6 @@ final class HudView extends CustomUIHud {
         Arrays.fill(sentIcon, null);
         Arrays.fill(sentAlert, HudMath.Alert.NONE);
 
-        if (HudItemName.sendAtBuild(config)) {
-            // Proven only when the dev command worked on a client: a selector that does not resolve disconnects the player.
-            ui.setObject(HudItemName.SELECTOR + ".Anchor", anchor(HudItemName.moved(config)));
-            itemNameSent = "moved at build";
-        }
         for (HudBar bar : HudBar.values()) {
             String n = bar.id;
             HudConfig.Nudge nudge = config.nudges().of(bar);
@@ -149,46 +136,6 @@ final class HudView extends CustomUIHud {
         if (ui != null) {
             update(false, ui);
         }
-    }
-
-    /** Sends an anchor for the vanilla item name label, once, through the normal update path (dev command and reset). */
-    void sendItemName(HudItemName.Spec spec, String description) {
-        UICommandBuilder ui = new UICommandBuilder();
-        ui.setObject(HudItemName.SELECTOR + ".Anchor", anchor(spec));
-        update(false, ui);
-        itemNameSent = description;
-    }
-
-    /** Dev only: the label text alignment. A bad style property is another possible disconnect, so it is its own command. */
-    void sendItemNameAlignment(String alignment) {
-        UICommandBuilder ui = new UICommandBuilder();
-        ui.set(HudItemName.SELECTOR + ".Style.HorizontalAlignment", alignment);
-        update(false, ui);
-        itemNameSent = "alignment " + alignment;
-    }
-
-    String itemNameSent() {
-        return itemNameSent;
-    }
-
-    static Anchor anchor(HudItemName.Spec spec) {
-        Anchor a = new Anchor();
-        if (spec.top() != null) {
-            a.setTop(Value.of(spec.top()));
-        }
-        if (spec.left() != null) {
-            a.setLeft(Value.of(spec.left()));
-        }
-        if (spec.bottom() != null) {
-            a.setBottom(Value.of(spec.bottom()));
-        }
-        if (spec.width() != null) {
-            a.setWidth(Value.of(spec.width()));
-        }
-        if (spec.height() != null) {
-            a.setHeight(Value.of(spec.height()));
-        }
-        return a;
     }
 
     private static Anchor row(int bottom) {

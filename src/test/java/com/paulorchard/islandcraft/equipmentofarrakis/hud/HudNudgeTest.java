@@ -118,20 +118,13 @@ class HudNudgeTest {
         }
         assertEquals(0.0, read.getBarsLift(), 0.0);
         assertEquals(26.0, read.getRowGap(), 0.0);
-        assertEquals("copy", read.getArtSource(), "the Reference documents are not in the pack");
-        assertTrue(read.copyArt());
     }
 
+    /** A config file written by 0.2.0 holds keys that no longer exist: it must still read, and keep the settings that do exist. */
     @Test
-    void theCopyRouteIsTheDefaultAndReferenceNeedsItsWord() {
-        HudConfig config = new HudConfig();
-        assertTrue(config.copyArt());
-        config.setArtSource("reference");
-        assertFalse(config.copyArt());
-        config.setArtSource("REFERENCE");
-        assertFalse(config.copyArt());
-        config.setArtSource("copy");
-        assertTrue(config.copyArt());
-        assertTrue(HudConfig.CODEC.decode(BsonDocument.parse("{\"ArtSource\": \"something\"}")).copyArt(), "anything but reference is the copy route");
+    void keysOfTheRemovedHudSettingsAreIgnoredWhenAnOldFileIsRead() {
+        HudConfig read = HudConfig.CODEC.decode(BsonDocument.parse("{\"ArtSource\": \"reference\", \"AlertColor\": \"#e6004f\", \"ItemNameMove\": true, "
+                + "\"ItemNameTop\": 5, \"ItemNameLeft\": 6, \"ItemNameWidth\": 7, \"ItemNameHeight\": 8, \"BarsLift\": 12}"));
+        assertEquals(12.0, read.getBarsLift(), 0.0);
     }
 }

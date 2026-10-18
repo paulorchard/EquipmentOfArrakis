@@ -33,7 +33,7 @@ class HudMathTest {
         String hex = "^#[0-9a-fA-F]{6}$";
         HudConfig cfg = new HudConfig();
         for (String c : new String[] {cfg.getPowerColor(), cfg.getPowerIconColor(), cfg.getWaterIconColor(), cfg.getExposureIconLow(), cfg.getExposureIconHigh(),
-                cfg.getAlertColor(), cfg.getExposureColorOrange(), cfg.getExposureColorRed()}) {
+                cfg.getExposureColorOrange(), cfg.getExposureColorRed()}) {
             assertTrue(c.matches(hex), c);
         }
         for (int percent = 0; percent <= 100; percent++) {

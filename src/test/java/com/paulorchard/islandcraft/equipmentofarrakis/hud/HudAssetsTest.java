@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,17 +18,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The four generated documents (Reference and Copy route, adventure and creative art) have the ids the view sets, name only textures that
- * exist (the ones in our pack at the vanilla pixel size) or that are known vanilla paths, and the Reference route ships no copy of a
- * vanilla file.
+ * The two generated documents (adventure and creative art) have the ids the view sets and name only textures of our own pack, at the vanilla pixel size.
  */
 class HudAssetsTest {
 
     private static final String BASE = "/Common/UI/Custom/Hud/Equipment_of_Arrakis/Hud/";
-    /** The documents in the pack. The Reference documents are not: they broke the client join of the first build and live under tools/assets/hud/variants. */
+    /** The documents in the pack. */
     private static final String[] DOCUMENTS = {"Arrakis_Hud_Copy.ui", "Arrakis_Hud_Copy_Creative.ui"};
-    private static final String[] REFERENCE = {"Arrakis_Hud_Reference.ui", "Arrakis_Hud_Reference_Creative.ui"};
-    private static final java.nio.file.Path VARIANTS = java.nio.file.Path.of("tools/assets/hud/variants");
     /** Pixel sizes of the images in VanillaDerived/ (the @2x file of each name), the vanilla sizes. */
     private static final Map<String, int[]> SIZES = Map.ofEntries(
             Map.entry("StaminaIconWhite", new int[] {48, 48}),
@@ -42,9 +37,6 @@ class HudAssetsTest {
             Map.entry("ManaBackground", new int[] {635, 24}), Map.entry("ManaFill", new int[] {635, 24}),
             Map.entry("ManaEffect", new int[] {522, 16}), Map.entry("CreativeManaFill", new int[] {636, 24}),
             Map.entry("ManaBackgroundError", new int[] {635, 24}), Map.entry("ManaBackgroundErrorOutline", new int[] {635, 24}));
-    /** The exceptions: what the Reference route may take from our own pack. */
-    private static final Set<String> REFERENCE_MAY_SHIP = Set.of("StaminaIconWhite", "NeutralHealthBarFill", "NeutralCreativeHealthBarFill",
-            "NeutralManaFill", "NeutralCreativeManaFill", "ErrorLeft", "ErrorOutlineLeft");
 
     private static byte[] bytes(String name) throws IOException {
         try (InputStream in = HudAssetsTest.class.getResourceAsStream(BASE + name)) {
@@ -54,16 +46,7 @@ class HudAssetsTest {
     }
 
     private static String ui(String name) throws IOException {
-        if (name.contains("Reference")) {
-            return java.nio.file.Files.readString(VARIANTS.resolve("reference/resources/Common/UI/Custom/Hud/Equipment_of_Arrakis/Hud/" + name));
-        }
         return new String(bytes(name), StandardCharsets.UTF_8);
-    }
-
-    private static String[] concat(String[] a, String[] b) {
-        String[] all = java.util.Arrays.copyOf(a, a.length + b.length);
-        System.arraycopy(b, 0, all, a.length, b.length);
-        return all;
     }
 
     private static List<String> paths(String document) throws IOException {
@@ -77,23 +60,15 @@ class HudAssetsTest {
 
     @Test
     void thePackHasOnlyTheCopyDocumentsAndNoByteDuplicateOfAVanillaIcon() throws IOException {
-        for (String name : REFERENCE) {
-            assertTrue(HudAssetsTest.class.getResource(BASE + name) == null, name + " must not be in the pack: the client refused to join with it");
-        }
-        assertTrue(HudAssetsTest.class.getResource(BASE + "Arrakis_Hud_Probe.ui") == null, "the probe is for a test jar only");
-        assertTrue(HudAssetsTest.class.getResource(BASE + "VanillaDerived/Misc-Dup.png") == null);
         for (String name : new String[] {"Misc.png", "Natural-Fluid.png"}) {
             String text = new String(bytes("VanillaDerived/" + name), StandardCharsets.ISO_8859_1);
             assertFalse(text.contains("tEXt") || text.contains("iCCP") || text.contains("pHYs"), name + " must be our re-encode");
-        }
-        for (String variant : new String[] {"reference", "refinpack", "dupicons", "probe"}) {
-            assertTrue(java.nio.file.Files.isDirectory(VARIANTS.resolve(variant + "/resources")), "the bisect variant " + variant);
         }
     }
 
     @Test
     void everyDocumentHasEveryIdTheViewSets() throws IOException {
-        for (String document : concat(DOCUMENTS, REFERENCE)) {
+        for (String document : DOCUMENTS) {
             String ui = ui(document);
             for (HudBar bar : HudBar.values()) {
                 for (String part : new String[] {"Row", "Pad", "Error", "Fill", "AlertGroup", "Alert", "Effect", "Outline", "OutlineDim", "Icon"}) {
@@ -105,7 +80,7 @@ class HudAssetsTest {
 
     @Test
     void theBarsUseTheVanillaProgressBarAndTheVanillaMetrics() throws IOException {
-        for (String document : concat(DOCUMENTS, REFERENCE)) {
+        for (String document : DOCUMENTS) {
             String ui = ui(document);
             assertEquals(4, count(ui, "ProgressBar #"), document + ": only the vanilla effect layer of each bar is a ProgressBar");
             assertEquals(8, count(ui, "HorizontalBorder: 9"), document + ": the fill and the alert fill of each bar are 9 pixel border groups (the slanted cap of the vanilla fills)");
@@ -124,7 +99,7 @@ class HudAssetsTest {
      */
     @Test
     void noTexturedProgressBarSetsBarAndNoCodeSetsABarColor() throws IOException {
-        for (String document : concat(DOCUMENTS, REFERENCE)) {
+        for (String document : DOCUMENTS) {
             String ui = ui(document);
             Matcher m = Pattern.compile("ProgressBar #\\w+ \\{[^}]*\\}").matcher(ui);
             while (m.find()) {
@@ -146,7 +121,7 @@ class HudAssetsTest {
 
     @Test
     void theOverlaysAreShownAndHiddenNeverGivenAnAlphaAtRunTime() throws IOException {
-        for (String document : concat(DOCUMENTS, REFERENCE)) {
+        for (String document : DOCUMENTS) {
             String ui = ui(document);
             for (HudBar bar : HudBar.values()) {
                 for (String part : new String[] {"Error", "Outline", "OutlineDim", "AlertGroup"}) {
@@ -190,20 +165,6 @@ class HudAssetsTest {
     }
 
     @Test
-    void theReferenceRouteShipsNoCopyOfAVanillaFileOnlyTheListedExceptions() throws IOException {
-        for (String document : REFERENCE) {
-            for (String path : paths(document)) {
-                if (path.startsWith("VanillaDerived/")) {
-                    String name = path.substring("VanillaDerived/".length(), path.length() - ".png".length());
-                    assertTrue(REFERENCE_MAY_SHIP.contains(name), document + " uses a copy of a vanilla file: " + path);
-                } else {
-                    assertTrue(path.startsWith("../../../InGame/Hud/") || path.startsWith("../../../../../Icons/ItemCategories/"), document + " path " + path);
-                }
-            }
-        }
-    }
-
-    @Test
     void theCopyRouteDependsOnNothingOutsideOurPack() throws IOException {
         for (String document : new String[] {"Arrakis_Hud_Copy.ui", "Arrakis_Hud_Copy_Creative.ui"}) {
             for (String path : paths(document)) {
@@ -213,13 +174,13 @@ class HudAssetsTest {
     }
 
     @Test
-    void theCreativeDocumentsUseTheCreativeFillsAndTheCreativeHeart() throws IOException {
-        String adventure = ui("Arrakis_Hud_Reference.ui");
-        String creative = ui("Arrakis_Hud_Reference_Creative.ui");
-        assertTrue(adventure.contains("Health/HealthBarFill.png") && adventure.contains("Mana/ManaFill.png") && adventure.contains("Health/HealthIcon.png"));
+    void theCreativeDocumentUsesTheCreativeFillsAndTheCreativeHeart() throws IOException {
+        String adventure = ui("Arrakis_Hud_Copy.ui");
+        String creative = ui("Arrakis_Hud_Copy_Creative.ui");
+        assertTrue(adventure.contains("VanillaDerived/HealthBarFill.png") && adventure.contains("VanillaDerived/ManaFill.png") && adventure.contains("VanillaDerived/HealthIcon.png"));
         assertFalse(adventure.contains("Creative"));
-        assertTrue(creative.contains("Health/CreativeHealthBarFill.png") && creative.contains("Mana/CreativeManaFill.png") && creative.contains("Health/CreativeHealthIcon.png"));
-        assertFalse(creative.contains("Health/HealthBarFill.png") || creative.contains("Mana/ManaFill.png"));
+        assertTrue(creative.contains("VanillaDerived/CreativeHealthBarFill.png") && creative.contains("VanillaDerived/CreativeManaFill.png") && creative.contains("VanillaDerived/CreativeHealthIcon.png"));
+        assertFalse(creative.contains("VanillaDerived/HealthBarFill.png") || creative.contains("VanillaDerived/ManaFill.png"));
         assertTrue(creative.contains("NeutralCreativeHealthBarFill") && creative.contains("NeutralCreativeManaFill"), "the tinted bars need creative neutral copies too");
     }
 
