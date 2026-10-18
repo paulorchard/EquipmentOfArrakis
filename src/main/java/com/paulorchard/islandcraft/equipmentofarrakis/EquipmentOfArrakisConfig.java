@@ -43,8 +43,6 @@ public class EquipmentOfArrakisConfig {
     private ShieldConfig shield = new ShieldConfig();
     private com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsConfig weapons = new com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsConfig();
     private com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig hud = new com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig();
-    { modules = java.util.stream.Stream.concat(java.util.Arrays.stream(modules), java.util.stream.Stream.of("experiments")).toArray(String[]::new); } // EXPERIMENT: remove with the experiments module
-    private com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig experiments = new com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig(); // EXPERIMENT: remove with the experiments module
 
     /** The ids of the modules to load, lower case. The core module is always loaded whatever this says. */
     public Set<String> enabledModules() {
@@ -87,9 +85,6 @@ public class EquipmentOfArrakisConfig {
         return hud;
     }
 
-    public com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig experiments() { // EXPERIMENT: remove with the experiments module
-        return experiments; // EXPERIMENT: remove with the experiments module
-    } // EXPERIMENT: remove with the experiments module
 
     /** The settings object of a module, by module id. */
     public Object section(String moduleId) {
@@ -103,7 +98,6 @@ public class EquipmentOfArrakisConfig {
             case "shield" -> shield;
             case "weapons" -> weapons;
             case "hud" -> hud;
-            case "experiments" -> experiments; // EXPERIMENT: remove with the experiments module
             default -> null;
         };
     }
@@ -141,8 +135,5 @@ public class EquipmentOfArrakisConfig {
             .append(new KeyedCodec<>("Hud", com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig.CODEC, false), (c, v) -> c.hud = v, c -> c.hud)
             .documentation("Settings of the hud module (the four bars above the hotbar).")
             .add()
-            .append(new KeyedCodec<>("Experiments", com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsConfig.CODEC, false), (c, v) -> c.experiments = v, c -> c.experiments) // EXPERIMENT: remove with the experiments module
-            .documentation("Settings of the experiments module (throw-away experiments).") // EXPERIMENT: remove with the experiments module
-            .add() // EXPERIMENT: remove with the experiments module
             .build();
 }

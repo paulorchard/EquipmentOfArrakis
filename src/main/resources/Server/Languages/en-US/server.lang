@@ -140,15 +140,3 @@ commands.arrakis.hud.component.desc = Development: hide, show or reset one vanil
 commands.arrakis.hud.probe.desc = Development: appends the throw-away probe document (only in a jar built with -PhudExtra=probe)
 commands.arrakis.hud.itemname.desc = Development: move the held item name label (a client label) once for you: arrakis hud itemname move [top left] | reset | state | align left|center
 
-# EXPERIMENT BEGIN
-items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter
-items.Arrakis_Exp_Flame_Cutter.description = EXPERIMENT. A flamethrower turned into a rock-cutting beam: no fire, no damage to creatures; hold Primary to cut. Costs Mana.
-items.Arrakis_Exp_Flame_Beam.name = EXPERIMENT Flame Beam Cutter
-items.Arrakis_Exp_Flame_Beam.description = EXPERIMENT. The Flame Cutter with the Stoneskin laser instead of the ring of dots: a static weapon that cuts rock up to 5 blocks away. Costs Mana.
-commands.arrakis.exp.desc = Throw-away experiments: exp cal (calibration tools)
-commands.arrakis.exp.cal.desc = Calibrate where a beam sits on the player: fp, tp, cam, body, frame, pulse, apex, step, astep, view, end, collapse, target, nodes, beam, off, show, save, load, reset
-commands.arrakis.exp.cal.view.desc = Change or read a parameter of the first person (fp) or third person (tp) numbers, or the start of a world-space beam (cam: camera frame; body: the grip, along the heading of the body; frame cam|body chooses): node x y z yaw pitch roll scale detached; value a number, + or -
-commands.arrakis.exp.cal.number.desc = Set or step a number: a value, + or -
-commands.arrakis.exp.cal.rig.desc = Switch a live rig on or off: collapse, target, nodes, beam, off
-commands.arrakis.exp.cal.file.desc = Print the paste-ready block, save it, load it, or go back to the vanilla numbers
-# EXPERIMENT END

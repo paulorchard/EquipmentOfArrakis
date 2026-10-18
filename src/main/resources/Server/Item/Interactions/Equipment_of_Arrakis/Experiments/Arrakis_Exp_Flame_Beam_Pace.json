@@ -1,5 +1,0 @@
-{
-  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). Keeps the Primary chain of the Flame Beam Cutter running at the pace of the tick: no effects, no animation, so the weapon stays in its hold pose.",
-  "Type": "Simple",
-  "RunTime": 0.1
-}

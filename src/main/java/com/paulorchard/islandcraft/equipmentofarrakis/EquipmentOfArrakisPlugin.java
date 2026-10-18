@@ -78,7 +78,6 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
                 new ShieldModule(this),
                 new com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsModule(this),
                 new com.paulorchard.islandcraft.equipmentofarrakis.hud.HudModule());
-        all = java.util.stream.Stream.concat(all.stream(), java.util.stream.Stream.of(new com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsModule(this))).toList(); // EXPERIMENT: remove with the experiments module
         modules.setupAll(all, settings.enabledModules(), context);
         getCommandRegistry().registerCommand(root.command());
     }

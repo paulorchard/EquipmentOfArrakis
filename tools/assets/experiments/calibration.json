@@ -1,7 +1,0 @@
-{ "$Comment": "EXPERIMENT: calibration of the Flame Beam Cutter, from /arrakis exp cal show (see EXPERIMENT_LOG.md, How to calibrate)",
-  "apex": 5, "step": 0.01, "angleStep": 0.5,
-  "endAtBlock": false, "frame": "cam", "pulseHz": 2,
-  "cam": { "node": "eye", "x": 0.15, "y": -0.15, "z": 0.6, "yaw": 0, "pitch": 0, "roll": 0, "scale": 1, "detached": false },
-  "body": { "node": "body", "x": 0.275, "y": -0.324, "z": 0.45, "yaw": 0, "pitch": 0, "roll": 0, "scale": 1, "detached": false },
-  "fp": { "node": "Body", "x": -0.2, "y": 1.5, "z": 3.2, "yaw": 0, "pitch": 180, "roll": 0, "scale": 1, "detached": false },
-  "tp": { "node": "Head", "x": -0.5, "y": 0, "z": 3.2, "yaw": 0, "pitch": 180, "roll": 0, "scale": 1, "detached": true } }

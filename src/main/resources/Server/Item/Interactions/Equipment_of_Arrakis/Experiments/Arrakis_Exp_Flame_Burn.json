@@ -1,5 +1,0 @@
-{
-  "$Comment": "EXPERIMENT: delete with the whole experiments module (see EXPERIMENT_LOG.md, \"Removing the experiments\"). The pace of the Flame Cutter: nothing but a pass of FLAME_RUN_TIME. No animation (the gun is static, see Arrakis_Exp_Flame_Static) and no particles: the laser is part of the weapon model (make_flame_model.js).",
-  "Type": "Simple",
-  "RunTime": 0.3
-}
