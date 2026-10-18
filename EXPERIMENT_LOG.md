@@ -350,6 +350,112 @@ not lost through the Weapon block, the tags, the HUD fields or the interaction v
     no flicker and no sound spam (0.2 s). Right click on a weapon: vanilla guard, no picker; on a tool: the picker. After death, respawn and relog the toggle is OFF and H still works. H with a page open: nothing.
     If H never arrives on some item kind, note which and read gate 5 above.
 
+## Module notes: the four-bar HUD (`hud`)
+
+Labels as above: **confirmed** (boot, unit test, javap, the reference screenshot), **inferred**, **needs a client**. Nothing client-side could be tried here (no player can be created headlessly), so the
+whole look, the placement against the hotbar and everything the per-player tick does are on the test sheet at the end. The headless boot is clean with the module on and off, without Water, with the
+Water jar that exists today (no `setHudHidden`, no colour rules) and with a scratch copy of that jar that has the prompt 06 methods (the real Water repo was not edited).
+
+### What it draws
+
+Two rows above the hotbar, each split in half at the middle of the screen: Power (teal, bolt) over Health (red, heart) on the left, Heat Exposure (amber to red, sun) over Water (blue, drop) on the
+right, a round icon at the outer end of each bar, no numbers. `HudView` (a `CustomUIHud` with its own key `EquipmentOfArrakisBars`, so it sits beside the Water HUD) builds
+`Common/UI/Custom/Hud/Equipment_of_Arrakis/Hud/Arrakis_Hud.ui`; `HudRuntime.tick` (run by `HudSystem` for every player every tick) reads the four values and sends what changed.
+Sources, all unchanged and display only: Power = `Power.fraction` (the vanilla Mana stat), Health = the `Health` entry of the player's `EntityStatMap` (value / max), Heat Exposure and Water = the
+Water mod `getExposure` / `getWater` (0 to 100, `max()` is 100). A bar that cannot be read (no Water) is not drawn. Fill lengths use the Water bars' technique: a track of an empty part and a fill
+part that share its length by `FlexWeight` (1000 - v and v, integers, 0.1% steps, always adding up to 1000, 0 and 100 exact), so the fill is exactly the value at any screen size; the fill is a
+white texture tinted by `Background.Color`, with an untinted sheen on top. Left bars fill from their outer (left) end, right bars from their outer (right) end (**inferred**: the reference
+screenshot shows all four full, so the direction is a choice; changing it means swapping the two parts in the generator).
+
+- **Updates:** only what moved by `MinPercentChange` 0.25 percent (always at 0 and 100); colour changes only when the colour string changes (Heat Exposure as it passes the red-start percent,
+  and the flash). **Flash:** Power and Water below `FlashBelowPercent` 5; the fill alternates between its colour and the same colour moved `FlashTintPercent` 55% toward white, from a clock all
+  bars share. **Interpretation to check:** the request says "about 2 Hz" and "at most 2 updates a second", which differ by a factor of two; `FlashHz` is the number of colour changes a second
+  (2: bright half a second, normal half a second, one full blink a second); set 4 for two full blinks a second. Health and Heat Exposure never flash. It stops the moment the value is 5 or more.
+- **Heat Exposure colour:** orange up to the red-start percent, then a straight blend to red at 100 (`HudMath.exposureColor`, same rule as the Water bar). The three numbers come from the Water mod
+  when its jar has the prompt 06 accessors (`getExposureRedStartPercent`, `getExposureColorOrange`, `getExposureColorRed`, found by reflection, so it works with both jars). **The Water jar that
+  exists today does not have them**: the module logs a WARN once and uses the Hud config fallback (`ExposureRedStartPercent 75`, `#ff8a1f`, `#e0201a` = the Water defaults) and `/arrakis hud state`
+  says "fallback". **Confirmed** both ways in a boot (the scratch jar printed "rules come from the Water mod"). The prompt names a `String exposureColor(double)` helper; the module does not call it
+  (it needs the three numbers to blend itself, and the helper is only needed to avoid duplicating the rule, which `HudMath` does in 6 lines with a test); if the helper exists later it could replace
+  `HudMath.exposureColor`.
+- **The Water link** moved from `litrejon` to `core.water` (`WaterApi`, `WaterBridge`, `WaterLink`) so that the LitreJon and the HUD share it without importing each other; Water stays compile
+  only and is never packed. New in `WaterApi`: `getExposure`, `setHudHidden(boolean)` (reflection; false when the jar has no such method), `exposureColors()`. With Water missing the bridge class is
+  never loaded. At start the module calls `setHudHidden(true)` (log: "Water bars switched off"), or logs the WARN "the Water bars are still on" for an older jar; Water adds its HUD every tick,
+  so nothing else is done. On stop it calls `setHudHidden(false)`.
+
+### Hiding the vanilla bars, and what that touches
+
+- Only `HudComponent.Health` and `HudComponent.Mana` are hidden, through `HudManager.hideHudComponents`. Every tick the module looks at `getVisibleHudComponents()` and hides them again if either
+  is present, so every reset is undone within one tick: the join (`PlayerHudManagerSystems$InitializeSystem` sends the set), a respawn or world change (`Player.resetManagers` calls
+  `resetUserInterface` / `resetHud`), and a game mode change (`GameModeTypeState.apply` sets the set from the game mode asset's `HudComponents`, `resetToBaseline` resets it). Polling was chosen over
+  hooks because those engine calls are not events. **Our own HUD** is added again whenever `getCustomHud(key)` is not our instance (the same test as the Water HUD).
+- **It changes no behaviour (confirmed by reading the server classes under `com.hypixel.hytale.server.core`):** `HudComponent` is referenced only by `HudManager`, `GameModeType`,
+  `GameModeTypeState`, `PlayerHudManagerSystems$InitializeSystem` and two debug commands; it only builds the `UpdateVisibleHudComponents` packet that tells the client what to draw. No stat, regeneration,
+  damage, low-health, death or Mana-use code reads it. (The scope of that search was `server.core`; the protocol classes only carry the packet.)
+- **Game modes:** `Creative.json` and `Adventure.json` list no `HudComponents`, so vanilla draws its own bars in creative and so do ours. The spectator modes list their own set without Health, Mana
+  or (`Spectator`) the Hotbar; the module draws the bars only while the Hotbar part is visible (so none in `Spectator`; `SpectatorInteractive` has a Hotbar and no Health / Mana and would show ours).
+- **Restoring:** `/arrakis hud off` (everyone) removes our HUD, shows Health and Mana again within a tick and lets the Water bars show; `on` reverses it. A new `EquipmentModule.stop` hook,
+  called from the plugin `shutdown()`, does the same for every online player and for Water. The module state is per player in memory and dropped on disconnect. The Z utility slot, stamina,
+  oxygen, the ammo indicator, the status icons and the hotbar are never touched.
+
+### The ability HUD and where the bars sit
+
+The vanilla ability indicator (`HudComponent.Abilities`) is drawn by the client; nothing on the server says where. It is on the right of the screen (as reported). The bars end 346 virtual pixels
+from the centre, so on a 16:9 screen (about 960 virtual pixels either side of the centre at 1080 high) they leave the whole right-hand third free; that is **inferred** from the reference screenshot
+and the geometry, not measured: **needs a client with a vanilla sword in the hand**. No screenshot with that HUD was available, so its position is not reported. The weapons module loses that HUD
+for the Arrakis weapons (the cause is being looked for separately, see "The missing ability HUD on the weapons"); this module neither hides nor draws anything of it.
+
+### The held-item name text
+
+- **What draws it: not determined.** The client draws it; the server has no field for it that was found. Checked: `PlayerSettings` (pickup locations, armour hiding, creative and voice settings; no
+  HUD or name option), the `ItemBase` packet (HUD related fields are only `carryHudInputBindings`, `displayEntityStatsHUD` and `hudUI`), the 27 `HudComponent` values (no item-name part; the
+  likeliest owners are `Hotbar` or `InputBindings`), and the item JSON (no name-display property in the sword, dagger, gun or tool templates). So it **cannot be switched off from the server in any way
+  that was found**, and hiding the whole Hotbar is excluded.
+- The v1 `EquipmentHud` (`ToolName`, a panel with the tool icon and name) is not in this build: the only `CustomUIHud` here is the new `HudView`, and the v1 `.ui` was not brought over (checked).
+- **Options:** `/arrakis hud component hide|show <Name>` hides or shows one vanilla part for you (and `reset`), to try each candidate on a client and see which one carries the text; and the Hud
+  setting `BarsLift` (default 0, the reference layout) raises both rows if the text collides with them. Neither was done for you because the text was not seen.
+
+### The art and the numbers
+
+All our own, drawn by `tools/assets/hud/make_hud.js` (it also writes the `.ui`): the bar background (dark body, lighter rim, dark outline, slanted outer end), the white fill, the sheen, and four round
+icons (bolt, heart, sun, drop: white glyph on a disc in the bar colour with a dark ring). Nothing is read from the game or the Water mod, and the Water icons were not reused. **Measured from
+`hud-layout-reference.jpg`** (902 x 317, the nine hotbar slots 160 to 770, so slot 9 ends 305 screenshot pixels from the centre: 360 virtual pixels as the v1 HUD measured, 0.847 screenshot pixels per
+virtual pixel): bar thickness 9.5 screenshot = 12 virtual; row bottoms 195.5 and 217.5 = 26 apart; slot top 225, 9 above the bottom row; slant about 45 degrees on the outer end only (top edge
+shorter); the bottom row is longer than the top (outer ends 335 and 314 from the centre) and its icons are further out (350 and 334); inner ends 7; colours teal `#57bbaf`, red `#d64d58`,
+amber `#d49c1b`, blue `#599de3`. All of these are in `HudConfig` (the `Hud` section) and at the top of the generator. **A human's eye is needed for:** `BottomRowBottom` (111 = hotbar baseline 24 from the
+v1 HUD + slot 78 + gap 9; the slot height 78 comes from the screenshot, the 24 from v1), the slant (`CAP` in the generator) against the hotbar, `TopOuter` / `BottomOuter` / the icon centres, the colours
+(sampled from a JPEG over a wooden scene, so a few percent off), the sheen strength, and the flash tint.
+
+**Anchoring.** The screen is split in two halves of equal `FlexWeight` so the middle (the middle of the hotbar, which the client draws centred) is exact at every resolution and aspect ratio; every
+offset from it is a fixed number of virtual pixels, the unit the hotbar is measured in, so the bars keep their place against it when the window scales. The vertical position is a fixed distance
+above the bottom of the screen. **Not verifiable without a client:** that the hotbar really is centred and nine slots 720 virtual pixels wide at 1080 high (taken from the v1 HUD, which measured it) and
+that the virtual pixel scales the same way for the vanilla hotbar and for our `Anchor` values (the Water bars and the v1 HUD rely on the same assumption).
+
+### Commands and checks
+
+`/arrakis hud on | off | state | demo <power|health|exposure|water> <percent> | component hide|show <Name> | reset`. `state` prints module on or off, whether our HUD is added, whether vanilla Health
+and Mana are shown or hidden and hidden by us, the visible vanilla parts, the four values with their colour and flash state, any demo pin, and the Water link, its hide switch and where the colour
+rules come from. `demo` pins a bar for `DemoSeconds` 6 (values below 5 on Power or Water flash).
+Unit tests (engine free): `HudMathTest` (weights always add up to 1000, 0 and 100 exact, the threshold, flash only below the limit and only on Power and Water, the phase and 2 flips a second, the tint,
+the exposure colour and its midpoint, the command words), `HudAssetsTest` (every id the view sets is in the `.ui`, every texture named there exists at 2x with the right size). The self-check lists the
+`.ui` and the ten textures.
+
+### Human test sheet, the HUD (a client; survival and creative; with and without the Water mod)
+
+15. The four bars sit above the hotbar as in `hud-layout-reference.jpg`: Power (teal, bolt) over Health (red, heart) on the left, Heat Exposure (amber, sun) over Water (blue, drop) on the right, icons at
+    the outer ends, the thin stamina bar above untouched, the Z slot untouched. Compare the slant, the thickness, the gap to the hotbar and the colours with the screenshot; note what to change in the
+    `Hud` section.
+16. The vanilla Health and Mana bars are gone and nothing else vanilla moved or went missing (oxygen when swimming, the ammo indicator, status icons, stamina). No duplicate Water edge bars (needs the Water
+    jar with prompt 06; with the current jar both draw and the log says so).
+17. Take damage, heal, use a tool that spends Mana, regenerate: the fills follow smoothly and the stats behave exactly as before. `/arrakis hud state` agrees with the bars.
+18. `/arrakis hud demo exposure 40`, `80`, `100`: orange, then toward red above the red-start, red at 100. `/arrakis hud demo power 3` and `water 3`: flash about once a second (see the note on `FlashHz`) and stop at
+    5; `health 3` and `exposure 3` never flash. No numbers anywhere.
+19. Respawn after death, change world, relog, switch creative and survival: the vanilla Health and Mana stay hidden, ours are right, nothing is stuck; `/arrakis hud off` brings the vanilla bars back and
+    removes ours, `on` reverses it.
+20. Without the Water mod: only the left half shows, no error in the log. Hold a vanilla sword: the ability HUD on the right is not covered. Resize the window and change the resolution: the bars stay
+    over the hotbar and never overlap it.
+21. The held-item name text: does it collide with the bars? If so try `/arrakis hud component hide InputBindings` (then `show`, `reset`) and the other parts to find what draws it, or raise
+    `BarsLift`, and write the answer here.
+
 ## Harness notes
 
 - `tools/headless/run.sh "wait 35" "arrakis modules" ...` boots the server with this jar; world commands from the console run in world `default`.

@@ -76,7 +76,8 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
                 new PlaceholdersModule(this),
                 new LightModule(),
                 new ShieldModule(this),
-                new com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsModule(this));
+                new com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsModule(this),
+                new com.paulorchard.islandcraft.equipmentofarrakis.hud.HudModule());
         all = java.util.stream.Stream.concat(all.stream(), java.util.stream.Stream.of(new com.paulorchard.islandcraft.equipmentofarrakis.experiments.ExperimentsModule(this))).toList(); // EXPERIMENT: remove with the experiments module
         modules.setupAll(all, settings.enabledModules(), context);
         getCommandRegistry().registerCommand(root.command());
@@ -90,6 +91,13 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
             for (String line : modules.selfChecks()) {
                 getLogger().at(Modules.isProblem(line) ? Level.WARNING : Level.INFO).log("Self-check: %s", line);
             }
+        }
+    }
+
+    @Override
+    protected void shutdown() {
+        if (context != null) {
+            modules.stopAll(context);
         }
     }
 
