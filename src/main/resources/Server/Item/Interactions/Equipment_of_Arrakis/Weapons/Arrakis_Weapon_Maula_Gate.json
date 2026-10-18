@@ -1,0 +1,7 @@
+{
+  "$Comment": "First and only interaction of the Primary root. It asks GunCost.charge for Cost per shot (0 now: free) and runs Next, the shot. When the cost cannot be paid it ends as Failed and runs the vanilla Gun_Shoot_Fail (the dry click). An ammo system raises Cost here and implements GunCost.charge; nothing else changes.",
+  "Type": "Arrakis_Gun_Gate",
+  "Cost": 0,
+  "Next": "Arrakis_Weapon_Maula_Shoot",
+  "Failed": "Gun_Shoot_Fail"
+}

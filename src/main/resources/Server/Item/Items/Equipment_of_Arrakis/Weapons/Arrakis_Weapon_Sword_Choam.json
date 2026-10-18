@@ -1,0 +1,25 @@
+{
+  "$Comment": "Looks like the vanilla Cobalt sword (model, texture, icon, quality by path), plays like the Crude one: Parent is Weapon_Sword_Crude, so the whole InteractionVars (damage numbers, DamageEffects, swing effects and sounds) and ItemSoundSetId are the Crude ones. No recipe, no durability. Interactions are the template's Primary, Secondary and Ability1 plus Ability4, the Holtzman toggle (tools/assets/weapons/make_weapons.js).",
+  "Parent": "Weapon_Sword_Crude",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Weapon_Sword_Choam.name",
+    "Description": "server.items.Arrakis_Weapon_Sword_Choam.description"
+  },
+  "Model": "Items/Weapons/Sword/Cobalt.blockymodel",
+  "Texture": "Items/Weapons/Sword/Cobalt_Texture.png",
+  "Icon": "Icons/ItemsGenerated/Weapon_Sword_Cobalt.png",
+  "Quality": "Rare",
+  "Recipe": null,
+  "MaxDurability": 0,
+  "DurabilityLossOnHit": 0,
+  "MaxStack": 1,
+  "Categories": [
+    "IslandCraft.Weapons"
+  ],
+  "Interactions": {
+    "Primary": "Root_Weapon_Sword_Primary",
+    "Secondary": "Root_Weapon_Sword_Secondary_Guard",
+    "Ability1": "Root_Weapon_Sword_Signature_Vortexstrike",
+    "Ability4": "Arrakis_Root_Toggle_Holtzman"
+  }
+}

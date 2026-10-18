@@ -1,0 +1,23 @@
+{
+  "$Comment": "The vanilla Weapon_Handgun by Parent: model, texture, icon, animations, quality, tags, the Secondary bash and the swing InteractionVars are the vanilla ones. Changed: the name, the Primary (one dart a click, free), Ability4 (the Holtzman toggle), the creative tab, no recipe, no durability and Utility.Compatible false (tools/assets/weapons/make_weapons.js).",
+  "Parent": "Weapon_Handgun",
+  "Icon": "Icons/ItemsGenerated/Weapon_Handgun.png",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Weapon_Maula_Pistol.name",
+    "Description": "server.items.Arrakis_Weapon_Maula_Pistol.description"
+  },
+  "Categories": [
+    "IslandCraft.Weapons"
+  ],
+  "Recipe": null,
+  "MaxDurability": 0,
+  "MaxStack": 1,
+  "Interactions": {
+    "Primary": "Arrakis_Weapon_Maula_Primary",
+    "Secondary": "Gun_Attack",
+    "Ability4": "Arrakis_Root_Toggle_Holtzman"
+  },
+  "Utility": {
+    "Compatible": false
+  }
+}

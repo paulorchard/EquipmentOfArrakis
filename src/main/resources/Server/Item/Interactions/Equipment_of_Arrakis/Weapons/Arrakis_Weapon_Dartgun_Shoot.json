@@ -1,0 +1,24 @@
+{
+  "$Comment": "The vanilla Gun_Shoot (LaunchProjectile, animation Shoot, Handgun_Shoot camera shake) with the dart, Arrakis_Dart_Shot (smoke only) at the placement of the vanilla Weapon_Assault_Rifle, and the gun's own fire sounds. RunTime 0 as the vanilla items set it.",
+  "Type": "LaunchProjectile",
+  "RunTime": 0,
+  "Effects": {
+    "ItemAnimationId": "Shoot",
+    "CameraEffect": "Handgun_Shoot",
+    "Particles": [
+      {
+        "SystemId": "Arrakis_Dart_Shot",
+        "PositionOffset": {
+          "Z": 0.85,
+          "Y": 0.15
+        },
+        "RotationOffset": {
+          "Pitch": 90
+        }
+      }
+    ],
+    "WorldSoundEventId": "SFX_Arrakis_Dartgun_Fire",
+    "LocalSoundEventId": "SFX_Arrakis_Dartgun_Fire_Local"
+  },
+  "ProjectileId": "Arrakis_Dartgun_Dart"
+}

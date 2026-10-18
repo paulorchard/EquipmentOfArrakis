@@ -103,6 +103,32 @@ commands.arrakis.shield.cooldown.desc = Shows or sets the cooldown in seconds (n
 commands.arrakis.shield.diag.desc = Logs every projectile creation with its creator: arrakis shield diag [on|off]
 customUI.arrakisPicker.shield = Holtzman Shield
 
+# ---- weapons
+commands.arrakis.weapons.desc = The weapons: give, state, trace
+commands.arrakis.weapons.give.desc = Give the ten weapons (the hotbar if there is room, else the inventory)
+commands.arrakis.weapons.state.desc = Show the held item, whether it has Ability4 (the H key), and the Holtzman toggle
+commands.arrakis.weapons.trace.desc = Log each Ability4 press that reaches the server: arrakis weapons trace [on|off]
+items.Arrakis_Weapon_Sword_Crude.name = Arrakis Sword (Crude)
+items.Arrakis_Weapon_Sword_Crude.description = A sword of house Crude. It looks like the Crude sword and fights like the Crude one: the same swings, the same damage, the same sounds. Right click guards. It does not wear out. H toggles the Holtzman shield.
+items.Arrakis_Weapon_Sword_Atreides.name = Arrakis Sword (Atreides)
+items.Arrakis_Weapon_Sword_Atreides.description = A sword of house Atreides. It looks like the Thorium sword and fights like the Crude one: the same swings, the same damage, the same sounds. Right click guards. It does not wear out. H toggles the Holtzman shield.
+items.Arrakis_Weapon_Sword_Choam.name = Arrakis Sword (Choam)
+items.Arrakis_Weapon_Sword_Choam.description = A sword of house Choam. It looks like the Cobalt sword and fights like the Crude one: the same swings, the same damage, the same sounds. Right click guards. It does not wear out. H toggles the Holtzman shield.
+items.Arrakis_Weapon_Sword_Harkonnen.name = Arrakis Sword (Harkonnen)
+items.Arrakis_Weapon_Sword_Harkonnen.description = A sword of house Harkonnen. It looks like the Adamantite sword and fights like the Crude one: the same swings, the same damage, the same sounds. Right click guards. It does not wear out. H toggles the Holtzman shield.
+items.Arrakis_Weapon_Daggers_Crude.name = Arrakis Daggers (Crude)
+items.Arrakis_Weapon_Daggers_Crude.description = A pair of daggers of house Crude. They look like the Crude daggers and fight like the Crude ones: the same swings, the same damage, the same sounds. Right click guards. They do not wear out. H toggles the Holtzman shield.
+items.Arrakis_Weapon_Daggers_Atreides.name = Arrakis Daggers (Atreides)
+items.Arrakis_Weapon_Daggers_Atreides.description = A pair of daggers of house Atreides. They look like the Thorium daggers and fight like the Crude ones: the same swings, the same damage, the same sounds. Right click guards. They do not wear out. H toggles the Holtzman shield.
+items.Arrakis_Weapon_Daggers_Choam.name = Arrakis Daggers (Choam)
+items.Arrakis_Weapon_Daggers_Choam.description = A pair of daggers of house Choam. They look like the Cobalt daggers and fight like the Crude ones: the same swings, the same damage, the same sounds. Right click guards. They do not wear out. H toggles the Holtzman shield.
+items.Arrakis_Weapon_Daggers_Harkonnen.name = Arrakis Daggers (Harkonnen)
+items.Arrakis_Weapon_Daggers_Harkonnen.description = A pair of daggers of house Harkonnen. They look like the Adamantite daggers and fight like the Crude ones: the same swings, the same damage, the same sounds. Right click guards. They do not wear out. H toggles the Holtzman shield.
+items.Arrakis_Weapon_Maula_Pistol.name = Maula Pistol
+items.Arrakis_Weapon_Maula_Pistol.description = A spring-gun pistol that fires darts. Hold it in your main hand: left click fires one dart (click again for the next, about three a second at most); a dart does 1 damage out to 40 blocks. Right click bashes. H toggles the Holtzman shield. Cannot go in the off-hand slot.
+items.Arrakis_Weapon_Dartgun.name = Dartgun
+items.Arrakis_Weapon_Dartgun.description = A two-handed spring gun that fires darts. Left click fires one dart (click again for the next, about three a second at most); a dart does 1 damage out to 40 blocks. Right click bashes. H toggles the Holtzman shield.
+
 # EXPERIMENT BEGIN
 items.Arrakis_Exp_Flame_Cutter.name = EXPERIMENT Flame Cutter
 items.Arrakis_Exp_Flame_Cutter.description = EXPERIMENT. A flamethrower turned into a rock-cutting beam: no fire, no damage to creatures; hold Primary to cut. Costs Mana.

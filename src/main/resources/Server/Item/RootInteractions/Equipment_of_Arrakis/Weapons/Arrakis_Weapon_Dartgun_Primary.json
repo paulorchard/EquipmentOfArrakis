@@ -1,0 +1,16 @@
+{
+  "$Comment": "RequireNewClick: the button has to be released and pressed again for the next dart, so holding it fires once. The Shoot cooldown caps fast clicking at one shot every 0.33 s.",
+  "RequireNewClick": true,
+  "Cooldown": {
+    "Id": "Shoot",
+    "Cooldown": 0.33
+  },
+  "Interactions": [
+    "Arrakis_Weapon_Dartgun_Gate"
+  ],
+  "Tags": {
+    "Attack": [
+      "Ranged"
+    ]
+  }
+}

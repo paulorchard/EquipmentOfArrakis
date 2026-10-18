@@ -1,0 +1,25 @@
+{
+  "$Comment": "Looks like the vanilla Cobalt daggers (model, texture, icon, quality by path), plays like the Crude one: Parent is Weapon_Daggers_Crude, so the whole InteractionVars (damage numbers, DamageEffects, swing effects and sounds) and ItemSoundSetId are the Crude ones. No recipe, no durability. Interactions are the template's Primary, Secondary and Ability1 plus Ability4, the Holtzman toggle (tools/assets/weapons/make_weapons.js).",
+  "Parent": "Weapon_Daggers_Crude",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Weapon_Daggers_Choam.name",
+    "Description": "server.items.Arrakis_Weapon_Daggers_Choam.description"
+  },
+  "Model": "Items/Weapons/Dagger/Cobalt.blockymodel",
+  "Texture": "Items/Weapons/Dagger/Cobalt_Texture.png",
+  "Icon": "Icons/ItemsGenerated/Weapon_Daggers_Cobalt.png",
+  "Quality": "Rare",
+  "Recipe": null,
+  "MaxDurability": 0,
+  "DurabilityLossOnHit": 0,
+  "MaxStack": 1,
+  "Categories": [
+    "IslandCraft.Weapons"
+  ],
+  "Interactions": {
+    "Primary": "Root_Weapon_Daggers_Primary",
+    "Secondary": "Root_Weapon_Daggers_Secondary_Guard",
+    "Ability1": "Root_Weapon_Daggers_Signature_Razorstrike",
+    "Ability4": "Arrakis_Root_Toggle_Holtzman"
+  }
+}
