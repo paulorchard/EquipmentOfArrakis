@@ -26,7 +26,6 @@ ui.itemcategory.islandcraft.tools = Tools
 ui.itemcategory.islandcraft.weapons = Weapons
 ui.itemcategory.islandcraft.armor = Armor
 ui.itemcategory.islandcraft.resources = Resources
-items.Arrakis_Dev_Marker.name = Dev Marker
 
 # ---- picker
 commands.arrakis.tools.desc = The tool set: give, state, open

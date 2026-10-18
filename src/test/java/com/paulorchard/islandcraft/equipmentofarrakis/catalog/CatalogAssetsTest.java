@@ -163,15 +163,4 @@ class CatalogAssetsTest {
         }
         assertFalse(found == 0, "the proof item is in the tab");
     }
-
-    @Test
-    void theDevMarkerIsAMinimalToolsItem() throws IOException {
-        BsonDocument marker = read(ITEMS.resolve("Equipment_of_Arrakis/Catalog/Arrakis_Dev_Marker.json"));
-        assertEquals("IslandCraft.Tools", marker.getArray("Categories").get(0).asString().getValue());
-        assertEquals(1, marker.getNumber("MaxStack").intValue());
-        assertTrue(marker.getString("$Comment").getValue().contains("Delete"), "the comment says it is deleted later");
-        assertFalse(marker.containsKey("Recipe"), "no recipe");
-        assertFalse(marker.containsKey("Interactions"), "no interactions");
-        assertFalse(marker.containsKey("Utility"), "no utility block");
-    }
 }

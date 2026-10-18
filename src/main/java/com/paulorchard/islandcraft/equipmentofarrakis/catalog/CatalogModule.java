@@ -7,7 +7,6 @@ import com.paulorchard.islandcraft.equipmentofarrakis.core.EquipmentModule;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.ModuleContext;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -23,7 +22,6 @@ public final class CatalogModule implements EquipmentModule {
     public static final String ID = "catalog";
     public static final String TAB = "IslandCraft";
     public static final List<String> CHILDREN = List.of("Tools", "Weapons", "Armor", "Resources");
-    public static final String DEV_MARKER = "Arrakis_Dev_Marker";
 
     @Override
     public String id() {
@@ -60,14 +58,6 @@ public final class CatalogModule implements EquipmentModule {
             if (!ids.equals(CHILDREN)) {
                 lines.add("PROBLEM the children are " + ids + ", expected " + CHILDREN);
             }
-        }
-        Item marker = Item.getAssetMap().getAsset(DEV_MARKER);
-        if (marker == null) {
-            lines.add("PROBLEM the item " + DEV_MARKER + " is not loaded");
-        } else {
-            String[] categories = marker.getCategories();
-            boolean inTab = categories != null && Arrays.asList(categories).contains(TAB + ".Tools");
-            lines.add((inTab ? "" : "PROBLEM ") + "item " + DEV_MARKER + " loaded, categories " + Arrays.toString(categories));
         }
         return lines;
     }
