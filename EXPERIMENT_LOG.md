@@ -315,6 +315,29 @@ Same labels as above: **confirmed** (headless boot, unit test, javap), **inferre
   The catalog test (every item in the tab names an existing child and has an Icon of its own) covers the ten as well. Self-check lines for every item, interaction, root, sound and particle.
   A Projectile asset is not removed when the module is off (`ModuleAssets` does not handle that type); the two dart projectiles stay loaded and unreferenced.
 
+### The missing ability HUD on the weapons (found after the first client test)
+
+A client test showed that holding an Arrakis weapon no longer shows the vanilla weapon HUD on the right of the screen (the ability status and the buttons that activate them). The ability
+buttons are wanted later, so the cause was looked for by comparing the resolved Crude daggers and the resolved Arrakis Crude daggers (and the swords) field by field. New dev command
+`/arrakis weapons diff <itemA> <itemB>` (`ItemDiff`) prints every field of two loaded items whose values differ. Result for `Weapon_Daggers_Crude` against `Arrakis_Weapon_Daggers_Crude` (**confirmed**,
+the swords differ in the same four ways):
+
+| field | vanilla Crude | Arrakis Crude |
+|---|---|---|
+| `categories` | `[Items.Weapons]` | `[IslandCraft.Weapons]` |
+| `interactions` | Primary, Secondary, Ability1, Ability3 (empty), Use, Pick, SwapFrom | the same plus `Ability4 = Arrakis_Root_Toggle_Holtzman` |
+| `maxDurability` | 120 | 0 |
+| `durabilityLossOnHit` | 0.06 (swords 0.13) | 0 |
+
+Other differences are only the id, the translation keys, the recipe (removed on purpose) and the asset bookkeeping (`data`). Everything else is identical, including `weapon` (signature energy
+modifiers), `utility`, `ability`, `tags`, `reticleId`, `carryHudInputBindings`, `displayEntityStatsHUD`, `hudUI`, `itemAppearanceConditions`, `interactionVars` and the model and sounds. So the HUD is
+not lost through the Weapon block, the tags, the HUD fields or the interaction variables: the cause is one of the four rows above. **Suspects, in order (inferred, not yet separated):**
+1. `categories`: the client may treat the category `Items.Weapons` as "this is a weapon" for the HUD. The catalog needs `IslandCraft.Weapons`; both can be listed, at the price of the item also
+   appearing in the vanilla weapons tab.
+2. `Ability4` on the item (the H key): the HUD may be laid out from the item's ability slots, and a fourth slot with a root that has no icon or energy could hide it.
+3. `maxDurability 0` (a weapon with no durability): least likely, the HUD shows abilities, not wear.
+**Next step (needs a client):** three throw-away daggers, one with `Items.Weapons` added to the categories, one without Ability4, one with durability 120, to see which brings the HUD back.
+
 ### Human test sheet, weapons and the H key (a client; `/arrakis weapons give`, survival and creative)
 
 11. Creative menu, IslandCraft tab, Weapons: eight melee and the Maula Pistol and Dartgun, with icons and names; each type has its own vanilla look (Crude, Thorium, Cobalt, Adamantite models).

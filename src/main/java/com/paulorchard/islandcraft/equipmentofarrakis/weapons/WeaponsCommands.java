@@ -38,6 +38,13 @@ final class WeaponsCommands {
             ToggleInteraction.trace = a.length > 0 ? "on".equalsIgnoreCase(a[0]) : !ToggleInteraction.trace;
             CoreModule.say(c, "Ability4 trace " + (ToggleInteraction.trace ? "ON: one log line per press that arrives" : "off"));
         }, "onoff"));
+        weapons.addSubCommand(WorldPositional.build("diff", LANG + "diff.desc", (c, w, s, a) -> {
+            if (a.length < 2) {
+                CoreModule.say(c, "Usage: arrakis weapons diff <itemA> <itemB>");
+                return;
+            }
+            ItemDiff.run(a[0], a[1], line -> CoreModule.say(c, line));
+        }, "itemA", "itemB"));
         return weapons;
     }
 
