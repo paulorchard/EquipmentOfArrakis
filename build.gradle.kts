@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "com.paulorchard.islandcraft"
-version = "0.2.0"
+version = "0.3.0"
 
 val hytaleServerVersion = "0.7.0"
 val modsDir = file("${System.getenv("APPDATA")}/Hytale/UserData/Mods")

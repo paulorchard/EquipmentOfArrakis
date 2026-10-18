@@ -1,0 +1,33 @@
+# Release notes
+
+## 0.3.0: cleanup release
+
+No behaviour change for the player. Item ids, stack metadata keys, interaction type names, asset ids and existing config files are unchanged: a config written by 0.2.0 loads, ignores the keys that
+were removed and is rewritten without them the next time it is saved.
+
+### What the mod contains
+
+- **Tools and the picker:** Cutter Ray, Compactor, LitreJon, Dew Harvester, Blood Extractor, Vehicle Summoner and Build/Repair Tool (placeholders), Blood Bag. Right click on any tool opens the picker
+  page: swap to another carried tool, or switch a toggle.
+- **Weapons and the H key:** ten weapons (Crude, Atreides, Choam, Harkonnen swords and daggers; Maula Pistol and Dartgun). They list `Items.Weapons` as well as `IslandCraft.Weapons`, which is what
+  makes the client draw the vanilla weapon ability HUD. The H key (Ability4) toggles the Holtzman shield on the weapons and the seven hand tools.
+- **Toggles:** Holtzman Shield and Personal Light, on the picker page; the shield also on H.
+- **The four-bar HUD:** Power, Health, Heat Exposure and Water above the hotbar, drawn from the vanilla Health and Mana art, with the low alert, creative fills, nudge commands and the link to the Water mod.
+- **Power and the IslandCraft creative tab** underneath.
+- The held-item name overlaps the bottom bar row and cannot be moved from the server; `BarsLift` 50 or 64 makes room (default 0).
+
+### What was removed
+
+- The whole **experiments module** (Flame Cutter, Flame Beam Cutter, the calibration rig): 10 Java files, 5 test files, 34 assets, its generators, its config section, `Modules` entry and language keys.
+- The **HUD investigation code**: the probe, the item-name label mover, the Reference art route, the bisect variants and the `-PhudExtra` build flag. The settings `ArtSource`, `AlertColor` and
+  `ItemName*` are ignored when read.
+- **Investigation commands:** `weapons diff`, `weapons trace`, `shield diag`, `hud probe`, `hud itemname`, `hud art` (and the item comparison class behind `weapons diff`).
+- **Dead code:** `ToggleRegistry.flip`, the `BloodBag` API class, `ArrakisIds.isOurs/itemDescriptionKey/categoryKey`, `WorldAccess.chunkStore`, `HudRuntime.exposureTint`, `WeaponIds.isWeapon`,
+  `BeamMath.entryDistance`, the dev trace flags of the toggle, shield shots and darts, and the `Arrakis_Dev_Marker` item (a creative-menu item of no use).
+- `EXPERIMENT_LOG.md`, replaced by `MODULES.md` (module notes and the client test sheet) and `ARCHIVE.md` (what was tried and abandoned, and the client rules learned).
+
+### New
+
+- `AssetReferencesTest` fails on a resource file or a language key that nothing refers to.
+
+The old code is recoverable from the git tag `equipment-v2.1-baseline`.
