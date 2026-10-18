@@ -18,6 +18,10 @@ public interface EquipmentModule {
     default void start(ModuleContext ctx) {
     }
 
+    /** The plugin is shutting down: put back what this module changed in the game (a hidden vanilla HUD part, a switch in another mod). */
+    default void stop(ModuleContext ctx) {
+    }
+
     /** Lines of text describing what was found; a line containing PROBLEM is a failure. */
     default List<String> selfCheck() {
         return List.of();

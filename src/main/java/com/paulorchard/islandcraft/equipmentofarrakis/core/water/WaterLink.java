@@ -1,4 +1,4 @@
-package com.paulorchard.islandcraft.equipmentofarrakis.litrejon;
+package com.paulorchard.islandcraft.equipmentofarrakis.core.water;
 
 import com.hypixel.hytale.common.plugin.PluginIdentifier;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -9,7 +9,7 @@ import com.hypixel.hytale.server.core.plugin.PluginManager;
  * be used, and null otherwise. It never throws: a missing plugin, a version of it without the classes this one was built against
  * ({@link LinkageError}) or anything else wrong is "not there", and the LitreJon then says "Water of Arrakis is needed".
  */
-final class WaterLink {
+public final class WaterLink {
 
     static final String GROUP = "IslandCraft";
     static final String NAME = "IslandCraft - Water of Arrakis";
@@ -20,7 +20,7 @@ final class WaterLink {
     private WaterLink() {
     }
 
-    static boolean pluginLoaded() {
+    public static boolean pluginLoaded() {
         try {
             return PluginManager.get().getPlugin(new PluginIdentifier(GROUP, NAME)) != null;
         } catch (RuntimeException e) {
@@ -29,7 +29,7 @@ final class WaterLink {
     }
 
     /** The Water API, or null when the mod is missing or cannot be used. */
-    static WaterApi api() {
+    public static WaterApi api() {
         WaterApi api = cached;
         if (api != null) {
             return api;
@@ -51,7 +51,7 @@ final class WaterLink {
     }
 
     /** One line for the start-up report. */
-    static String status() {
+    public static String status() {
         if (!pluginLoaded()) {
             return "Water of Arrakis not loaded: the LitreJon will refuse to pour (everything else works)";
         }

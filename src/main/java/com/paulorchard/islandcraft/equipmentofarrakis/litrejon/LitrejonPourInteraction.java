@@ -1,5 +1,7 @@
 package com.paulorchard.islandcraft.equipmentofarrakis.litrejon;
 
+import com.paulorchard.islandcraft.equipmentofarrakis.core.water.WaterApi;
+import com.paulorchard.islandcraft.equipmentofarrakis.core.water.WaterLink;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;

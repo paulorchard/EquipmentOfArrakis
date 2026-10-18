@@ -1,5 +1,7 @@
 package com.paulorchard.islandcraft.equipmentofarrakis.litrejon;
 
+import com.paulorchard.islandcraft.equipmentofarrakis.core.water.WaterApi;
+import com.paulorchard.islandcraft.equipmentofarrakis.core.water.WaterLink;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.RootInteraction;

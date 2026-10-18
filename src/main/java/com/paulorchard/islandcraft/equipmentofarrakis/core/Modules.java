@@ -89,6 +89,20 @@ public final class Modules {
         }
     }
 
+    /** The plugin is shutting down: every running module undoes what it changed outside its own data (in reverse order). */
+    public void stopAll(ModuleContext ctx) {
+        for (int i = entries.size() - 1; i >= 0; i--) {
+            Entry entry = entries.get(i);
+            if (entry.running()) {
+                try {
+                    entry.module().stop(ctx);
+                } catch (Throwable t) {
+                    ctx.logger().at(Level.WARNING).withCause(t).log("Module %s stop failed", entry.module().id());
+                }
+            }
+        }
+    }
+
     /** The self-check lines of every running module, each prefixed with the module id. */
     public List<String> selfChecks() {
         List<String> lines = new ArrayList<>();
