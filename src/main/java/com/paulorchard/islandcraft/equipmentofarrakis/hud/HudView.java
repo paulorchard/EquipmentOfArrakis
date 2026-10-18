@@ -122,8 +122,10 @@ final class HudView extends CustomUIHud {
             }
             if (alertChanged) {
                 ui.set("#" + n + "AlertGroup.Visible", alert[i] != HudMath.Alert.NONE);
-                ui.set("#" + n + "Error.Background.Color", HudMath.white(HudMath.errorOpacity(alert[i])));
-                ui.set("#" + n + "Outline.Background.Color", HudMath.white(HudMath.outlineOpacity(alert[i], config.getAlertOutlineOpacity())));
+                HudMath.Overlays overlays = HudMath.overlays(alert[i]);
+                ui.set("#" + n + "Error.Visible", overlays.error());
+                ui.set("#" + n + "Outline.Visible", overlays.outline());
+                ui.set("#" + n + "OutlineDim.Visible", overlays.outlineDim());
                 sentAlert[i] = alert[i];
             }
             if (tintChanged) {

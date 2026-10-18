@@ -75,20 +75,14 @@ class HudMathTest {
     }
 
     @Test
-    void theAlertStatesGiveTheOverlayAndOutlineOpacities() {
+    void theAlertStatesShowAndHideTheOverlayGroupsInsteadOfSettingOpacity() {
         assertEquals(HudMath.Alert.NONE, HudMath.alert(false, true));
         assertEquals(HudMath.Alert.NONE, HudMath.alert(false, false));
         assertEquals(HudMath.Alert.BRIGHT, HudMath.alert(true, true));
         assertEquals(HudMath.Alert.DIM, HudMath.alert(true, false));
-        assertEquals(1.0, HudMath.errorOpacity(HudMath.Alert.BRIGHT), 0.0);
-        assertEquals(0.0, HudMath.errorOpacity(HudMath.Alert.DIM), 0.0);
-        assertEquals(0.0, HudMath.errorOpacity(HudMath.Alert.NONE), 0.0);
-        assertEquals(1.0, HudMath.outlineOpacity(HudMath.Alert.BRIGHT, 0.5), 0.0);
-        assertEquals(0.5, HudMath.outlineOpacity(HudMath.Alert.DIM, 0.5), 0.0, "the vanilla outline start opacity while alerting");
-        assertEquals(0.0, HudMath.outlineOpacity(HudMath.Alert.NONE, 0.5), 0.0);
-        assertEquals("#ffffff(0.50)", HudMath.white(0.5));
-        assertEquals("#ffffff(0.00)", HudMath.white(-1));
-        assertEquals("#ffffff(1.00)", HudMath.white(3));
+        assertEquals(new HudMath.Overlays(true, true, false), HudMath.overlays(HudMath.Alert.BRIGHT), "bright: the error overlay and its full outline");
+        assertEquals(new HudMath.Overlays(false, false, true), HudMath.overlays(HudMath.Alert.DIM), "dim: only the outline at the vanilla start opacity (a group fixed in the .ui)");
+        assertEquals(new HudMath.Overlays(false, false, false), HudMath.overlays(HudMath.Alert.NONE));
     }
 
     @Test

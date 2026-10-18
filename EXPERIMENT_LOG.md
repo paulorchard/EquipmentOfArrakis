@@ -609,6 +609,18 @@ is the documented exception. The earlier notes ("Reference ... confirmed/inferre
 **Human test sheet additions.** 29. Join with the new jar, Water on and Water off: it joins and the four bars show with the Copy art. 30. `/arrakis hud art state` says the pack has the Copy documents and not the Reference ones;
 `/arrakis hud art reference` is refused. 31. If it still cannot join, say which build variant (none / `dupicons` / `refinpack` / `reference` / `probe`) and quote the client log line.
 
+### The client crash at Water below 5% (first client test of the Copy build)
+
+The Copy build joined. Typing `water set 5` then crashed the client; the server log only says `left with reason: Crash`, and every join after that crashed again (the Water value was saved at 5). The real
+message is in the **client** log (`2026-10-18_11-30-20_client.log`, 14:07:40): `Disconnecting with error during stage InGame: Failed to apply CustomUI HUD commands (CustomUI Set command couldn't set value.
+Selector: #WaterError.Background.Color -> Failed to convert JSON value (String) to specified type (UInt32Color))`. **Cause:** the alert set the colour of the error overlay with the string `#ffffff(1.00)`. The
+`(alpha)` form is `.ui` syntax; a colour set from the server must be a plain `#rrggbb`, and the client disconnects on a string it cannot convert. **Fix:** no opacity is ever set at run time now. Each bar has
+three overlay groups that start hidden (`Visible: false`): `#XError` and `#XOutline` (opaque) and `#XOutlineDim` (a fixed half-opaque outline, `Color: #ffffff(0.5)` in the document, the vanilla
+`@LowAlertOutlineOpacityStart`); the alert shows the first two in the bright phase and only the dim outline in the dim phase (`HudMath.overlays`, unit tested; `HudAssetsTest` checks the groups start hidden and that
+no document sets an alpha of 0). **Config:** `AlertOutlineOpacity` was removed (the number is the vanilla one written into the documents by the generator). **Confirmed from the same log:** in that command batch
+`#WaterAlert.Value` and `#WaterAlertGroup.Visible` were applied before the failing line and the client accepted them, so `ProgressBar.Value` and `Visible` on a group work from the server; plain `#rrggbb` strings on
+`Bar.Color` and `Background.Color` were accepted at the join. **Still needs a client:** that the alert now shows and flashes (test 23).
+
 ## Harness notes
 
 - `tools/headless/run.sh "wait 35" "arrakis modules" ...` boots the server with this jar; world commands from the console run in world `default`.

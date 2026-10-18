@@ -238,7 +238,7 @@ function document(route, creative) {
         const barGroup = `        Group #${n}Bar {\n`
             + `          Anchor: (${bar.left ? 'Left: 0, ' : ''}Width: ${m.barWidth}, Height: ${m.barHeight});\n`
             + `          Background: "${p.background}";\n\n`
-            + `          Group #${n}Error {\n            Background: PatchStyle(TexturePath: "${p.error}", Color: #ffffff(0));\n          }\n\n`
+            + `          Group #${n}Error {\n            Visible: false;\n            Background: PatchStyle(TexturePath: "${p.error}", Color: #ffffff);\n          }\n\n`
             + `          ProgressBar #${n}Fill {\n            Anchor: (Width: ${m.barWidth}, Height: ${m.barHeight});\n            BarTexturePath: "${p.fill}";\n            Bar: (Color: ${TINT[n]});\n            Value: 0;\n          }\n\n`
             + `          Group #${n}AlertGroup {
             Visible: false;
@@ -253,7 +253,8 @@ function document(route, creative) {
 
 `
             + `          ProgressBar #${n}Effect {\n            Anchor: (Width: ${m.barWidth}, Height: ${m.barHeight});\n            BarTexturePath: "${p.effect}";\n            Value: 0;\n          }\n\n`
-            + `          Group #${n}Outline {\n            Background: PatchStyle(TexturePath: "${p.outline}", Color: #ffffff(0));\n          }\n        }\n`;
+            + `          Group #${n}Outline {\n            Visible: false;\n            Background: PatchStyle(TexturePath: "${p.outline}", Color: #ffffff);\n          }\n\n`
+            + `          Group #${n}OutlineDim {\n            Visible: false;\n            Background: PatchStyle(TexturePath: "${p.outline}", Color: #ffffff(${m.alert.outlineOpacityStart}));\n          }\n        }\n`;
         const block = `      Group #${n}Block {\n        Anchor: (Width: ${m.blockWidth});\n        LayoutMode: Left;\n\n`
             + (bar.left ? iconGroup + '\n' + barGroup : barGroup + '\n' + iconGroup) + '      }\n';
         const spacer = `    Group #${n}Spacer {\n      FlexWeight: 1;\n    }\n`;

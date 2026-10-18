@@ -29,7 +29,8 @@ Group #PowerRow {
           Background: "../../../InGame/Hud/Health/HealthBackground.png";
 
           Group #PowerError {
-            Background: PatchStyle(TexturePath: "VanillaDerived/ErrorLeft.png", Color: #ffffff(0));
+            Visible: false;
+            Background: PatchStyle(TexturePath: "VanillaDerived/ErrorLeft.png", Color: #ffffff);
           }
 
           ProgressBar #PowerFill {
@@ -57,7 +58,13 @@ Group #PowerRow {
           }
 
           Group #PowerOutline {
-            Background: PatchStyle(TexturePath: "VanillaDerived/ErrorOutlineLeft.png", Color: #ffffff(0));
+            Visible: false;
+            Background: PatchStyle(TexturePath: "VanillaDerived/ErrorOutlineLeft.png", Color: #ffffff);
+          }
+
+          Group #PowerOutlineDim {
+            Visible: false;
+            Background: PatchStyle(TexturePath: "VanillaDerived/ErrorOutlineLeft.png", Color: #ffffff(0.5));
           }
         }
       }
@@ -98,7 +105,8 @@ Group #HealthRow {
           Background: "../../../InGame/Hud/Health/HealthBackground.png";
 
           Group #HealthError {
-            Background: PatchStyle(TexturePath: "VanillaDerived/ErrorLeft.png", Color: #ffffff(0));
+            Visible: false;
+            Background: PatchStyle(TexturePath: "VanillaDerived/ErrorLeft.png", Color: #ffffff);
           }
 
           ProgressBar #HealthFill {
@@ -126,7 +134,13 @@ Group #HealthRow {
           }
 
           Group #HealthOutline {
-            Background: PatchStyle(TexturePath: "VanillaDerived/ErrorOutlineLeft.png", Color: #ffffff(0));
+            Visible: false;
+            Background: PatchStyle(TexturePath: "VanillaDerived/ErrorOutlineLeft.png", Color: #ffffff);
+          }
+
+          Group #HealthOutlineDim {
+            Visible: false;
+            Background: PatchStyle(TexturePath: "VanillaDerived/ErrorOutlineLeft.png", Color: #ffffff(0.5));
           }
         }
       }
@@ -166,7 +180,8 @@ Group #ExposureRow {
           Background: "../../../InGame/Hud/Mana/ManaBackground.png";
 
           Group #ExposureError {
-            Background: PatchStyle(TexturePath: "../../../InGame/Hud/Mana/ManaBackgroundError.png", Color: #ffffff(0));
+            Visible: false;
+            Background: PatchStyle(TexturePath: "../../../InGame/Hud/Mana/ManaBackgroundError.png", Color: #ffffff);
           }
 
           ProgressBar #ExposureFill {
@@ -194,7 +209,13 @@ Group #ExposureRow {
           }
 
           Group #ExposureOutline {
-            Background: PatchStyle(TexturePath: "../../../InGame/Hud/Mana/ManaBackgroundErrorOutline.png", Color: #ffffff(0));
+            Visible: false;
+            Background: PatchStyle(TexturePath: "../../../InGame/Hud/Mana/ManaBackgroundErrorOutline.png", Color: #ffffff);
+          }
+
+          Group #ExposureOutlineDim {
+            Visible: false;
+            Background: PatchStyle(TexturePath: "../../../InGame/Hud/Mana/ManaBackgroundErrorOutline.png", Color: #ffffff(0.5));
           }
         }
 
@@ -235,7 +256,8 @@ Group #WaterRow {
           Background: "../../../InGame/Hud/Mana/ManaBackground.png";
 
           Group #WaterError {
-            Background: PatchStyle(TexturePath: "../../../InGame/Hud/Mana/ManaBackgroundError.png", Color: #ffffff(0));
+            Visible: false;
+            Background: PatchStyle(TexturePath: "../../../InGame/Hud/Mana/ManaBackgroundError.png", Color: #ffffff);
           }
 
           ProgressBar #WaterFill {
@@ -263,7 +285,13 @@ Group #WaterRow {
           }
 
           Group #WaterOutline {
-            Background: PatchStyle(TexturePath: "../../../InGame/Hud/Mana/ManaBackgroundErrorOutline.png", Color: #ffffff(0));
+            Visible: false;
+            Background: PatchStyle(TexturePath: "../../../InGame/Hud/Mana/ManaBackgroundErrorOutline.png", Color: #ffffff);
+          }
+
+          Group #WaterOutlineDim {
+            Visible: false;
+            Background: PatchStyle(TexturePath: "../../../InGame/Hud/Mana/ManaBackgroundErrorOutline.png", Color: #ffffff(0.5));
           }
         }
 

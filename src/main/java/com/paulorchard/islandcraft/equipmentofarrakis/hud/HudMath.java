@@ -54,19 +54,16 @@ final class HudMath {
         return !alerting ? Alert.NONE : bright ? Alert.BRIGHT : Alert.DIM;
     }
 
-    /** The colour string of a white overlay at an opacity, in the .ui form: #ffffff(0.50). */
-    static String white(double opacity) {
-        return String.format(Locale.ROOT, "#ffffff(%.2f)", Math.max(0.0, Math.min(1.0, opacity)));
+    /**
+     * What the three overlay groups of a bar show in an alert state: the error overlay and its outline in the bright phase, the dim outline
+     * (a second group at the vanilla outline start opacity, fixed in the .ui) in the dim phase. A colour with an alpha cannot be set from the
+     * server (the client refuses the string #ffffff(0.50) and disconnects), so opacity is never set at run time: groups are shown or hidden.
+     */
+    record Overlays(boolean error, boolean outline, boolean outlineDim) {
     }
 
-    /** Opacity of the error overlay for an alert state. */
-    static double errorOpacity(Alert alert) {
-        return alert == Alert.BRIGHT ? 1.0 : 0.0;
-    }
-
-    /** Opacity of the error outline for an alert state: never below {@code outlineMinimum} while alerting. */
-    static double outlineOpacity(Alert alert, double outlineMinimum) {
-        return alert == Alert.NONE ? 0.0 : alert == Alert.BRIGHT ? 1.0 : outlineMinimum;
+    static Overlays overlays(Alert alert) {
+        return new Overlays(alert == Alert.BRIGHT, alert == Alert.BRIGHT, alert == Alert.DIM);
     }
 
     static String blend(String from, String to, double t) {

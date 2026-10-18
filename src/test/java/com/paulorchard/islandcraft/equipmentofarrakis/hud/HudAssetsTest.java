@@ -96,7 +96,7 @@ class HudAssetsTest {
         for (String document : concat(DOCUMENTS, REFERENCE)) {
             String ui = ui(document);
             for (HudBar bar : HudBar.values()) {
-                for (String part : new String[] {"Row", "Pad", "Error", "Fill", "AlertGroup", "Alert", "Effect", "Outline", "Icon"}) {
+                for (String part : new String[] {"Row", "Pad", "Error", "Fill", "AlertGroup", "Alert", "Effect", "Outline", "OutlineDim", "Icon"}) {
                     assertTrue(ui.contains("#" + bar.id + part + " {"), document + " #" + bar.id + part);
                 }
             }
@@ -114,6 +114,21 @@ class HudAssetsTest {
             assertTrue(ui.contains("Width: 24, Height: 24"), document);
             assertTrue(ui.contains("Top: -8"), document + ": the vanilla icon offset");
             assertFalse(ui.contains("FlexWeight: 1000"), document + ": no FlexWeight fill split any more");
+        }
+    }
+
+    @Test
+    void theOverlaysAreShownAndHiddenNeverGivenAnAlphaAtRunTime() throws IOException {
+        for (String document : concat(DOCUMENTS, REFERENCE)) {
+            String ui = ui(document);
+            for (HudBar bar : HudBar.values()) {
+                for (String part : new String[] {"Error", "Outline", "OutlineDim", "AlertGroup"}) {
+                    int at = ui.indexOf("#" + bar.id + part + " {");
+                    assertTrue(ui.substring(at, at + 80).contains("Visible: false;"), document + " #" + bar.id + part + " starts hidden");
+                }
+            }
+            assertEquals(4, count(ui, "Color: #ffffff(0.5)"), document + ": the dim outline is a fixed half-opaque group");
+            assertFalse(ui.contains("#ffffff(0)"), document + ": opacity 0 is done with Visible, not an alpha");
         }
     }
 

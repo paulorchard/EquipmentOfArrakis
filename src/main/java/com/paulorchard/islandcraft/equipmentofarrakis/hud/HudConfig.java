@@ -16,7 +16,6 @@ import java.util.function.Function;
  *
  * <p>Removed against the first version (its own art): BarThickness, TopOuter, BottomOuter, InnerGap, IconSize, TopIconCentre,
  * BottomIconCentre, BottomRowBottom, RowPitch (now RowGap), HealthColor and WaterColor (the vanilla fills are used untinted), FlashHz and
- * FlashTintPercent (the alert copies the vanilla low alert: AlertFlipSeconds, AlertOutlineOpacity, AlertColor).
  */
 public final class HudConfig {
 
@@ -47,8 +46,6 @@ public final class HudConfig {
     private String alertColor = "#e6004f";
     /** The vanilla @LowAlertFlashTimer: the error overlay flips this often (4 updates a second at most). */
     private double alertFlipSeconds = 0.25;
-    /** The vanilla @LowAlertOutlineOpacityStart: the outline never goes below this while alerting. */
-    private double alertOutlineOpacity = 0.5;
     private boolean flashPower = false;
     private boolean flashHealth = true;
     private boolean flashExposure = false;
@@ -149,7 +146,6 @@ public final class HudConfig {
         b = num(b, "FlashBelowPercent", (c, v) -> c.flashBelowPercent = v, c -> c.flashBelowPercent, "A bar whose switch is on turns red and flashes below this percent.");
         b = str(b, "AlertColor", (c, v) -> c.alertColor = v, c -> c.alertColor, "Fill colour while alerting (the vanilla error overlay red, brightened).");
         b = num(b, "AlertFlipSeconds", (c, v) -> c.alertFlipSeconds = v, c -> c.alertFlipSeconds, "How often the error overlay flips while alerting (the vanilla stamina low alert: 0.25).");
-        b = num(b, "AlertOutlineOpacity", (c, v) -> c.alertOutlineOpacity = v, c -> c.alertOutlineOpacity, "Opacity of the error outline in its dim phase (the vanilla stamina low alert: 0.5).");
         b = bool(b, "FlashPower", (c, v) -> c.flashPower = v, c -> c.flashPower, "Power turns red and flashes when low.");
         b = bool(b, "FlashHealth", (c, v) -> c.flashHealth = v, c -> c.flashHealth, "Health turns red and flashes when low.");
         b = bool(b, "FlashExposure", (c, v) -> c.flashExposure = v, c -> c.flashExposure, "Heat Exposure turns red and flashes when low.");
@@ -191,7 +187,6 @@ public final class HudConfig {
     public double getFlashBelowPercent() { return flashBelowPercent; }
     public String getAlertColor() { return alertColor; }
     public double getAlertFlipSeconds() { return alertFlipSeconds; }
-    public double getAlertOutlineOpacity() { return alertOutlineOpacity; }
     public double getMinPercentChange() { return minPercentChange; }
     public double getDemoSeconds() { return demoSeconds; }
     public Nudges nudges() { return nudges; }
