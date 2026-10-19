@@ -21,7 +21,7 @@ The server log only says "Crash"; the real message is in the client log, `%APPDA
    listing both keeps it. (Found through the community mod WeaponCustomHUD and a field-by-field diff of the Crude daggers against ours: categories, Ability4, `maxDurability 0` and
    `durabilityLossOnHit 0` were the only differences. The category was the first suspect; this is the change that was made, with the client result still to be confirmed in the test sheet.)
 9. **Engine behaviour found by reading bytecode:** the default `InteractionRules` make every standard input type blocked by every other while a chain runs, so an Ability4 root needs
-   `Rules {"BlockedBy": []}` to work mid-swing; a killed NPC keeps its entity for the death animation time only; a `Projectile` asset is not removed by `ModuleAssets` when a module is off; the asset pack
+   `Rules {"BlockedBy": []}` to work mid-swing; a killed NPC keeps its entity for the death animation time only in vanilla (the extractor module now stretches it to `CorpseSeconds`, see MODULES.md); a `Projectile` asset is not removed by `ModuleAssets` when a module is off; the asset pack
    loads every asset whatever the config says, and one asset whose interaction type nobody registered stops the whole boot.
 
 ## Tried and abandoned

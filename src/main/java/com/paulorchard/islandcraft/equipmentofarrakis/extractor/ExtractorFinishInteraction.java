@@ -18,7 +18,7 @@ import com.paulorchard.islandcraft.equipmentofarrakis.core.Notice;
 /**
  * Interaction type {@code Arrakis_Extractor_Finish}: last in the Blood Extractor Primary chain, after the poke. Only reached when the
  * poke ran to its end: lets the crouch go and adds {@code BloodPerBody} blood to the first Blood Bag with room. The corpse stays
- * used.
+ * used, and goes in {@code ExtractedSeconds} (the blood really added is what shortens its timer; a refusal or a full bag leaves the timer alone).
  */
 public class ExtractorFinishInteraction extends SimpleInstantInteraction {
 
@@ -51,6 +51,9 @@ public class ExtractorFinishInteraction extends SimpleInstantInteraction {
         int added = bag == null ? 0 : ContainerInventory.addToFirst(buffer, ref, bag, pending.blood());
         if (added <= 0) {
             Notice.say(player, "server.arrakis.extractor.bagsFull");
+            return;
         }
+        // The blood is in the bag: the body vanishes promptly (a body that is already gone is skipped).
+        Corpses.quickRemoval(buffer, pending.corpse());
     }
 }

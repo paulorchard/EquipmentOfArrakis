@@ -39,6 +39,7 @@ public class EquipmentOfArrakisConfig {
     private CatalogConfig catalog = new CatalogConfig();
     private LitrejonConfig litrejon = new LitrejonConfig();
     private BloodBagConfig bloodbag = new BloodBagConfig();
+    private com.paulorchard.islandcraft.equipmentofarrakis.extractor.ExtractorConfig extractor = new com.paulorchard.islandcraft.equipmentofarrakis.extractor.ExtractorConfig();
     private LightConfig light = new LightConfig();
     private ShieldConfig shield = new ShieldConfig();
     private com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsConfig weapons = new com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsConfig();
@@ -69,6 +70,10 @@ public class EquipmentOfArrakisConfig {
         return bloodbag;
     }
 
+    public com.paulorchard.islandcraft.equipmentofarrakis.extractor.ExtractorConfig extractor() {
+        return extractor;
+    }
+
     public LightConfig light() {
         return light;
     }
@@ -94,6 +99,7 @@ public class EquipmentOfArrakisConfig {
             case "catalog" -> catalog;
             case "litrejon" -> litrejon;
             case "bloodbag" -> bloodbag;
+            case "extractor" -> extractor;
             case "light" -> light;
             case "shield" -> shield;
             case "weapons" -> weapons;
@@ -122,6 +128,9 @@ public class EquipmentOfArrakisConfig {
             .add()
             .append(new KeyedCodec<>("Bloodbag", BloodBagConfig.CODEC, false), (c, v) -> c.bloodbag = v, c -> c.bloodbag)
             .documentation("Settings of the bloodbag module.")
+            .add()
+            .append(new KeyedCodec<>("Extractor", com.paulorchard.islandcraft.equipmentofarrakis.extractor.ExtractorConfig.CODEC, false), (c, v) -> c.extractor = v, c -> c.extractor)
+            .documentation("Settings of the extractor module (how long the bodies of killed mobs stay).")
             .add()
             .append(new KeyedCodec<>("Light", LightConfig.CODEC, false), (c, v) -> c.light = v, c -> c.light)
             .documentation("Settings of the light module (Personal Light).")

@@ -32,6 +32,7 @@ Labels used: **confirmed** (a headless boot, a unit test, javap), **inferred** (
 | `power get` / `set` / `add` / `fill` / `spend` / `max` / `modifier add|remove|list` / `selftest` | the Mana stat (each takes an optional player last) |
 | `shield state` / `hit <n>` / `shot` / `cooldown [s]` | the Holtzman field |
 | `blood add <n>` / `corpse` | fills the first Blood Bag; spawns and kills a cow two blocks ahead |
+| `blood corpses` / `corpses clear` | the extended bodies (total, your chunk, busiest chunk, seconds left, cut by the cap); makes them all vanish |
 | `light on` / `off` / `state` | Personal Light |
 | `hud on` / `off` / `state` / `demo <bar> <percent>` / `component hide|show <Name>|reset` | the four bars |
 | `hud lb|rb|lt|rt [x[,] y]` / `... reset` / `hud nudge reset` | nudge a bar (lb Health, rb Water, lt Power, rt Heat Exposure) |
@@ -99,6 +100,16 @@ click held), 1 Mana per second while compacting, stops at 0 (creative never), ra
   aim; already used; no bag; all bags full. No Mana. A corpse is a non-player entity with a `DeathComponent` (and an `NPCEntity`, data `RequireNpc`); found with `getAllEntitiesInSphere` then a ray
   test (`CorpseAim.pick`: `Range` 2.5, `AimRadius` 0.9, `AimHeight` 0.5). One body, one use (a runtime set of claimed refs). The gate forces the crouch through the server `MovementStatesComponent`
   (data `ForceCrouch`; fallback `RequireCrouched`). The finish gives `BloodPerBody` 10. **Needs a client:** whether the owner's client fights the forced crouch.
+- **Long-lived bodies** (same module, config section `Extractor`: `CorpseSeconds` 120, `ExtractedSeconds` 1, `MaxCorpsesPerChunk` 5, `ExcludedRoles` []). The engine's `NPCSystems.OnDeathSystem` adds a
+  `DeferredCorpseRemoval(death animation time, deathParticles)` to a killed NPC; `CorpseTimerSystem` (a `RefChangeSystem` on that component, so it always runs after the engine's) replaces it with one of
+  `CorpseSeconds` and the same particles. `DeathSystems.TickCorpseRemoval` counts it down and `CorpseRemoval` removes the entity, so loot, experience, kill feed and the death effect are untouched.
+  The corpse rule is the one `CorpseAim.isCorpse` the Extractor uses; players are not in the query; a role on `ExcludedRoles` (case-insensitive, `NPCEntity.getRoleName()`) keeps the vanilla timer;
+  `CorpseSeconds` 0 or less switches the extending off. `Corpses.LEDGER` (`CorpseLedger`) remembers every body handled, so the replacement is never extended again, counts bodies per chunk column
+  (`ChunkUtil.indexChunkFromBlock`) and cuts the oldest of a chunk to `ExtractedSeconds` when it would hold more than the cap; refs of removed entities are pruned; nothing is saved. Bodies on a chunk
+  border can add up to 5 in each neighbouring chunk; there is no server-wide cap. A finished draw (blood really added) sets the body to `ExtractedSeconds`; a refused or cut-short poke leaves its timer.
+  A mob whose role has death animation time 0 gets no timer from the engine and is removed at once as before. `/arrakis blood corpse` kills through `DeathComponent.tryAddComponent`, the normal path.
+  `blood corpses` prints total, your chunk, busiest chunk, seconds left (nearest ten) and the number cut by the cap; `blood corpses clear` gives every extended body the quick removal.
+  **Needs a client:** whether the body holds its death pose for the 120 seconds (see the death pose note in the test sheet).
 
 ## placeholders and light
 
@@ -165,7 +176,12 @@ world change and death. Settings (`Shield`): `EffectId`, `ImpactEffectId`, `Mana
 7. **Dew Harvester:** on a Primrose with a LitreJon with room: a swing a second, +10 water in the flask, -10 Mana, Primrose and your own water unchanged; no Mana, no flask, full flask or another block: no
    swing and a message.
 8. **Blood Extractor:** `/arrakis blood corpse`, left click within 2.5: crouch (do you and others see it?), the jab, +10 blood in the first bag; the same corpse again: refused; no bag or full bags: refused
-   with no animation; no Mana spent. `/arrakis blood add 495` fills a bag to 500.
+   with no animation; no Mana spent. `/arrakis blood add 495` fills a bag to 500. The body vanishes about a second after the draw, with the vanilla death effect; an interrupted poke leaves
+    it with its remaining time and usable.
+    **Bodies (18):** kill a cow, a skeleton and a goblin: each body stays about two minutes, then goes with the death effect. **What does it look like for those two minutes** (lying in its death
+    pose, standing up again, gone)? Loot and drops come at death; the body does not attack, move or block. Kill 10 mobs in one spot: the newest five in that chunk stay, the older go in about a
+    second; another chunk is unaffected; `blood corpses` shows the numbers, `corpses clear` removes them. A player's death and respawn work as before; an excluded role disappears with the vanilla
+    timer; nothing is left after a restart.
 9. **Weapons:** melee swings with the same damage for all four houses, vanilla guard and bash, the signature move still works, no durability bar. Maula Pistol and Dartgun: one click one dart, at most 3 a
    second, 1 damage, nothing past 40 blocks, smoke only, no ammo or Mana. **Holding any Arrakis weapon shows the vanilla ability HUD on the right** (the Items.Weapons category).
 10. **H key** on each of the ten weapons and seven tools: the shield toggles (field, hum, chat line "Holtzman Shield: ON"), the picker page shows the same state; H during a swing or a shot toggles without
