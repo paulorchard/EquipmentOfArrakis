@@ -1,0 +1,21 @@
+{
+  "$Comment": "The standing Thumper: the vanilla Temple Emerald torch model and texture, re-encoded with nothing changed (tools/assets/thumper/make_model.js; a byte-identical copy would count as a Duplicated Asset): a model asset may only point under Items/, Characters/, NPC/ or VFX/, so the Blocks/ path cannot be used here. The model has no geometry on its Flame node (the flame of the vanilla torch is a particle on that node), and this asset has no Particles and no Light. MinScale and MaxScale are the visual size: 1.0 is the size of the placed vanilla torch block (its item has no CustomModelScale).",
+  "Model": "Items/Equipment_of_Arrakis/Thumper/Arrakis_Thumper.blockymodel",
+  "Texture": "Items/Equipment_of_Arrakis/Thumper/Arrakis_Thumper_Texture.png",
+  "EyeHeight": 0.5,
+  "CrouchOffset": 0.0,
+  "MinScale": 1.0,
+  "MaxScale": 1.0,
+  "HitBox": {
+    "Max": {
+      "X": 0.1,
+      "Y": 0.9,
+      "Z": 0.1
+    },
+    "Min": {
+      "X": -0.1,
+      "Y": 0,
+      "Z": -0.1
+    }
+  }
+}

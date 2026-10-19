@@ -24,6 +24,12 @@ The server log only says "Crash"; the real message is in the client log, `%APPDA
    `Rules {"BlockedBy": []}` to work mid-swing; a killed NPC keeps its entity for the death animation time only in vanilla (the extractor module now stretches it to `CorpseSeconds`, see MODULES.md); a `Projectile` asset is not removed by `ModuleAssets` when a module is off; the asset pack
    loads every asset whatever the config says, and one asset whose interaction type nobody registered stops the whole boot.
 
+10. **Asset validator rules found while building the Thumper (0.7.0):** a `Server/Models` asset (the model of an entity) may only point at `Characters/, NPC/, Items/, VFX/` ("must be within the root"; the
+    torch model is under `Blocks/`, so the standing Thumper has a re-encoded copy); an item `Icon` must be under `Icons/Items/` or `Icons/ItemsGenerated/`. A sound event's `Volume` (dB) and `Pitch`
+    (semitones) are kept by the loaded asset as a gain and a ratio, so writing the config values over it needs the conversion (10^(dB/20), 2^(semitones/12)); the first version wrote the raw numbers.
+    A deployable config with `LiveDuration` 0 has no despawn timer, `MaxLiveCount` removes the oldest instead of refusing a new one, and `HitboxCollision` exists only when a
+    `HitboxCollisionConfig` is named.
+
 ## Tried and abandoned
 
 - **Flame Cutter and Flame Beam Cutter (the experiments module).** A flamethrower-style tool and a beam tool with a calibration rig (about 17 `exp cal` commands, particles, a measured angle unit) to place a

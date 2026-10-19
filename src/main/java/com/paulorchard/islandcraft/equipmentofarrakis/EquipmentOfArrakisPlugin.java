@@ -77,6 +77,7 @@ public class EquipmentOfArrakisPlugin extends JavaPlugin {
                 new LightModule(),
                 new ShieldModule(this),
                 new com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsModule(this),
+                new com.paulorchard.islandcraft.equipmentofarrakis.thumper.ThumperModule(this),
                 new com.paulorchard.islandcraft.equipmentofarrakis.hud.HudModule());
         modules.setupAll(all, settings.enabledModules(), context);
         getCommandRegistry().registerCommand(root.command());

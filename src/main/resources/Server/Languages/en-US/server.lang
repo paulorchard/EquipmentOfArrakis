@@ -135,3 +135,14 @@ commands.arrakis.hud.state.desc = Hidden components, the four values, the flash 
 commands.arrakis.hud.demo.desc = Pins a bar to a percent for a few seconds: arrakis hud demo <power|health|exposure|water> <percent>
 commands.arrakis.hud.component.desc = Development: hide, show or reset one vanilla HUD part for you: arrakis hud component hide|show <Name> | reset
 
+
+# ---- thumper
+commands.arrakis.thumper.desc = The Thumper: give, state, clear
+commands.arrakis.thumper.give.desc = Give Thumpers (default 4; the hotbar if there is room, else the inventory): arrakis thumper give [count]
+commands.arrakis.thumper.state.desc = Show the standing Thumpers (owner, position, age, beat timer), the Worms link and the sand blocks in use
+commands.arrakis.thumper.clear.desc = Remove every standing Thumper (for testing)
+items.Arrakis_Thumper.name = Thumper
+items.Arrakis_Thumper.description = Plant it in the sand. It thumps, and the worm comes for it.
+arrakis.thumper.notSand = A Thumper needs sand under your feet.
+arrakis.thumper.limit = You have as many Thumpers out as you may.
+arrakis.thumper.noRoom = There is no room to plant it here.

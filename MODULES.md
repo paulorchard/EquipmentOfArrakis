@@ -15,8 +15,10 @@ Labels used: **confirmed** (a headless boot, a unit test, javap), **inferred** (
   `AlertColor`, `ItemName*`) is ignored when read and dropped the next time the file is saved. A module id in `Modules` that is unknown is ignored.
 - Never edited: the Water of Arrakis mod and any vanilla asset. Vanilla art, models, sounds and animations are referenced by path; the only art shipped is ours, plus the derived and re-encoded
   copies under `Common/UI/Custom/Hud/Equipment_of_Arrakis/Hud/VanillaDerived/` (the documented exception, see `hud`).
+- Documented exceptions to "vanilla by path": the HUD `VanillaDerived/` images, the Thumper icon (the flame taken out) and the re-encoded torch model and texture under `Common/Items/Equipment_of_Arrakis/Thumper/`
+  (see `thumper`). Nothing else ships a vanilla asset.
 - `core.water` (`WaterApi`, `WaterBridge`, `WaterLink`) is the optional link to the Water mod: compiled against its jar (`compileOnly`, never packed; `-PwaterJar=` points at another copy), new methods
-  found by reflection. The manifest lists Water as an optional dependency.
+  found by reflection. The manifest lists Water as an optional dependency. `core.worms` is the same for Worms of Arrakis (the Thumper registers itself as a totem; see `thumper`; `-PwormsJar=`).
 - Test tooling: `tools/headless/run.sh "wait 30" "arrakis modules" ...` boots the server with this jar and types console commands; `/arrakis selfcheck` re-runs every module's checks and prints them
   (`PROBLEM` marks a failure). The generators are `tools/assets/weapons/make_weapons.js` and `tools/assets/hud/make_hud.js`.
 
@@ -33,6 +35,7 @@ Labels used: **confirmed** (a headless boot, a unit test, javap), **inferred** (
 | `shield state` / `hit <n>` / `shot` / `cooldown [s]` | the Holtzman field |
 | `blood add <n>` / `corpse [role]` | fills the first Blood Bag; spawns a mob (default Cow) two blocks ahead and kills it a second later |
 | `blood corpses` / `corpses clear` | the extended bodies (total, your chunk, busiest chunk, seconds left, cut by the cap, and the nearest five with their Status animation); makes them all vanish |
+| `thumper give [n]` / `state` / `clear` | Thumpers into the inventory (default 4); the standing Thumpers, the Worms link and the sand set; removes them all |
 | `light on` / `off` / `state` | Personal Light |
 | `hud on` / `off` / `state` / `demo <bar> <percent>` / `component hide|show <Name>|reset` | the four bars |
 | `hud lb|rb|lt|rt [x[,] y]` / `... reset` / `hud nudge reset` | nudge a bar (lb Health, rb Water, lt Power, rt Heat Exposure) |
@@ -151,6 +154,72 @@ world change and death. Settings (`Shield`): `EffectId`, `ImpactEffectId`, `Mana
 - **Categories:** `["Items.Weapons", "IslandCraft.Weapons"]`. `Items.Weapons` is what makes the client draw the vanilla weapon ability HUD (see `ARCHIVE.md`); the weapons also appear in the vanilla Weapons tab.
 - Firing a dart drops the Holtzman field like any projectile; a melee swing never does.
 
+## thumper (Thumper)
+
+- **What it is.** `Arrakis_Thumper` (IslandCraft tab, Tools; `/arrakis thumper give [n]`): a consumable, MaxStack 16, no recipe, no durability, not a picker tool. Right click on sand plants an invulnerable
+  deployable (`Arrakis_Thumper`) at the player's feet that thumps softly until something removes it. The Worms of Arrakis mod already treats a registered deployable id as a totem (aggro, the 10 s stalk,
+  the breach that removes it); this module registers the id there (see the Worms link below) and owns nothing of that: the aggro numbers (`TotemStartAggro`, `TotemAggroPerSecond`), the ripple
+  and the sand disturbance stay in Worms.
+- **The item (look).** The vanilla Temple Emerald torch by path: `PlayerAnimationsId Torch`, `Primary Root_Unarmed_Attack_Swing_Left`, the vanilla swing interaction vars, the same icon properties.
+  Because the vanilla torch is a block item whose held model comes from its BlockType, ours carries a `BlockType` with the same `CustomModel` / `CustomModelTexture` (draw type Model, hitbox
+  Torch) and nothing else: no Light, no Particles (the green flame is the particle `Torch_Fire_Green` on the Flame node; the model has no geometry there), no Support rules, no State or Use
+  interaction, no ambient sound. Its Secondary is `Arrakis_Thumper_Secondary`, not `Block_Secondary`, so it is never placed as a torch block. **Not seen on a client:** that this gives the same held
+  pose and model as the vanilla torch. The torch model's root node is `L-Attachment` and the Torch animation clips live under `Off_Handed/Torch/`, so the vanilla torch is held in the left hand by
+  the animation set; ours uses the same set, so no `R-Attachment` node should be needed and no copy of the held model was made. If the hand shows nothing, the alternative is `Model` /
+  `Texture` on the item instead of a BlockType (what the Blood Extractor does with the pistol). The vanilla icon shows the lit torch, so the icon is derived (below).
+- **The chain.** `Arrakis_Thumper_Secondary` (RequireNewClick, 0.5 s cooldown): `Arrakis_Thumper_Gate` (our interaction type; refuses with a chat line and nothing consumed unless the block under the
+  feet is sand, the player has fewer than `MaxLivePerPlayer` Thumpers, and the feet are not inside a solid block), `Arrakis_Thumper_Place` (the vanilla `SpawnDeployableAtLocation`),
+  `Arrakis_Thumper_Consume` (the vanilla `ModifyInventory`, RequiredGameMode Adventure, AdjustHeldItemQuantity -1: nothing is used up in creative, the same test as `Power.isCreative`).
+- **Placement: why SpawnDeployableAtLocation.** Read from the bytecode of the interaction: with `OriginSource Entity` the position is the entity's own `TransformComponent` position (the feet) plus
+  `Offset`; a zero Offset is exactly "at my feet", and no ray has to hit the ground (the raycast variant would need a ground hit within about a block and can miss on a slope or when the player
+  stands in a depression). The spawn face is "UP". **Owner:** the interaction passes `getOwningEntity()` (the entity itself if there is none) to `DeployablesUtils.spawnDeployable`, and
+  `DeployableComponent.init` stores that ref and the owner's `UUIDComponent` uuid, so `getOwnerUUID()` (what Worms reads) is the placing player. Confirmed by bytecode, not yet by a Worms run.
+- **The deployable.** A `Type Aoe` config inline in `Arrakis_Thumper_Place`: Id `Arrakis_Thumper`, DamageAmount 0 (the engine skips damage at 0 or less; it still looks for entities in a 0.1 radius
+  every `DamageInterval`, set to 5 s), no effects, no particles, no sounds, Invulnerable true (the engine adds the `Invulnerable` component), model `Arrakis_Thumper`.
+  **Collision:** the engine adds a `HitboxCollision` component only when the config names a `HitboxCollisionConfig`; ours names none (the vanilla totems use `HardCollision`), so it cannot block or
+  push the player. **LiveDuration:** the engine adds a despawn timer only when `liveDuration x 1000 > 0`, so `0 is forever` (no huge number needed). **MaxLiveCount:** the engine does not refuse a
+  fourth; it removes the oldest, so the limit is enforced in the gate and the JSON value is overwritten at boot from `MaxLivePerPlayer` (and the live duration from `MaxLiveSeconds`; `ThumperSetup`,
+  reflection, the same method as the Extractor poke).
+- **The look of the standing Thumper.** Model asset `Server/Models/Equipment_of_Arrakis/Thumper/Arrakis_Thumper.json`, MinScale = MaxScale = 1.0. The prompt said the placed torch block uses
+  `CustomModelScale 0.6`; the vanilla item JSON has no such key (its `Scale 1.4` is the held and dropped size, and 0.6 is the scale of the flame particle), so 1.0 is the size of the placed block.
+  Change `MinScale/MaxScale` in that file if the standing torch looks wrong. **Not seen on a client** (size, and that the model stands upright as an entity).
+- **The beat.** `ThumperSystem` (an entity-ticking system over deployables) moves one `BeatClock` per Thumper (a map by uuid in `ThumperBook`, pruned two seconds after the entity stops ticking, nothing
+  saved) and, for each hit due, plays `SFX_Arrakis_Thumper_Thump` with `SoundUtil.playSoundEvent3d(index, SFX, position, accessor)` on the world thread: one world sound at the Thumper, every player in range
+  hears it with the event's falloff (nothing is sent to players far away). A beat is `BeatSeconds` (1.0) long: a hit at its start, a second hit `DoubleThumpGapSeconds` (0.25) later, then a rest; a
+  gap of 0 or less is a single hit. The first beat is at the first tick after the placement. A long pause (lag, an unloaded chunk) gives at most one beat, never a burst.
+- **The sound.** The vanilla clip `Sounds/PlayerActions/Footsteps/Block_Steps/Walk_Sand_01.ogg` by path (the one picked in the audition). **Units**, read from the codec and confirmed by the self-check on
+  the first boot: the event's `Pitch` is in **semitones** (range -12 to 12) and its `Volume` in **decibels** (-100 to 10); the loaded event stores them as a playback-rate ratio and a gain (-6 became
+  0.7071, +3 became 1.4125, so the audition's rate of 0.7 is -6 semitones). A layer has its own `Volume` (dB) and only a *random* pitch offset (`RandomSettings MinPitch/MaxPitch`), so a fixed pitch is
+  set on the event. `Parent SFX_Attn_Loud`: full volume to 15 blocks, silent at 45. `MaxInstance` 16, `PreventSoundInterruption` true. The defaults are in the JSON (-6, +3); `ThumpPitchSemitones`
+  and `ThumpVolumeDb` in the config are converted and written over the loaded event at boot. AudioCategory is `AudioCat_SFX` (the category of the attenuation parents; the other Arrakis events use
+  `AudioCat_Weapons`, which is the wrong slider for a footstep). **Not heard yet:** how it compares with the audition.
+- **The Worms link** (`core.worms`: `WormsApi`, `WormsBridge`, `WormsLink`, the same shape as `core.water`). Compiled against the Worms jar (`compileOnly`, never packed; `-PwormsJar=` points at
+  another copy; default `../WormsOfArrakis/build/libs/IslandCraft-WormsOfArrakis-0.1.0.jar`); the manifest lists `IslandCraft:IslandCraft - Worms of Arrakis` as optional (the plugin name is the manifest name;
+  the Worms javadoc writes `WormsOfArrakis`, so both are looked up) and `Hytale:Deployables` as required (the interaction type of the placement). The bridge is the only class naming Worms classes and is
+  loaded only after the plugin is found, inside a handler for linkage errors. **Load order:** nothing is assumed. The module registers `Arrakis_Thumper` with `WormAggro.registerTotem` in `start()`, at
+  `BootEvent` and every 5 seconds after (a scheduled check that looks the plugin up again); if the plugin instance changed (Worms reloaded) the link is rebuilt, and an id missing from `totemIds()` is
+  registered again. The log says what changed ("registered Arrakis_Thumper as a totem; Worms reports [...]"). `stop()` unregisters. Without Worms the log says once that the Thumper places, thumps and
+  stands. Headless result: with the Worms jar, "registered ... Worms reports [Arrakis_Thumper, Healing_Totem, Slowness_Totem]"; without, the single line and no error.
+- **The sand set.** Worms uses `SandBlocksOverride` if set, else `Arrakis_Sand` when Dunes of Arrakis is installed, else the four vanilla sands (`Soil_Sand, Soil_Sand_Ashen, Soil_Sand_Red,
+  Soil_Sand_White`); it checks the first non-air block at or below the feet by `SandTolerance` (1.0: two blocks). Worms has no API for the set, so: `SandBlocks` in the Thumper config if not empty, else
+  the ids Worms itself reports (its package-private `sandBlockIds()` read by reflection when Worms is linked: the override is then matched exactly), else the same default as Worms. The gate looks at the
+  two blocks under the feet the same way. It does not reuse the Compactor's rule (that one excludes Arrakis_Sand). Headless: with Worms the set was read from Worms (four ids), without it the vanilla four.
+- **Derived art (documented exceptions to "vanilla by path").** (1) `Common/Icons/Items/Equipment_of_Arrakis/Arrakis_Thumper.png`, made by `tools/assets/thumper/make_icon.js` from the vanilla icon
+  `Furniture_Temple_Emerald_Torch.png`: no unlit icon of this torch exists, so the flame (saturated green, yellow-green and yellow pixels, hue 53 to 170 degrees and saturation 0.45 or more, plus the
+  almost white core touching them) is removed, the space above the cup is transparent and the hole in the bowl is filled with the darkest stone pixel below it. 181 flame pixels removed, 34 filled; no
+  green or yellow pixel is left (a unit test checks it). It reads as the stone torch with an empty dark bowl. An item icon must live under `Icons/Items/` or `Icons/ItemsGenerated/` (the asset
+  validator says so), hence the path. (2) `Common/Items/Equipment_of_Arrakis/Thumper/Arrakis_Thumper.blockymodel` and `Arrakis_Thumper_Texture.png`, made by `tools/assets/thumper/make_model.js`: the vanilla
+  torch model and texture, re-encoded with nothing changed (the model as compact JSON, the texture as the same pixels written again; a byte-identical copy would be a "Duplicated Asset", ARCHIVE rule 7).
+  A model asset (`Server/Models`) may only point under `Characters/, NPC/, Items/` or `VFX/`, and the torch is under `Blocks/Decorative_Sets/`, so the standing entity cannot use the vanilla path
+  (the held item can, and does). The vanilla file `Items/Torch/Torch.blockymodel` is a different (wooden) torch.
+- **Not built:** the Thumper is not removed at the end of a worm event (Worms removes one that is swallowed; one left standing when an event ends some other way stays, which is accepted for now);
+  `MaxLiveSeconds` (default 0 = off) is the safety net for a server that wants dead Thumpers to expire.
+- **Commands:** `/arrakis thumper give [n]` (default 4), `state` (the standing Thumpers: owner, position, age, beat timer; the Worms link and the totem ids it reports; the sand blocks in use),
+  `clear` (removes them all). **Settings (`Thumper`):** `MaxLivePerPlayer` 3, `SandBlocks` [] (Worms' set), `BeatSeconds` 1.0, `DoubleThumpGapSeconds` 0.25, `ThumpPitchSemitones` -6,
+  `ThumpVolumeDb` 3, `MaxLiveSeconds` 0. **An old config file** has a `Modules` list without `"thumper"`, so the module is off until that word is added (or the file is deleted to be written again).
+- **Checked here (no client, no player):** the build and 204 tests; the headless boot without the Worms jar and with it, and with the module switched off ("removed 7 of its assets"): no PROBLEM line, no asset
+  error, the Duplicated Asset count unchanged. Not testable headless (a player is needed to place, entities land in unloaded chunks): the placement, the beat, the sound and the worm.
+
 ## hud (the four bars)
 
 - Two rows above the hotbar: Power (teal, bolt) over Health on the left, Heat Exposure over Water on the right. The vanilla Health and Mana parts are hidden through `HudManager.hideHudComponents`
@@ -211,4 +280,7 @@ world change and death. Settings (`Shield`): `EffectId`, `ImpactEffectId`, `Mana
     player sees them at once; a left bar stops at the middle of the screen.
 16. **Water on and off:** Heat Exposure and Water follow the Water mod; with `hud off` the vanilla bars and the Water bars come back; `hud on` reverses it; without Water only the left half shows and the
     log has no error. Resize the window and change resolution: the bars keep their place over the hotbar.
-17. **The old test world** (`Arrakis Equipment Test`) with its old config file: it loads, everything above works, and the file is rewritten without the removed keys.
+17. **The old test world** (`Arrakis Equipment Test`) with its old config file: it loads, everything above works, and the file is rewritten without the removed keys. Add `"thumper"` to its `Modules` for 18 to 20.
+18. **Thumper item:** `/arrakis thumper give`: it is in the IslandCraft tab (Tools) with the unlit icon (stone torch, empty dark bowl, no flame). In the hand: the vanilla torch model, no flame, no light, held and swung like the vanilla torch (compare with `Furniture_Temple_Emerald_Torch` from the creative menu). If the hand is empty or wrong, see the item notes in `thumper` (BlockType vs Model).
+19. **Thumper placement:** on sand, right click: a Thumper stands at your feet (stone torch, no flame, no light, the size of a placed torch), one item is used up (not in creative), and you can walk through and away from it. On rock, dirt or in the air, and inside a block: refused with a message, the item kept. A fourth Thumper (three standing) is refused; clicking fast does not slip a fourth past. It cannot be broken by hand, weapon or mob.
+20. **Thumper beat and worm:** thump-thump, a rest, thump-thump every second, audible from tens of blocks and quieter with distance (silent past about 45); several Thumpers do not cut each other off; compare the sound with the audition (half an octave down, louder). Relog, death and a world change leave no beat sound and no stuck state; `/arrakis thumper clear` stops it at once. With Worms of Arrakis and the Thumper on sand: within about 10 seconds a worm event starts around it and the worm breaches at the Thumper, which is gone; the owner standing on sand nearby gets the pulses; a Thumper placed during a stalk makes the worm come for it. Without Worms: it places, thumps and stands.

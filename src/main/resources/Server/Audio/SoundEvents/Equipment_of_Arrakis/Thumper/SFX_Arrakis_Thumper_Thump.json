@@ -1,0 +1,18 @@
+{
+  "$Comment": "One hit of the Thumper beat: the vanilla soft footstep on sand (Walk_Sand_01, 16 KB) by path, half an octave down and louder. Units: Pitch is semitones (-12 to 12), Volume is decibels (-100 to 10), both on the event; ThumpPitchSemitones and ThumpVolumeDb in the Thumper config are written over them at server start. Heard in a ball with a falloff from SFX_Attn_Loud (full volume to 15 blocks, silent at 45); the Thumper system plays one world sound per hit at the Thumper, so everyone nearby hears it. MaxInstance leaves room for several Thumpers.",
+  "AudioCategory": "AudioCat_SFX",
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/PlayerActions/Footsteps/Block_Steps/Walk_Sand_01.ogg"
+      ],
+      "StartDelay": 0,
+      "Volume": 0
+    }
+  ],
+  "Volume": 3,
+  "Pitch": -6,
+  "MaxInstance": 16,
+  "PreventSoundInterruption": true,
+  "Parent": "SFX_Attn_Loud"
+}

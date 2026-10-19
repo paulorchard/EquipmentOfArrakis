@@ -1,0 +1,6 @@
+{
+  "$Comment": "Last in the Thumper Secondary chain: uses one Thumper up. The vanilla ModifyInventory with RequiredGameMode Adventure does nothing in creative (the same test Power.isCreative makes: the player game mode is Creative).",
+  "Type": "ModifyInventory",
+  "RequiredGameMode": "Adventure",
+  "AdjustHeldItemQuantity": -1
+}

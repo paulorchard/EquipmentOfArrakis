@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  *
  * <pre>
  * {
- *   "Modules": ["core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor", "placeholders", "light", "shield", "weapons", "hud"],
+ *   "Modules": ["core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor", "placeholders", "light", "shield", "weapons", "thumper", "hud"],
  *   "Core": { "LogSelfCheckAtBoot": true },
  *   "Power": { "LogStatDefinition": true },
  *   "Catalog": { }
@@ -33,7 +33,7 @@ public class EquipmentOfArrakisConfig {
 
     public static final String FILE_NAME = "Equipment_of_Arrakis";
 
-    private String[] modules = {"core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor", "placeholders", "light", "shield", "weapons", "hud"};
+    private String[] modules = {"core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor", "placeholders", "light", "shield", "weapons", "thumper", "hud"};
     private CoreConfig core = new CoreConfig();
     private PowerConfig power = new PowerConfig();
     private CatalogConfig catalog = new CatalogConfig();
@@ -43,6 +43,7 @@ public class EquipmentOfArrakisConfig {
     private LightConfig light = new LightConfig();
     private ShieldConfig shield = new ShieldConfig();
     private com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsConfig weapons = new com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsConfig();
+    private com.paulorchard.islandcraft.equipmentofarrakis.thumper.ThumperConfig thumper = new com.paulorchard.islandcraft.equipmentofarrakis.thumper.ThumperConfig();
     private com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig hud = new com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig();
 
     /** The ids of the modules to load, lower case. The core module is always loaded whatever this says. */
@@ -86,6 +87,10 @@ public class EquipmentOfArrakisConfig {
         return weapons;
     }
 
+    public com.paulorchard.islandcraft.equipmentofarrakis.thumper.ThumperConfig thumper() {
+        return thumper;
+    }
+
     public com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig hud() {
         return hud;
     }
@@ -103,6 +108,7 @@ public class EquipmentOfArrakisConfig {
             case "light" -> light;
             case "shield" -> shield;
             case "weapons" -> weapons;
+            case "thumper" -> thumper;
             case "hud" -> hud;
             default -> null;
         };
@@ -140,6 +146,9 @@ public class EquipmentOfArrakisConfig {
             .add()
             .append(new KeyedCodec<>("Weapons", com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsConfig.CODEC, false), (c, v) -> c.weapons = v, c -> c.weapons)
             .documentation("Settings of the weapons module (dart range).")
+            .add()
+            .append(new KeyedCodec<>("Thumper", com.paulorchard.islandcraft.equipmentofarrakis.thumper.ThumperConfig.CODEC, false), (c, v) -> c.thumper = v, c -> c.thumper)
+            .documentation("Settings of the thumper module (the sand-planted beat that draws the worm).")
             .add()
             .append(new KeyedCodec<>("Hud", com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig.CODEC, false), (c, v) -> c.hud = v, c -> c.hud)
             .documentation("Settings of the hud module (the four bars above the hotbar).")

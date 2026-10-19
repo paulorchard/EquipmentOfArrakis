@@ -1,0 +1,4 @@
+{
+  "$Comment": "First in the Thumper Secondary chain. Refuses (chain failed: nothing placed, nothing consumed, a short message) unless the block under the feet is sand (the set Worms of Arrakis uses, or SandBlocks in the Thumper config), the player has fewer than MaxLivePerPlayer Thumpers standing and the feet are not inside a solid block.",
+  "Type": "Arrakis_Thumper_Gate"
+}

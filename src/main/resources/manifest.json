@@ -2,7 +2,7 @@
   "Group": "IslandCraft",
   "Name": "IslandCraft - Equipment of Arrakis",
   "Version": "0.3.0",
-  "Description": "Equipment for survival on Arrakis, built as small modules on the vanilla Mana stat: a tool picker and tools (Cutter Ray, Compactor, LitreJon, Dew Harvester, Blood Extractor, Blood Bag), ten weapons, the Holtzman shield on the H key, Personal Light and a four-bar HUD.",
+  "Description": "Equipment for survival on Arrakis, built as small modules on the vanilla Mana stat: a tool picker and tools (Cutter Ray, Compactor, LitreJon, Dew Harvester, Blood Extractor, Blood Bag), ten weapons, the Thumper, the Holtzman shield on the H key, Personal Light and a four-bar HUD.",
   "Authors": [
     {
       "Name": "paulo"
@@ -11,10 +11,12 @@
   "ServerVersion": "*",
   "Main": "com.paulorchard.islandcraft.equipmentofarrakis.EquipmentOfArrakisPlugin",
   "Dependencies": {
-    "Hytale:EntityModule": "*"
+    "Hytale:EntityModule": "*",
+    "Hytale:Deployables": "*"
   },
   "OptionalDependencies": {
-    "IslandCraft:IslandCraft - Water of Arrakis": "*"
+    "IslandCraft:IslandCraft - Water of Arrakis": "*",
+    "IslandCraft:IslandCraft - Worms of Arrakis": "*"
   },
   "DisabledByDefault": false,
   "IncludesAssetPack": true

@@ -1,0 +1,62 @@
+{
+  "$Comment": "The Thumper: a consumable. The vanilla Temple Emerald torch by path (block model and texture through a BlockType, the animation set Torch, the swing), without its Light and its flame particle. Right click (Arrakis_Thumper_Secondary) places a deployable at the feet on sand and uses one up (not in creative); it is never placed as a block: Secondary is not Block_Secondary and there are no Support rules. No recipe, no durability. The icon is derived from the vanilla one (the flame taken out, tools/assets/thumper/make_icon.js).",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Thumper.name",
+    "Description": "server.items.Arrakis_Thumper.description"
+  },
+  "Categories": [
+    "IslandCraft.Tools"
+  ],
+  "PlayerAnimationsId": "Torch",
+  "Icon": "Icons/Items/Equipment_of_Arrakis/Arrakis_Thumper.png",
+  "IconProperties": {
+    "Rotation": [
+      22.5,
+      45,
+      21.375
+    ],
+    "Scale": 0.6,
+    "Translation": [
+      0,
+      -15.6
+    ]
+  },
+  "InteractionConfig": {
+    "Priorities": {
+      "Secondary": {
+        "MainHand": 1,
+        "OffHand": -1
+      }
+    }
+  },
+  "Interactions": {
+    "Primary": "Root_Unarmed_Attack_Swing_Left",
+    "Secondary": "Arrakis_Thumper_Secondary"
+  },
+  "InteractionVars": {
+    "Torch_Swing_Left_Effect": "Torch_Swing_Left_Effect",
+    "Torch_Swing_Right_Effect": "Torch_Swing_Right_Effect",
+    "Torch_Swing_Left_Damage": "Torch_Swing_Left_Damage",
+    "Torch_Swing_Right_Damage": "Torch_Swing_Right_Damage"
+  },
+  "BlockType": {
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Blocks/Decorative_Sets/Temple_Emerald/Torch.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Weight": 1,
+        "Texture": "Blocks/Decorative_Sets/Temple_Emerald/Torch_Texture.png"
+      }
+    ],
+    "HitboxType": "Torch",
+    "Material": "Solid"
+  },
+  "Scale": 1.4,
+  "MaxStack": 16,
+  "Quality": "Technical",
+  "Utility": {
+    "Usable": true
+  },
+  "ItemSoundSetId": "ISS_Blocks_Stone"
+}

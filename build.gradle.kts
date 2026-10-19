@@ -21,6 +21,8 @@ dependencies {
     // Water of Arrakis is an optional dependency (see WaterBridge): compiled against its built jar, never packed into this one.
     // Build that mod first (its gradlew jar); -PwaterJar=<path> points at another copy.
     compileOnly(files(providers.gradleProperty("waterJar").orElse("../WaterOfArrakis/build/libs/IslandCraft-WaterOfArrakis-0.1.0.jar")))
+    // Worms of Arrakis is optional too (see WormsBridge): same way. Build it first (its gradlew jar); -PwormsJar=<path> points at another copy.
+    compileOnly(files(providers.gradleProperty("wormsJar").orElse("../WormsOfArrakis/build/libs/IslandCraft-WormsOfArrakis-0.1.0.jar")))
     testImplementation("com.hypixel.hytale:Server:$hytaleServerVersion")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
