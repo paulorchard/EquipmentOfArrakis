@@ -1,23 +1,15 @@
 {
-  "$Comment": "Places the Thumper deployable at the player's own position (OriginSource Entity with a zero Offset is the feet; the player is the owner, which Worms reads). A deployable of type Aoe with DamageAmount 0 and no effects does nothing but stand: no HitboxCollisionConfig, so it never blocks or pushes the player; Invulnerable; LiveDuration 0 is no despawn timer (the engine adds one only above 0). Model: Arrakis_Thumper (the vanilla torch model and texture, re-encoded). MaxLiveCount and LiveDuration are overwritten at server start from MaxLivePerPlayer and MaxLiveSeconds in the Thumper config.",
-  "Type": "SpawnDeployableAtLocation",
-  "OriginSource": "Entity",
-  "OffsetRotationMode": "None",
-  "Offset": {
-    "X": 0,
-    "Y": 0,
-    "Z": 0
-  },
-  "RotationYaw": "None",
+  "$Comment": "Spawns the Thumper deployable at the spot the gate chose. Arrakis_Thumper_Place is our own interaction type: it takes the same Config as the vanilla SpawnDeployableAtLocation and calls the same DeployablesUtils.spawnDeployable, with the position from the gate instead of a fixed offset; the owner is the player, which Worms reads. A deployable of type Aoe with DamageAmount 0 and no effects does nothing but stand: no HitboxCollisionConfig, so it never blocks or pushes the player; Invulnerable; LiveDuration 0 is no despawn timer (the engine adds one only above 0). Model: Arrakis_Thumper (the vanilla torch model and texture, re-encoded). MaxLiveCount and LiveDuration are overwritten at server start from MaxLivePerPlayer and MaxLiveSeconds in the Thumper config.",
+  "Type": "Arrakis_Thumper_Place",
   "Config": {
     "Type": "Aoe",
     "Id": "Arrakis_Thumper",
     "Shape": "Sphere",
     "Model": "Arrakis_Thumper",
-    "ModelScale": 1.0,
+    "ModelScale": 1,
     "StartRadius": 0.1,
     "DamageInterval": 5,
-    "DamageAmount": 0.0,
+    "DamageAmount": 0,
     "LiveDuration": 0,
     "MaxLiveCount": 3,
     "Invulnerable": true,

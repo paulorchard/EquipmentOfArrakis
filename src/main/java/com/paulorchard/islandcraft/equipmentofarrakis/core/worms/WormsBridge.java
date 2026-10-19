@@ -60,6 +60,20 @@ final class WormsBridge implements WormsApi {
         }
     }
 
+    @Override
+    public Double sandTolerance() {
+        try {
+            java.lang.reflect.Field field = WormsOfArrakisPlugin.class.getDeclaredField("config");
+            field.setAccessible(true);
+            Object holder = field.get(WormsOfArrakisPlugin.get());
+            Object settings = holder.getClass().getMethod("get").invoke(holder);
+            Object value = settings.getClass().getMethod("getSandTolerance").invoke(settings);
+            return value instanceof Number number ? number.doubleValue() : null;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return null;
+        }
+    }
+
     private static Method method() {
         try {
             Method m = WormsOfArrakisPlugin.class.getDeclaredMethod("sandBlockIds");

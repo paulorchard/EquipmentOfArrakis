@@ -9,8 +9,9 @@ import java.util.UUID;
 
 /**
  * What the beat system knows about the standing Thumpers: one clock per entity, who owns it, where it is, when it was last seen
- * ticking, and the placements that were accepted but have not been seen yet (so a quick second click cannot slip past the limit).
- * Nothing is saved. No engine class; times are nanoseconds from any steady clock.
+ * ticking, and the placements that were accepted but have not been seen yet (with the position they were meant for, so a quick second
+ * click cannot slip past the limit or onto the same spot, and so the position the entity really has can be compared with the intended
+ * one). Nothing is saved. No engine class; times are nanoseconds from any steady clock.
  */
 final class ThumperBook {
 
@@ -23,6 +24,9 @@ final class ThumperBook {
     record Entry(UUID id, UUID owner, double x, double y, double z, long firstSeenNanos, double phase) {
     }
 
+    private record Reservation(long at, double x, double y, double z) {
+    }
+
     private static final class Slot {
         final BeatClock clock;
         final UUID id;
@@ -30,6 +34,8 @@ final class ThumperBook {
         final long firstSeen;
         double x, y, z;
         long lastSeen;
+        /** Distance between the position the placement meant and the one the entity had at first sight; null if unknown or already read. */
+        Double drift;
 
         Slot(BeatClock clock, UUID id, UUID owner, long now) {
             this.clock = clock;
@@ -45,7 +51,7 @@ final class ThumperBook {
     }
 
     private final Map<UUID, Slot> slots = new HashMap<>();
-    private final Map<UUID, List<Long>> reservations = new HashMap<>();
+    private final Map<UUID, List<Reservation>> reservations = new HashMap<>();
     private final double beat;
     private final double gap;
 
@@ -54,23 +60,24 @@ final class ThumperBook {
         this.gap = gap;
     }
 
-    /** An accepted placement of {@code owner}, counted until its entity is seen (or the reservation runs out). */
-    synchronized void reserve(UUID owner, long now) {
-        reservations.computeIfAbsent(owner, k -> new ArrayList<>()).add(now);
+    /** An accepted placement of {@code owner} at the given position, counted until its entity is seen (or the reservation runs out). */
+    synchronized void reserve(UUID owner, long now, double x, double y, double z) {
+        reservations.computeIfAbsent(owner, k -> new ArrayList<>()).add(new Reservation(now, x, y, z));
     }
 
     /**
      * The entity {@code id} ticked. Returns how many hits are due now. A first sighting starts its clock (the first beat is at
-     * once) and uses up one reservation of its owner.
+     * once) and uses up the oldest reservation of its owner, remembering how far the entity is from the position that was meant.
      */
     synchronized int tick(UUID id, UUID owner, double x, double y, double z, double dt, long now) {
         Slot slot = slots.get(id);
         if (slot == null) {
-            List<Long> pending = reservations.get(owner);
-            if (pending != null && !pending.isEmpty()) {
-                pending.remove(0);
-            }
             slot = new Slot(new BeatClock(beat, gap), id, owner, now);
+            List<Reservation> pending = reservations.get(owner);
+            if (pending != null && !pending.isEmpty()) {
+                Reservation meant = pending.remove(0);
+                slot.drift = Math.sqrt(sq(meant.x - x) + sq(meant.y - y) + sq(meant.z - z));
+            }
             slots.put(id, slot);
         }
         slot.x = x;
@@ -78,6 +85,16 @@ final class ThumperBook {
         slot.z = z;
         slot.lastSeen = now;
         return slot.clock.advance(dt);
+    }
+
+    /** The drift noted at the first sighting of {@code id}, once; null if there is none (or it was read). */
+    synchronized Double popDrift(UUID id) {
+        Slot slot = slots.get(id);
+        Double drift = slot == null ? null : slot.drift;
+        if (slot != null) {
+            slot.drift = null;
+        }
+        return drift;
     }
 
     /** Standing Thumpers of {@code owner} (seen within the stale time) plus placements still waiting to be seen. */
@@ -88,15 +105,33 @@ final class ThumperBook {
                 count++;
             }
         }
-        List<Long> pending = reservations.get(owner);
+        List<Reservation> pending = reservations.get(owner);
         if (pending != null) {
-            for (long at : pending) {
-                if (now - at <= RESERVATION_NANOS) {
+            for (Reservation r : pending) {
+                if (now - r.at <= RESERVATION_NANOS) {
                     count++;
                 }
             }
         }
         return count;
+    }
+
+    /** True when any live Thumper (anybody's, standing or still waiting to be seen) is within {@code radius} of the point. */
+    synchronized boolean occupied(double x, double y, double z, double radius, long now) {
+        double limit = radius * radius;
+        for (Slot slot : slots.values()) {
+            if (now - slot.lastSeen <= STALE_NANOS && sq(slot.x - x) + sq(slot.y - y) + sq(slot.z - z) <= limit) {
+                return true;
+            }
+        }
+        for (List<Reservation> list : reservations.values()) {
+            for (Reservation r : list) {
+                if (now - r.at <= RESERVATION_NANOS && sq(r.x - x) + sq(r.y - y) + sq(r.z - z) <= limit) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** Drops what is stale: entities not seen for the stale time, reservations that ran out. Returns how many entries went. */
@@ -108,9 +143,9 @@ final class ThumperBook {
                 dropped++;
             }
         }
-        for (Iterator<List<Long>> it = reservations.values().iterator(); it.hasNext(); ) {
-            List<Long> list = it.next();
-            list.removeIf(at -> now - at > RESERVATION_NANOS);
+        for (Iterator<List<Reservation>> it = reservations.values().iterator(); it.hasNext(); ) {
+            List<Reservation> list = it.next();
+            list.removeIf(r -> now - r.at > RESERVATION_NANOS);
             if (list.isEmpty()) {
                 it.remove();
             }
@@ -137,5 +172,9 @@ final class ThumperBook {
     synchronized void clear() {
         slots.clear();
         reservations.clear();
+    }
+
+    private static double sq(double v) {
+        return v * v;
     }
 }

@@ -6,8 +6,8 @@
   "AimHeight": 0.5,
   "PokeSeconds": 1.0,
   "BloodPerBody": 10,
-  "ForceCrouch": true,
-  "RequireCrouched": false,
+  "ForceCrouch": false,
+  "RequireCrouched": true,
   "RequireNpc": true,
   "BagItemId": "Arrakis_Blood_Bag"
 }

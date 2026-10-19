@@ -24,4 +24,7 @@ public interface WormsApi {
      * is reached by reflection and a jar without it, or a different one, gives null).
      */
     Set<String> sandBlockNames();
+
+    /** Worms' SandTolerance (how far below a totem it looks for sand), or null when it cannot be read (the caller uses the default, 1.0). */
+    Double sandTolerance();
 }

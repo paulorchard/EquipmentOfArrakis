@@ -20,25 +20,176 @@ class ThumperTest {
     // ---- the gate rules
 
     @Test
-    void sandIsTheFirstRefusalThenTheLimitThenRoom() {
-        assertEquals(ThumperRules.Refusal.NONE, ThumperRules.refusal(true, 0, 3, true));
-        assertEquals(ThumperRules.Refusal.NOT_SAND, ThumperRules.refusal(false, 0, 3, true));
-        assertEquals(ThumperRules.Refusal.NOT_SAND, ThumperRules.refusal(false, 9, 3, false), "the first reason wins");
-        assertEquals(ThumperRules.Refusal.LIMIT, ThumperRules.refusal(true, 3, 3, true), "three standing, a fourth is refused");
-        assertEquals(ThumperRules.Refusal.NONE, ThumperRules.refusal(true, 2, 3, true), "the third is allowed");
-        assertEquals(ThumperRules.Refusal.NO_ROOM, ThumperRules.refusal(true, 0, 3, false));
-        assertEquals(ThumperRules.Refusal.LIMIT, ThumperRules.refusal(true, 5, 3, false), "limit before room");
+    void theRefusalsComeInTheDocumentedOrder() {
+        // crouched, live, max, room, onSand, occupied
+        assertEquals(ThumperRules.Refusal.NONE, ThumperRules.refusal(true, 0, 3, true, true, false));
+        assertEquals(ThumperRules.Refusal.NOT_CROUCHING, ThumperRules.refusal(false, 0, 3, true, true, false));
+        assertEquals(ThumperRules.Refusal.NOT_CROUCHING, ThumperRules.refusal(false, 9, 3, false, false, true), "crouch is the first reason");
+        assertEquals(ThumperRules.Refusal.LIMIT, ThumperRules.refusal(true, 3, 3, false, false, true), "three standing, a fourth is refused");
+        assertEquals(ThumperRules.Refusal.NONE, ThumperRules.refusal(true, 2, 3, true, true, false), "the third is allowed");
+        assertEquals(ThumperRules.Refusal.NO_ROOM, ThumperRules.refusal(true, 0, 3, false, false, true), "no room before sand");
+        assertEquals(ThumperRules.Refusal.NOT_SAND, ThumperRules.refusal(true, 0, 3, true, false, true), "sand before the spot being taken");
+        assertEquals(ThumperRules.Refusal.OCCUPIED, ThumperRules.refusal(true, 0, 3, true, true, true));
     }
 
     @Test
-    void theBlockUnderTheFeetDecidesNotWhatIsFurtherDown() {
-        Set<String> sand = Set.of("Arrakis_Sand");
-        assertTrue(ThumperRules.onSand(new String[] {"Arrakis_Sand", "Rock_Stone"}, sand));
-        assertFalse(ThumperRules.onSand(new String[] {"Rock_Stone", "Arrakis_Sand"}, sand), "rock on top of sand is rock");
-        assertTrue(ThumperRules.onSand(new String[] {null, "Arrakis_Sand"}, sand), "air under the feet: the next block down counts, as in Worms");
-        assertTrue(ThumperRules.onSand(new String[] {"", "Arrakis_Sand"}, sand));
-        assertFalse(ThumperRules.onSand(new String[] {null, null}, sand), "in the air");
-        assertFalse(ThumperRules.onSand(new String[] {"Soil_Dirt", null}, sand), "dirt");
+    void crouchCountsOnlyWhenItIsThePlayersOwn() {
+        assertTrue(com.paulorchard.islandcraft.equipmentofarrakis.core.Crouch.counts(true, false));
+        assertFalse(com.paulorchard.islandcraft.equipmentofarrakis.core.Crouch.counts(false, false));
+        assertFalse(com.paulorchard.islandcraft.equipmentofarrakis.core.Crouch.counts(true, true), "a forced crouch is not the player's choice");
+        assertFalse(com.paulorchard.islandcraft.equipmentofarrakis.core.Crouch.counts(false, true));
+    }
+
+    // ---- the neighbour block in the look direction
+
+    private static String cell(double dirX, double dirZ) {
+        int[] c = ThumperSpot.neighbour(dirX, dirZ);
+        return c == null ? "none" : c[0] + "," + c[1];
+    }
+
+    private static String atDegrees(double degrees) {
+        double r = Math.toRadians(degrees);
+        return cell(Math.cos(r), Math.sin(r));
+    }
+
+    @Test
+    void theEightDirectionsAreTheEightSectorsOfFortyFiveDegrees() {
+        assertEquals("1,0", atDegrees(0));
+        assertEquals("1,1", atDegrees(45));
+        assertEquals("0,1", atDegrees(90));
+        assertEquals("-1,1", atDegrees(135));
+        assertEquals("-1,0", atDegrees(180));
+        assertEquals("-1,-1", atDegrees(225));
+        assertEquals("0,-1", atDegrees(270));
+        assertEquals("1,-1", atDegrees(315));
+    }
+
+    @Test
+    void theSectorEdgesAndTheWrapAroundAt360() {
+        assertEquals("1,0", atDegrees(22.4), "just inside east");
+        assertEquals("1,1", atDegrees(22.6), "just inside north-east");
+        assertEquals("1,0", atDegrees(-22.4));
+        assertEquals("1,-1", atDegrees(-22.6));
+        assertEquals("1,0", atDegrees(360), "360 is 0");
+        assertEquals("1,0", atDegrees(359.9));
+        assertEquals("1,-1", atDegrees(337.4), "just past the edge between east and south-east");
+        assertEquals("1,0", atDegrees(337.6));
+        assertEquals("-1,0", atDegrees(-180));
+        assertEquals("0,1", atDegrees(450), "a quarter turn past 360");
+    }
+
+    @Test
+    void theCellIsNeverTheOwnBlockAndPitchDoesNotMatter() {
+        for (int degrees = 0; degrees < 360; degrees += 5) {
+            double r = Math.toRadians(degrees);
+            for (double length : new double[] {1.0, 0.5, 0.01}) {
+                int[] c = ThumperSpot.neighbour(Math.cos(r) * length, Math.sin(r) * length);
+                assertTrue(c != null && (c[0] != 0 || c[1] != 0) && Math.abs(c[0]) <= 1 && Math.abs(c[1]) <= 1, degrees + " degrees");
+            }
+        }
+        assertEquals(atDegrees(60), cell(Math.cos(Math.toRadians(60)) * 0.02, Math.sin(Math.toRadians(60)) * 0.02), "looking almost straight down: the same direction");
+        assertEquals("none", cell(0, 0), "no horizontal direction at all");
+    }
+
+    // ---- the ground in the column and the room above it
+
+    private static java.util.function.IntFunction<String> column(java.util.Map<Integer, String> blocks) {
+        return y -> blocks.get(y);
+    }
+
+    @Test
+    void theGroundIsTheFirstBlockFromOneAboveTheFeetDownToTwoBelow() {
+        int feet = 100;
+        assertEquals(100, ThumperSpot.ground(feet, column(java.util.Map.of(100, "Arrakis_Sand", 99, "Arrakis_Sand"))), "level ground: the block at feet level");
+        assertEquals(99, ThumperSpot.ground(feet, column(java.util.Map.of(99, "Arrakis_Sand"))), "one lower");
+        assertEquals(98, ThumperSpot.ground(feet, column(java.util.Map.of(98, "Arrakis_Sand"))), "two lower is the limit");
+        assertEquals(Integer.MIN_VALUE, ThumperSpot.ground(feet, column(java.util.Map.of(97, "Arrakis_Sand"))), "three lower: a drop, no ground");
+        assertEquals(101, ThumperSpot.ground(feet, column(java.util.Map.of(101, "Arrakis_Sand", 100, "Arrakis_Sand"))), "one higher: a step up, taken from the top");
+        assertEquals(101, ThumperSpot.ground(feet, column(java.util.Map.of(101, "Rock_Stone", 99, "Arrakis_Sand"))), "the first block found from above is the ground");
+        assertEquals(Integer.MIN_VALUE, ThumperSpot.ground(feet, y -> null), "air all the way");
+        assertEquals(100, ThumperSpot.ground(feet, column(java.util.Map.of(100, "Plant_Grass_Tall"))), "a plant is the first block, as in Worms");
+    }
+
+    @Test
+    void twoFreeBlocksAboveTheGroundAreNeeded() {
+        assertTrue(ThumperSpot.headroom(100, y -> false));
+        assertFalse(ThumperSpot.headroom(100, y -> y == 101), "a wall right above the ground");
+        assertFalse(ThumperSpot.headroom(100, y -> y == 102), "a dune face two up");
+        assertTrue(ThumperSpot.headroom(100, y -> y == 103), "the third block does not matter");
+    }
+
+    // ---- the Worms sand rule mirrored
+
+    private static final Set<String> ARRAKIS = Set.of("Arrakis_Sand");
+
+    @Test
+    void theWormsRuleLooksFromBelowTheFeetDownByTheToleranceToTheFirstBlock() {
+        // a Thumper standing at y 100: the ground block is at 99 (its top face at 100)
+        assertTrue(ThumperSpot.wormsOnSand(100.0, 1.0, column(java.util.Map.of(99, "Arrakis_Sand")), ARRAKIS), "sand right under");
+        assertFalse(ThumperSpot.wormsOnSand(100.0, 1.0, column(java.util.Map.of(99, "Rock_Stone", 98, "Arrakis_Sand")), ARRAKIS), "rock over sand is rock");
+        assertTrue(ThumperSpot.wormsOnSand(100.0, 1.0, column(java.util.Map.of(98, "Arrakis_Sand")), ARRAKIS), "sand under a gap of air, within tolerance 1.0");
+        assertFalse(ThumperSpot.wormsOnSand(100.0, 1.0, column(java.util.Map.of(97, "Arrakis_Sand")), ARRAKIS), "sand two under a gap: beyond tolerance 1.0");
+        assertTrue(ThumperSpot.wormsOnSand(100.0, 2.0, column(java.util.Map.of(97, "Arrakis_Sand")), ARRAKIS), "tolerance 2.0 reaches it");
+        assertFalse(ThumperSpot.wormsOnSand(100.0, 1.0, y -> null, ARRAKIS), "in the air");
+        assertFalse(ThumperSpot.wormsOnSand(100.0, 1.0, column(java.util.Map.of(99, "Plant_Grass_Tall", 98, "Arrakis_Sand")), ARRAKIS), "a plant on the sand is the first block");
+    }
+
+    @Test
+    void theTenthOfABlockOffsetDecidesWhichBlockIsTheTop() {
+        // y - 0.1 is floored: a Thumper at 100.0 starts at block 99, one at 100.05 also at 99, one at 100.2 at block 100
+        assertTrue(ThumperSpot.wormsOnSand(100.05, 1.0, column(java.util.Map.of(99, "Arrakis_Sand")), ARRAKIS));
+        assertFalse(ThumperSpot.wormsOnSand(100.2, 1.0, column(java.util.Map.of(99, "Arrakis_Sand", 100, "Rock_Stone")), ARRAKIS), "a hair higher and rock is the first block");
+        assertTrue(ThumperSpot.wormsOnSand(99.95, 1.0, column(java.util.Map.of(98, "Arrakis_Sand")), ARRAKIS), "a hair lower: the block below");
+        // the gate stands the Thumper at ground + 1 exactly, so the ground block itself is always the one the rule looks at
+        for (int ground = 60; ground < 70; ground++) {
+            assertTrue(ThumperSpot.wormsOnSand(ground + 1, 1.0, column(java.util.Map.of(ground, "Arrakis_Sand")), ARRAKIS), "ground " + ground);
+            assertFalse(ThumperSpot.wormsOnSand(ground + 1, 1.0, column(java.util.Map.of(ground, "Rock_Stone", ground - 1, "Arrakis_Sand")), ARRAKIS));
+        }
+    }
+
+    @Test
+    void theGateAndWormsAgreeForEveryGroundTheGateAccepts() {
+        // Every column the gate can pick (ground from feet+1 down to feet-2) gives the same answer under Worms' rule at ground + 1.
+        for (int feet = 90; feet < 93; feet++) {
+            for (int groundOffset = -2; groundOffset <= 1; groundOffset++) {
+                for (String block : new String[] {"Arrakis_Sand", "Rock_Stone"}) {
+                    int ground = feet + groundOffset;
+                    java.util.Map<Integer, String> blocks = java.util.Map.of(ground, block, ground - 1, "Arrakis_Sand");
+                    int found = ThumperSpot.ground(feet, column(blocks));
+                    assertEquals(ground, found);
+                    assertEquals(block.equals("Arrakis_Sand"), ThumperSpot.wormsOnSand(found + 1, 1.0, column(blocks), ARRAKIS));
+                }
+            }
+        }
+    }
+
+    // ---- one Thumper per spot
+
+    @Test
+    void aSpotWithAThumperWithinEightTenthsOfABlockIsTaken() {
+        ThumperBook book = new ThumperBook(1.0, 0.25);
+        UUID a = UUID.randomUUID();
+        book.tick(a, ME, 10.5, 64, 20.5, 0.05, 0);
+        assertTrue(book.occupied(10.5, 64, 20.5, 0.8, 0), "the same spot");
+        assertTrue(book.occupied(11.2, 64, 20.5, 0.8, 0), "0.7 away");
+        assertFalse(book.occupied(11.5, 64, 20.5, 0.8, 0), "a block away: the next spot");
+        assertFalse(book.occupied(10.5, 66, 20.5, 0.8, 0), "two up");
+        assertTrue(book.occupied(10.5, 64, 20.5, 0.8, SECOND), "still seen a second later");
+        assertFalse(book.occupied(10.5, 64, 20.5, 0.8, 4 * SECOND), "not seen for a long time: gone");
+    }
+
+    @Test
+    void aPlacementNotYetSeenAlreadyTakesTheSpotAndItsDriftIsNoted() {
+        ThumperBook book = new ThumperBook(1.0, 0.25);
+        book.reserve(ME, 0, 5.5, 70, 5.5);
+        assertTrue(book.occupied(5.5, 70, 5.5, 0.8, 0), "a quick second click on the same spot");
+        assertFalse(book.occupied(6.5, 70, 5.5, 0.8, 0));
+        UUID entity = UUID.randomUUID();
+        book.tick(entity, ME, 5.5, 71, 5.5, 0.05, SECOND / 10);
+        Double drift = book.popDrift(entity);
+        assertEquals(1.0, drift, 1e-9, "the entity stands one block above the intended spot: visible");
+        assertEquals(null, book.popDrift(entity), "read once");
+        assertTrue(book.occupied(5.5, 71, 5.5, 0.8, SECOND / 10), "now by the entity");
     }
 
     // ---- the sand set
@@ -124,8 +275,8 @@ class ThumperTest {
     @Test
     void anAcceptedPlacementCountsUntilItsEntityIsSeen() {
         ThumperBook book = new ThumperBook(1.0, 0.25);
-        book.reserve(ME, 0);
-        book.reserve(ME, 0);
+        book.reserve(ME, 0, 0, 0, 0);
+        book.reserve(ME, 0, 0, 0, 0);
         assertEquals(2, book.live(ME, 0), "two clicks before the entities exist");
         book.tick(UUID.randomUUID(), ME, 0, 0, 0, 0.05, SECOND / 10);
         assertEquals(2, book.live(ME, SECOND / 10), "one placement became an entity, one is still waiting");
@@ -138,7 +289,7 @@ class ThumperTest {
     @Test
     void aReservationThatNeverBecameAnEntityRunsOut() {
         ThumperBook book = new ThumperBook(1.0, 0.25);
-        book.reserve(ME, 0);
+        book.reserve(ME, 0, 0, 0, 0);
         assertEquals(1, book.live(ME, 2 * SECOND));
         assertEquals(0, book.live(ME, 4 * SECOND), "the engine refused the spawn: it does not count for ever");
         book.prune(4 * SECOND);

@@ -13,8 +13,8 @@ final class Thumpers {
     /** The config id of the deployable (the Id in the Config of the placement interaction); also the item id. */
     static final String ID = "Arrakis_Thumper";
     static final String THUMP_SOUND = "SFX_Arrakis_Thumper_Thump";
-    /** Blocks looked at below the feet, counting the one under them: Worms looks down by SandTolerance (1) which is two blocks. */
-    static final int SAND_DEPTH = 2;
+    /** Worms SandTolerance when Worms does not say (its default). */
+    static final double DEFAULT_SAND_TOLERANCE = 1.0;
 
     private static volatile ThumperConfig config = new ThumperConfig();
     private static volatile HytaleLogger logger;
@@ -44,6 +44,13 @@ final class Thumpers {
         HytaleLogger log = logger;
         if (log != null) {
             log.at(line.contains("PROBLEM") ? Level.WARNING : Level.INFO).log("%s", line);
+        }
+    }
+
+    static void warn(String line) {
+        HytaleLogger log = logger;
+        if (log != null) {
+            log.at(Level.WARNING).log("%s", line);
         }
     }
 

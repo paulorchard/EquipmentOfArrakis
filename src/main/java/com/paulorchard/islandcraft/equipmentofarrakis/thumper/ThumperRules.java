@@ -11,7 +11,7 @@ final class ThumperRules {
     static final String[] VANILLA_SAND = {"Soil_Sand", "Soil_Sand_Ashen", "Soil_Sand_Red", "Soil_Sand_White"};
     static final String DUNES_SAND = "Arrakis_Sand";
 
-    enum Refusal { NONE, NOT_SAND, LIMIT, NO_ROOM }
+    enum Refusal { NONE, NOT_CROUCHING, LIMIT, NO_ROOM, NOT_SAND, OCCUPIED }
 
     private ThumperRules() {
     }
@@ -37,15 +37,24 @@ final class ThumperRules {
         return 12.0 * Math.log(ratio) / Math.log(2.0);
     }
 
-    /** Why a placement is refused, in this order, or NONE. */
-    static Refusal refusal(boolean onSand, int live, int max, boolean room) {
-        if (!onSand) {
-            return Refusal.NOT_SAND;
+    /**
+     * Why a placement is refused, in this order, or NONE: not crouching; the player already has the most they may; no ground or no room in
+     * the chosen column; the ground there is not sand (Worms' rule); another Thumper already stands on the spot.
+     */
+    static Refusal refusal(boolean crouched, int live, int max, boolean room, boolean onSand, boolean occupied) {
+        if (!crouched) {
+            return Refusal.NOT_CROUCHING;
         }
         if (live >= max) {
             return Refusal.LIMIT;
         }
-        return room ? Refusal.NONE : Refusal.NO_ROOM;
+        if (!room) {
+            return Refusal.NO_ROOM;
+        }
+        if (!onSand) {
+            return Refusal.NOT_SAND;
+        }
+        return occupied ? Refusal.OCCUPIED : Refusal.NONE;
     }
 
     /**
@@ -63,17 +72,4 @@ final class ThumperRules {
         return new LinkedHashSet<>(Arrays.asList(dunesInstalled ? new String[] {DUNES_SAND} : VANILLA_SAND));
     }
 
-    /**
-     * Sand under the feet, the test Worms uses for a totem: the first block that is not air, looking down from the block under the feet
-     * for {@code column.length} blocks, is a sand block. {@code column} is the block ids from the block under the feet downwards, null or
-     * empty for air.
-     */
-    static boolean onSand(String[] column, Set<String> sand) {
-        for (String id : column) {
-            if (id != null && !id.isEmpty()) {
-                return sand.contains(id);
-            }
-        }
-        return false;
-    }
 }

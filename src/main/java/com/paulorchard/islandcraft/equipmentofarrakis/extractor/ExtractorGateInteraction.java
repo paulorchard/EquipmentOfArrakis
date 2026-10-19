@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Interaction type {@code Arrakis_Extractor_Gate}: first in the Blood Extractor Primary chain. Finds the dead mob in range and aim and
  * decides, in this order, ending the chain as Failed (no animation, nothing spent) with a short message when it must: no corpse
- * in range and aim; the corpse already used; (only with {@code RequireCrouched}, the fallback when the crouch cannot be forced) not
+ * in range and aim; the corpse already used; (with {@code RequireCrouched}, now the default; {@code ForceCrouch} is off) not
  * crouching; no Blood Bag carried; every bag full. Otherwise it claims the corpse (one body, one use), forces the crouch and
  * remembers the poke for {@link ExtractorFinishInteraction}. No Mana is involved.
  *
@@ -67,8 +67,8 @@ public class ExtractorGateInteraction extends SimpleInstantInteraction {
     private float aimHeight = 0.5f;
     private float pokeSeconds = 1.0f;
     private int bloodPerBody = 10;
-    private boolean forceCrouch = true;
-    private boolean requireCrouched = false;
+    private boolean forceCrouch = false;
+    private boolean requireCrouched = true;
     private boolean requireNpc = true;
     private String bagItemId = "Arrakis_Blood_Bag";
 
@@ -91,7 +91,7 @@ public class ExtractorGateInteraction extends SimpleInstantInteraction {
         ContainerItem bag = ContainerInventory.find(bagItemId);
         int bags = bag == null ? 0 : ContainerInventory.carried(buffer, ref, bag).size();
         boolean room = bag != null && ContainerInventory.firstWithRoom(buffer, ref, bag) != null;
-        boolean crouched = ExtractorState.isCrouching(buffer, ref);
+        boolean crouched = com.paulorchard.islandcraft.equipmentofarrakis.core.Crouch.isCrouching(buffer, ref);
         ExtractorRules.Refusal refusal =
                 ExtractorRules.refusal(corpse != null, used, requireCrouched && !forceCrouch, crouched, bags, room);
         if (refusal != ExtractorRules.Refusal.NONE) {

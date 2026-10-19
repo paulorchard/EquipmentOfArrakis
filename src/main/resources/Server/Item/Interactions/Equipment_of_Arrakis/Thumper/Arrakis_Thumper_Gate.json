@@ -1,4 +1,4 @@
 {
-  "$Comment": "First in the Thumper Secondary chain. Refuses (chain failed: nothing placed, nothing consumed, a short message) unless the block under the feet is sand (the set Worms of Arrakis uses, or SandBlocks in the Thumper config), the player has fewer than MaxLivePerPlayer Thumpers standing and the feet are not inside a solid block.",
+  "$Comment": "First in the Thumper Secondary chain. Refuses (chain failed: nothing placed, nothing consumed, a short message) unless the player is crouching, has fewer than MaxLivePerPlayer Thumpers, there is ground and room in the block next to them in the look direction (one of the eight around), that ground is sand by the rule Worms of Arrakis applies to a totem at the position the Thumper will have (the set Worms uses, or SandBlocks in the Thumper config), and no other Thumper is within 0.8 blocks. Otherwise it hands the spot to Arrakis_Thumper_Place.",
   "Type": "Arrakis_Thumper_Gate"
 }

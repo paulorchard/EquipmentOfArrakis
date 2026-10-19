@@ -38,6 +38,7 @@ public final class ThumperModule implements EquipmentModule {
 
     public ThumperModule(JavaPlugin plugin) {
         plugin.getCodecRegistry(Interaction.CODEC).register(ThumperGateInteraction.TYPE, ThumperGateInteraction.class, ThumperGateInteraction.CODEC);
+        plugin.getCodecRegistry(Interaction.CODEC).register(ThumperPlaceInteraction.TYPE, ThumperPlaceInteraction.class, ThumperPlaceInteraction.CODEC);
         guard = ModuleAssets.guard(plugin, ID, id -> id.equals(ITEM) || id.startsWith("Arrakis_Thumper_") || id.equals(Thumpers.THUMP_SOUND));
     }
 
@@ -99,7 +100,7 @@ public final class ThumperModule implements EquipmentModule {
         } else {
             String[] categories = item.getCategories();
             boolean inTab = categories != null && Arrays.asList(categories).contains("IslandCraft.Tools");
-            boolean problem = !inTab || item.hasRecipesToGenerate() || item.getMaxDurability() > 0 || item.getMaxStack() != 16 || item.getIcon() == null;
+            boolean problem = !inTab || item.hasRecipesToGenerate() || item.getMaxDurability() > 0 || item.getMaxStack() != 1 || item.getIcon() == null;
             lines.add((problem ? "PROBLEM " : "") + "item " + ITEM + " loaded, categories " + Arrays.toString(categories) + ", max stack " + item.getMaxStack()
                     + ", max durability " + item.getMaxDurability() + ", icon " + item.getIcon() + ", animations " + item.getPlayerAnimationsId()
                     + ", block type " + (item.hasBlockType() ? "yes (the held model)" : "NO") + ", interactions " + item.getInteractions());

@@ -1,5 +1,5 @@
 {
-  "$Comment": "Secondary (right click) of the Thumper: the gate, the placement, one item used up. RequireNewClick: a held button places one. The cooldown is a short debounce.",
+  "$Comment": "Secondary (right click) of the Thumper: the gate (crouched, sand, the block you face), the placement, one item used up. RequireNewClick: a held button places one. The cooldown is a short debounce.",
   "RequireNewClick": true,
   "Cooldown": {
     "Cooldown": 0.5

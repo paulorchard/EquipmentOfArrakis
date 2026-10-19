@@ -62,7 +62,7 @@ class ThumperAssetsTest {
             assertFalse(block.has(forbidden), "no " + forbidden + " on the block type: no light, no fire, no placement rules, no state");
         }
         assertFalse(text(ITEM).contains("Torch_Fire"), "no flame particle anywhere on the item");
-        assertEquals(16, item.get("MaxStack").getAsInt());
+        assertEquals(1, item.get("MaxStack").getAsInt(), "one Thumper per slot");
         assertFalse(item.has("Recipe"), "no recipe");
         assertFalse(item.has("MaxDurability"), "no durability");
         assertEquals(List.of("IslandCraft.Tools"), strings(item.getAsJsonArray("Categories")));
@@ -84,12 +84,8 @@ class ThumperAssetsTest {
     @Test
     void theDeployableIsInvulnerableHasNoCollisionAndNoDespawnTimer() throws IOException {
         JsonObject place = json(INTERACTIONS + "Arrakis_Thumper_Place.json");
-        assertEquals("SpawnDeployableAtLocation", place.get("Type").getAsString());
-        assertEquals("Entity", place.get("OriginSource").getAsString());
-        JsonObject offset = place.getAsJsonObject("Offset");
-        assertEquals(0, offset.get("X").getAsDouble());
-        assertEquals(0, offset.get("Y").getAsDouble(), "at the feet: the player position, no lift");
-        assertEquals(0, offset.get("Z").getAsDouble());
+        assertEquals("Arrakis_Thumper_Place", place.get("Type").getAsString(), "our own type: the position comes from the gate, not from a fixed offset");
+        assertFalse(place.has("Offset") || place.has("OriginSource"), "no fixed offset");
         JsonObject config = place.getAsJsonObject("Config");
         assertEquals("Arrakis_Thumper", config.get("Id").getAsString(), "the id Worms is told about");
         assertEquals("Aoe", config.get("Type").getAsString());
@@ -167,15 +163,24 @@ class ThumperAssetsTest {
     void everyKeyTheThumperUsesIsInTheLanguageFile() throws IOException {
         String lang = text(LANG);
         for (String key : new String[] {"items.Arrakis_Thumper.name", "items.Arrakis_Thumper.description", "arrakis.thumper.notSand", "arrakis.thumper.limit",
-                "arrakis.thumper.noRoom", "commands.arrakis.thumper.desc", "commands.arrakis.thumper.give.desc", "commands.arrakis.thumper.state.desc",
+                "arrakis.thumper.noRoom", "arrakis.thumper.crouch", "arrakis.thumper.occupied", "arrakis.extractor.needCrouch", "commands.arrakis.thumper.desc", "commands.arrakis.thumper.give.desc", "commands.arrakis.thumper.state.desc",
                 "commands.arrakis.thumper.clear.desc"}) {
             assertTrue(lang.contains("\n" + key + " = "), "missing language key " + key);
         }
         assertTrue(lang.contains("items.Arrakis_Thumper.description = Plant it in the sand. It thumps, and the worm comes for it."));
         String gate = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/com/paulorchard/islandcraft/equipmentofarrakis/thumper/ThumperGateInteraction.java"));
-        for (String key : new String[] {"server.arrakis.thumper.notSand", "server.arrakis.thumper.limit", "server.arrakis.thumper.noRoom"}) {
+        for (String key : new String[] {"server.arrakis.thumper.notSand", "server.arrakis.thumper.limit", "server.arrakis.thumper.noRoom", "server.arrakis.thumper.crouch", "server.arrakis.thumper.occupied"}) {
             assertTrue(gate.contains(key), "the gate says " + key);
         }
+    }
+
+    @Test
+    void theExtractorNeedsACrouchTheCrouchIsNotForcedAndTheMessageSaysSo() throws IOException {
+        JsonObject gate = json(SERVER + "Item/Interactions/Equipment_of_Arrakis/Extractor/Arrakis_Extractor_Gate.json");
+        assertTrue(gate.get("RequireCrouched").getAsBoolean());
+        assertFalse(gate.get("ForceCrouch").getAsBoolean());
+        assertTrue(text(LANG).contains("arrakis.extractor.needCrouch = Crouch to draw blood."));
+        assertTrue(text(LANG).contains("arrakis.thumper.crouch = Crouch to plant the Thumper."));
     }
 
     @Test

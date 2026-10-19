@@ -1,5 +1,5 @@
 {
-  "$Comment": "The Thumper: a consumable. The vanilla Temple Emerald torch by path (block model and texture through a BlockType, the animation set Torch, the swing), without its Light and its flame particle. Right click (Arrakis_Thumper_Secondary) places a deployable at the feet on sand and uses one up (not in creative); it is never placed as a block: Secondary is not Block_Secondary and there are no Support rules. No recipe, no durability. The icon is derived from the vanilla one (the flame taken out, tools/assets/thumper/make_icon.js).",
+  "$Comment": "The Thumper: a consumable. The vanilla Temple Emerald torch by path (block model and texture through a BlockType, the animation set Torch, the swing), without its Light and its flame particle. Right click while crouching (Arrakis_Thumper_Secondary) plants a deployable on the block you face, on sand, and uses one up (not in creative); it is never placed as a block: Secondary is not Block_Secondary and there are no Support rules. No recipe, no durability. The icon is derived from the vanilla one (the flame taken out, tools/assets/thumper/make_icon.js).",
   "TranslationProperties": {
     "Name": "server.items.Arrakis_Thumper.name",
     "Description": "server.items.Arrakis_Thumper.description"
@@ -53,7 +53,7 @@
     "Material": "Solid"
   },
   "Scale": 1.4,
-  "MaxStack": 16,
+  "MaxStack": 1,
   "Quality": "Technical",
   "Utility": {
     "Usable": true

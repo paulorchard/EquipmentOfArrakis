@@ -62,20 +62,20 @@ final class ThumperCommands {
         InventoryComponent.Hotbar hotbar = store.getComponent(ref, InventoryComponent.Hotbar.getComponentType());
         InventoryComponent.Storage storage = store.getComponent(ref, InventoryComponent.Storage.getComponentType());
         int wanted = parseCount(args);
-        int left = wanted;
-        while (left > 0) {
-            ItemStack stack = new ItemStack(Thumpers.ID, left);
-            ItemStack rest = hotbar.getInventory().addItemStack(stack).getRemainder();
+        int given = 0;
+        // one item per slot: the item stacks to 1
+        while (given < wanted) {
+            ItemStack rest = hotbar.getInventory().addItemStack(new ItemStack(Thumpers.ID, 1)).getRemainder();
             if (rest != null && !rest.isEmpty()) {
                 rest = storage.getInventory().addItemStack(rest).getRemainder();
             }
-            int remaining = rest == null || rest.isEmpty() ? 0 : rest.getQuantity();
-            if (remaining >= left) {
-                break; // nothing fitted
+            if (rest != null && !rest.isEmpty()) {
+                break; // the inventory is full
             }
-            left = remaining;
+            given++;
         }
-        CoreModule.say(c, left == 0 ? "gave " + wanted + " " + Thumpers.ID : "gave " + (wanted - left) + " of " + wanted + " " + Thumpers.ID + ", NO ROOM for " + left);
+        CoreModule.say(c, given == wanted ? "gave " + wanted + " " + Thumpers.ID + " (one per slot)"
+                : "gave " + given + " of " + wanted + " " + Thumpers.ID + ", the inventory is full");
     }
 
     private static void state(CommandContext c) {

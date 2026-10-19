@@ -13,6 +13,9 @@ import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import com.paulorchard.islandcraft.equipmentofarrakis.core.WorldAccess;
+import com.paulorchard.islandcraft.equipmentofarrakis.core.worms.WormsLink;
 import org.joml.Vector3d;
 
 import java.util.UUID;
@@ -61,6 +64,10 @@ final class ThumperSystem extends EntityTickingSystem<EntityStore> {
         long now = System.nanoTime();
         int hits = Thumpers.book().tick(uuid.getUuid(), owner, at.x, at.y, at.z, dt, now);
         if (hits > 0) {
+            Double drift = Thumpers.book().popDrift(uuid.getUuid());
+            if (drift != null) {
+                firstSight(store, at, drift);
+            }
             int sound = sound();
             if (sound > 0) {
                 Vector3d where = new Vector3d(at.x, at.y + 0.3, at.z);
@@ -72,6 +79,28 @@ final class ThumperSystem extends EntityTickingSystem<EntityStore> {
         if (now - lastPrune > PRUNE_EVERY_NANOS) {
             lastPrune = now;
             Thumpers.book().prune(now);
+        }
+    }
+
+    /**
+     * A Thumper placed by the gate is seen for the first time: say where it really stands and whether the Worms rule, applied at that
+     * position, calls it sand. A difference from the intended spot, or a position Worms would ignore, is a warning, so a mismatch between
+     * the gate and Worms is visible in the log.
+     */
+    private void firstSight(Store<EntityStore> store, Vector3d at, double drift) {
+        WorldAccess access = new WorldAccess(store.getExternalData().getWorld());
+        int x = (int) Math.floor(at.x);
+        int z = (int) Math.floor(at.z);
+        boolean sand = access.isTicking(x, z) && ThumperSpot.wormsOnSand(at.y, WormsLink.sandTolerance(), y -> {
+            BlockType block = access.blockType(x, y, z);
+            return block == null ? null : String.valueOf(block.getId());
+        }, Thumpers.sand());
+        String line = String.format("Thumper stands at %.2f %.2f %.2f, %.2f from the intended spot; the Worms rule at this position says %s", at.x, at.y, at.z,
+                drift, sand ? "sand" : "NOT sand");
+        if (!sand || drift > 0.05) {
+            Thumpers.warn("MISMATCH " + line + ": Worms may ignore this Thumper");
+        } else {
+            Thumpers.log(line);
         }
     }
 

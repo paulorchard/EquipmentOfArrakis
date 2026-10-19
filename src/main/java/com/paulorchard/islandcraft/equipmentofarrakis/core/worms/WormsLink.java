@@ -129,6 +129,20 @@ public final class WormsLink {
         }
     }
 
+    /** Worms' SandTolerance, or the default 1.0 when Worms is not there or does not tell. */
+    public static double sandTolerance() {
+        WormsApi api = api();
+        if (api == null) {
+            return 1.0;
+        }
+        try {
+            Double tolerance = api.sandTolerance();
+            return tolerance == null ? 1.0 : tolerance;
+        } catch (LinkageError | RuntimeException e) {
+            return 1.0;
+        }
+    }
+
     /** One line for the start-up report and the state command. */
     public static String status(String deployableId) {
         if (!pluginLoaded()) {
