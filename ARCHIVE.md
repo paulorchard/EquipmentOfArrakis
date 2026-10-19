@@ -30,12 +30,12 @@ The server log only says "Crash"; the real message is in the client log, `%APPDA
     A deployable config with `LiveDuration` 0 has no despawn timer, `MaxLiveCount` removes the oldest instead of refusing a new one, and `HitboxCollision` exists only when a
     `HitboxCollisionConfig` is named.
 
-11. **Movement facts for the Suspensor Belt (read from the 0.7.0 jar and Assets.zip; the lab module is how the open questions are answered on a client; this entry keeps the facts after the lab is deleted).**
+11. **Movement facts for the Suspensor Belt (read from the 0.7.0 jar and Assets.zip; the lab module that answered the open questions on a client has been deleted; rule 12 is what it found).**
     - **Gliding is entirely client-side.** `ToggleGliderInteraction.firstRun` on the server is a bare `return`; the interaction only makes a packet for the client. `GlidingCondition` just reads
       `MovementStates.gliding`, which the client sends. The glider numbers live on the item: an item JSON `Glider` block (`TerminalVelocity` -2, `FallSpeedMultiplier` 6, `HorizontalSpeedMultiplier` 1.1, `Speed` 10,
       the dive values) is sent in `ItemBase.gliderConfig`. The stat `GlidingActive` (0 to 1) only follows the `Gliding` condition (+1 per 0.1 s while gliding, -1 while not) and drives the open/closed model of the
       glider. Nothing in the server starts a glide: `SavedMovementStates` (what `SetMovementStates` carries to the client) has one field, `flying`. The vanilla click is `GroundedCondition` (failed = in the air) then
-      `ToggleGlider`, with durability, a tiny stamina cost and `RequireNewClick`. Whether the client glides from a Z-slot item is a client question (the lab item `Arrakis_Lab_Belt_Glider` asked it).
+      `ToggleGlider`, with durability, a tiny stamina cost and `RequireNewClick`. Whether the client glides from a Z-slot item was never answered (the glider route was not pursued).
     - **Fall damage is computed on the server from the vertical speed the client reports at the landing,** not from the height: `DamageSystems.FallDamagePlayers`, on the tick the client says `onGround` with a
       current fall distance above 0, and not in fluid. With v = |client Y velocity| in blocks a second and `MovementConfig` (Default.json) `MinFallSpeedToEngageRoll` 21: nothing at 21 or less; above it
       `floor(maxHealth / 100 * ((0.58 * (v - 21))^2 + 10))` of cause Fall, so v = 22 gives 10 % of max health, 31 gives 43 %, 41 gives 144 %. A roll lowers it (full mitigation up to `MaxFallSpeedRollFullMitigation` 25, partial
@@ -54,11 +54,24 @@ The server log only says "Crash"; the real message is in the client log, `%APPDA
     - **The Z slot** is `InventoryComponent.Utility` (an `ActiveSlotInventoryComponent`: `getActiveSlot()`, `getActiveItem()`), readable on the world thread every tick; an item needs `Utility { Usable: true }`. Armor items can carry
       movement settings (`Rocket_Boots`: `Armor.MovementSettings.ExtraJumpCount`); the Rocket Boots are a Legs armor item, not a Z item.
 
+12. **What the movement lab proved (module deleted; the Suspensor Belt is built on this).**
+    - **Flight is the client's double tap, gated by the setting.** The double tap of Space is client code gated by `MovementSettings.fly` (Disabled / Allowed / Forced; creative gets Allowed, everyone else Disabled). The server never sees
+      the tap, only the resulting `flying` flag in `MovementStates`. `fly = Allowed` with chosen `horizontalFlySpeed` and `verticalFlySpeed`, pushed with `MovementManager.update`, made the double tap fly in Adventure.
+    - **Units.** Fly speed 0.5 in Adventure feels like 0.1 in creative, so the belt starts at 1.0 and exposes the numbers.
+    - **`jumping` is not "Space held"**: it is true only while rising after a jump and the client clears it the moment flying starts. A driver built on it (the lab's Mk II/III prototype) switched itself off the tick it switched flight on and
+      flickered about 18 times a second. Nothing should be driven from `jumping`.
+    - **Never push settings or the flying flag every tick.** The prototype did and spammed the client (and drained stamina through the jump spam). Push only on a state change.
+    - **Fly speed 0 does not remove jump momentum**: with `verticalFlySpeed` 0 the client velocity was still about +5.5 blocks a second for a moment after the flight began, then the fall read -13.9 (two samples: likely, not proven).
+    - **Measured:** the client velocity (not the position delta, which is a half-second average) is the number fall damage uses; at rest it reads about -0.5; the fastest fall seen was -22.08 (just over the 21 threshold). The Z slot item reads
+      correctly every tick. The glider route, the settings route, the velocity clamp and fall damage numbers were not exercised and were dropped with the lab.
+    - **Engine helper:** `Player.setFlying(ref, boolean, accessor)` starts or stops flying, pushes settings and flag and restores the default fly mode when stopping; it is what ends the belt's flight at 0 Mana.
+
 ## Tried and abandoned
 
 - **Flame Cutter and Flame Beam Cutter (the experiments module).** A flamethrower-style tool and a beam tool with a calibration rig (about 17 `exp cal` commands, particles, a measured angle unit) to place a
   beam on the player. They answered what the engine allows for held-item particles and beams; the Cutter Ray took the useful part (a vanilla-gun look, no projectile). Removed in 0.3.0 with its 34 assets
   and generators.
+- **The Suspensor Belt as three Z-slot items with a jump-driven prototype (the lab).** Replaced by two picker toggles and the client's own double tap (rule 12); Mk I (slow descent) is not built.
 - **The Z-wheel / Z slot idea.** A utility slot as the way to select equipment; replaced by the picker page (right click on any tool) and the H key for the shield.
 - **The Reference art route of the HUD.** Documents whose textures pointed at the vanilla files by relative path (`../../../InGame/Hud/...`), so a texture pack would restyle the bars. The client rejected
   them (rule 5). The Copy route (`VanillaDerived/`) is the only route; the `ArtSource` setting and `/arrakis hud art` are gone.

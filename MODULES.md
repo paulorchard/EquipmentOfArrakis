@@ -36,14 +36,14 @@ Labels used: **confirmed** (a headless boot, a unit test, javap), **inferred** (
 | `blood add <n>` / `corpse [role]` | fills the first Blood Bag; spawns a mob (default Cow) two blocks ahead and kills it a second later |
 | `blood corpses` / `corpses clear` | the extended bodies (total, your chunk, busiest chunk, seconds left, cut by the cap, and the nearest five with their Status animation); makes them all vanish |
 | `thumper give [n]` / `state` / `clear` | Thumpers into the inventory (default 4); the standing Thumpers, the Worms link and the sand set; removes them all |
-| `lab ...` | EXPERIMENT: the movement lab (see `lab`) |
+| `suspensor state` / `set mk2|mk3 <h> <v>` / `off` | the caller's belt and the movement settings in force / live speeds, saved / turns the caller's belt off |
 | `light on` / `off` / `state` | Personal Light |
 | `hud on` / `off` / `state` / `demo <bar> <percent>` / `component hide|show <Name>|reset` | the four bars |
 | `hud lb|rb|lt|rt [x[,] y]` / `... reset` / `hud nudge reset` | nudge a bar (lb Health, rb Water, lt Power, rt Heat Exposure) |
 
 ## core
 
-- `ToolRegistry` (picker tools by item id; detection is by this list, never by a prefix), `ToggleRegistry` (passive toggles: id, order, label key, callbacks; `forget(uuid)` resets), `GiveRegistry`
+- `ToolRegistry` (picker tools by item id; detection is by this list, never by a prefix), `ToggleRegistry` (passive toggles: id, order, label key, callbacks, optional exclusive group; `forget(uuid)` resets), `GiveRegistry`
   (what `tools give` hands out), `ToolUse.fired(PlayerRef)` with listeners (the shield listens; only the Cutter Ray calls it), `ContainerItem` (an amount in stack metadata mirrored to the
   durability bar), `ContainerInventory` (carried containers, first with room: hotbar, then main inventory, never the backpack or the utility slots), `Notice` (a short chat line, at most one a
   second per player and key), `ModuleAssets`, shared command groups (`CommandRoot.group`), `WorldAccess`.
@@ -242,38 +242,37 @@ world change and death. Settings (`Shield`): `EffectId`, `ImpactEffectId`, `Mana
 - **Checked here (no client, no player):** the build and 204 tests; the headless boot without the Worms jar and with it, and with the module switched off ("removed 7 of its assets"): no PROBLEM line, no asset
   error, the Duplicated Asset count unchanged. Not testable headless (a player is needed to place, entities land in unloaded chunks): the placement, the beat, the sound and the worm.
 
-## lab (EXPERIMENT: the movement lab for the Suspensor Belt)
+## suspensor (Suspensor Belt Mk II and Mk III)
 
-EXPERIMENT: delete with the lab module. Module id `lab`, package `lab` (classes `Lab*`), assets only in `Lab` folders with ids `Arrakis_Lab_*`, config section `Lab`
-(`WatchSeconds` 0.5, `ManaPerSecond` 1, `FlySpeed` 0.5, `RiseSpeed` 0.5, `BeltUsesEngineFly` false). Operator-only commands under `/arrakis lab`; every change to a player's movement is undone by
-`lab reset`, on death and on a world change (the system checks each tick), and the state is dropped on disconnect. What the Suspensor Belt is: three separate Z-slot items, Mk I slow fall, Mk II flat flight, Mk III
-rising flight, each costing 1 Mana a second while Space is held in the air. The movement facts found by reading the jar are in ARCHIVE.md rule 11; the lab is how the open ones are answered on a client.
+Module id `suspensor`, package `suspensor`, config section `Suspensor`; **add `"suspensor"` to `Modules` in an existing config file.** No item: two toggles on the picker page (right click any tool), ids `suspensor3`
+(Suspensor Belt Mk III, order 31) and `suspensor2` (Mk II, order 32), icon item `Rune_WindStrike`, one exclusive **group** `suspensor`: turning one on turns the other off first, so the ON mark is the
+mark in operation. Mk I (slow descent) is **not built**: the config has a documented placeholder `Mk1` that nothing reads.
 
-| Command | What it does |
-|---|---|
-| `lab watch on|off [seconds]` | a chat and log line every N s: the true state flags, vertical speed twice (the client velocity the fall damage uses, and the position delta), horizontal speed, Mana, selected Z item, game mode, fly mode and speeds, belt state; one more line whenever jumping, flying or gliding flips |
-| `lab fly off|allowed|forced [h] [v]` | sets `fly`, `horizontalFlySpeed`, `verticalFlySpeed` on the player's `MovementManager` settings and pushes them (`UpdateMovementSettings`) |
-| `lab fly flag on|off` / `fly engine on|off` | sends a `SetMovementStates` with the flying flag / calls the engine's own `Player.setFlying` |
-| `lab belt 2|3|off` | the Mk II / Mk III prototype, active only with a lab belt as the selected Z item, in the air, Space held, Mana above 0; `off` resets |
-| `lab fall drag|mass|airdrag|fallforce|set|get|list|reset` | the settings route: `dragCoefficient`, `mass`, `airDragMin/Max`, `variableJumpFallForce`, any float, boolean or fly field by name (67 of them), pushed at once |
-| `lab vel y <v>` / `lab clamp on|off [max]` | the velocity route: one Set velocity instruction (a `ChangeVelocity` packet) / the same every tick the downward speed is above max |
-| `lab give glider|belt|beltglider` | the vanilla `Glider_Scrap`; the belt (Rocket Boots look, Z slot); the belt with the glider block of `Template_Glider` and a ToggleGlider click on both buttons |
-| `lab drop <blocks>` | teleports you that many blocks above the ground where you stand and reports the fastest fall speed, the health lost and what the engine formula gives |
-| `lab state` / `lab reset` | the lab state and the movement settings / puts everything back (`resetDefaultsAndUpdate`, belt off, clamp off, no flying flag, no hum) |
-
-The belt prototype's hum is the vanilla loop `SFX_Ability_Wind_Strike_Imbued_Loop` through the effect `Arrakis_Lab_Hum` (refreshed every tick while active, like the Compactor's). Other vanilla looping candidates: `SFX_Gobliterator_Engine_Loop`
-(a machine drone), `Staff_Charged_LP_01` (the clip the Compactor hums with), `SFX_Emit_Wind_Gusts` (wind). The vanilla Rocket Boots sound is `SFX_Tool_Goblin_Rocket_Boots_Jump` (a one-shot).
-
-### Removing the lab
-
-Run `node tools/lab/remove_lab.js` (it does steps 1 to 5), or by hand:
-1. Delete `src/main/java/com/paulorchard/islandcraft/equipmentofarrakis/lab/` and `src/test/java/com/paulorchard/islandcraft/equipmentofarrakis/lab/`.
-2. Delete every asset folder named `Lab`: `src/main/resources/Server/Item/Items/Equipment_of_Arrakis/Lab/`, `.../Server/Item/RootInteractions/Equipment_of_Arrakis/Lab/`, `.../Server/Entity/Effects/Equipment_of_Arrakis/Lab/`.
-3. In `EquipmentOfArrakisPlugin.java` and `EquipmentOfArrakisConfig.java` delete the lines that end with `// EXPERIMENT: remove with the lab module` (the module in the list; the default `"lab"`; the field, getter, `case` and codec line).
-4. In `server.lang` delete the block from `# LAB BEGIN` to `# LAB END`.
-5. Delete `tools/lab/` and this section. Keep the movement facts in ARCHIVE.md (rule 11).
-Rehearsed on a copy of the repository: the script left no `lab` or `EXPERIMENT` text in `src`, and `gradlew test jar` passed there (215 tests, `AssetReferencesTest` included; 223 with the lab in).
-An old config file that still has a `Lab` section or `"lab"` in `Modules` loads fine afterwards (unknown keys and module ids are ignored).
+- **What the belt does.** While a mark is ON the movement setting `fly` (`FlyMode`) is `Allowed` with `horizontalFlySpeed` and `verticalFlySpeed` of the mark, pushed once
+  (`MovementManager.update`). The **client's own double tap of Space** then starts creative-style flight (Space rises, crouch sinks, a second double tap ends it); the server never calls
+  `setFlying(true)`. Mk III: `Mk3.HorizontalSpeed` 1.0, `Mk3.VerticalSpeed` 1.0. Mk II: `Mk2.HorizontalSpeed` 1.0, `Mk2.VerticalSpeed` 0.0 (flat flight). Units: the lab found 0.5 in Adventure
+  feels like 0.1 in creative, hence 1.0 to start; tune with `/arrakis suspensor set`. The client's own flight settings (Flight Mode hover/directional, Flight Drift, Camera-Relative Flight, Move Speed) apply
+  to this flight as to creative flight; the server does not control them.
+- **Cost.** `ManaPerSecond` 1.0 times the tick time through `Power.spendUpTo` (the same helper as the Compactor, so the regen idle rule is shared), only while the flying flag of `MovementStates` is set.
+  Not flying: no cost, nothing sent. Creative: the toggle does nothing (a chat line says so) and creative flight is untouched; if the game mode leaves Adventure while the belt is ON it lets go.
+- **At 0 Mana** (nothing left to take while flying): `Player.setFlying(ref, false, accessor)`, then fly is pushed `Disabled` with the snapshot's speeds, the toggle stays ON but **unarmed**, and "The belt needs Mana." is said
+  (`Notice`, once a second). It arms again, with one push, when Mana is at `ResumeMana` (5) or more, or when the toggle is turned off and on. Switching on with Mana under `ResumeMana` starts unarmed.
+  If the client still reports flight after the cut-off, it is stopped again at most once a second.
+- **Off** (toggle, the other mark never drops you, `/arrakis suspensor off`, death, respawn, world change, disconnect, leaving Adventure): if flying, `setFlying(false)`; the snapshot of the three fly fields
+  taken at switch-on is written back and pushed once. **After death, a world change, a disconnect or a game-mode change the snapshot is not trusted and `MovementManager.resetDefaultsAndUpdate` is used instead**
+  (the log says which: "restored the snapshot" or "reset to the defaults"). Switching Mk III to Mk II while flying keeps the flight, keeps the first snapshot and pushes the new speeds once.
+- **The packet rule.** `BeltMachine` (no engine types, unit tested) decides; `SuspensorSystem` carries out. A settings write happens only when the settings that should be in force differ from the last
+  pushed (arming, cut-off, re-arming, a mark change, a speed change from `suspensor set`, off): never per tick. The log shows only arm/cut-off/push/off lines, at most one of a kind per second per player.
+- **Hum.** The lab's hum is moved here as `Arrakis_Suspensor_Hum` (vanilla loop `SFX_Ability_Wind_Strike_Imbued_Loop`, refreshed every tick while flying and paid, removed when flight ends; `Hum` false turns it off).
+  It is the Compactor's mechanism and loads in the headless boot; whether it sounds right is **needs a client** (the lab never got a verdict on it).
+- **Commands:** `suspensor state` (mark, armed or not, flying, Mana, the speeds, the movement settings now, last pushed, the snapshot, how many settings writes), `suspensor set mk2|mk3 <h> <v>` (saved to the config; players with
+  that mark ON get the new speeds on their next tick), `suspensor off`.
+- **Toggle groups (core).** `ToggleRegistry.Toggle` has an optional `group` (the old constructor leaves it null; the Holtzman Shield and the Personal Light are ungrouped and unchanged). ON switches every other ON member of the
+  group OFF first through the same hook (a hook that throws is skipped), then switches the toggle ON; OFF touches nothing else. `ToggleRegistry.set(id, on, ...)` is the same path for commands. The picker page reads each
+  toggle's state when it rebuilds, so the mutual switch-off shows in the same rebuild; its chat line now reports the state after the press (a switch-on refused in Creative says OFF).
+- Fall damage, the Water/stamina rework and the Holtzman field are not touched; landing from flight uses the engine's rules (ARCHIVE.md rule 11: no damage below a client fall speed of 21 blocks a second).
+- **The lab is gone.** The movement lab (module `lab`, items `Arrakis_Lab_*`, `/arrakis lab`) was removed with `tools/lab/remove_lab.js` once it had answered its questions; what it found is in ARCHIVE.md rules 11 and 12. The hum effect
+  moved here; the MovementSettings snapshot and restore are `BeltMachine` and `Suspensors.read/write`.
 
 ## hud (the four bars)
 
@@ -340,3 +339,8 @@ An old config file that still has a `Lab` section or `"lab"` in `Modules` loads 
 19. **Thumper item:** `/arrakis thumper give`: it is in the IslandCraft tab (Tools) with the unlit icon (stone torch, empty dark bowl, no flame). In the hand: the vanilla torch model, no flame, no light, held and swung like the vanilla torch (compare with `Furniture_Temple_Emerald_Torch` from the creative menu). If the hand is empty or wrong, see the item notes in `thumper` (BlockType vs Model).
 20. **Thumper placement:** crouching on flat sand, face each of the 8 directions in turn and right click: the Thumper appears on the neighbouring block in that direction, on the sand, never on your own block; looking up or down changes nothing. It is the size of a placed torch, one item is used up (not in creative) and you can walk through it. Next to a wall, a steep dune face, on a non-sand block or with a drop of more than two blocks: refused with a message, item kept. A second Thumper on the same spot: "A Thumper is already there." A fourth (three standing) is refused; clicking fast does not slip a fourth past. Try the edge of a dune and the border of sand and rock: the Worms log must never say "not on sand: ignored" for one of ours, and ours must not log "Thumper MISMATCH". MaxStack 1: `/arrakis thumper give 3` fills three slots, planting one consumes exactly one. It cannot be broken by hand, weapon or mob.
 21. **Thumper beat and worm:** thump-thump, a rest, thump-thump every second, audible from tens of blocks and quieter with distance (silent past about 45); several Thumpers do not cut each other off; compare the sound with the audition (half an octave down, louder). Relog, death and a world change leave no beat sound and no stuck state; `/arrakis thumper clear` stops it at once. With Worms of Arrakis and the Thumper on sand: within about 10 seconds a worm event starts around it and the worm breaches at the Thumper, which is gone; the owner standing on sand nearby gets the pulses; a Thumper placed during a stalk makes the worm come for it. Without Worms: it places, thumps and stands.
+22. **Suspensor toggles and group** (Adventure; `"suspensor"` in `Modules`): the picker lists Suspensor Belt Mk III and Mk II with the wind rune icon, OFF. Mk III on shows ON; then Mk II on shows Mk II ON and Mk III OFF in the same rebuild. Holtzman and Light still toggle independently.
+23. **Suspensor flight:** Mk III on (chat line "ready: double-tap Space"): walking and jumping unchanged; double-tap Space flies, Space rises, crouch sinks, all directions at about the configured speed (1.0; try `/arrakis suspensor set mk3 2.0 2.0` live); Mana drops about 1 a second only while flying; a further double tap ends the flight and you fall normally. Is 1.0 a good speed? Does the flying pose look right and the hum sound right?
+24. **Suspensor Mana:** while flying `/arrakis power set 3`: the flight ends, you fall, "The belt needs Mana." (once a second at most), a double tap does nothing; once Mana is back at 5 or more it works again. Note the damage if you fall from height (a fall speed under 21 blocks a second costs none) to judge whether Mk I is needed.
+25. **Suspensor Mk II and switching:** Mk II on: the double tap flies but Space and crouch do nothing vertically (flat glide). Turning the toggle off while flying drops you at once; switching Mk III to Mk II while flying keeps you flying and locks the height.
+26. **Suspensor resets:** death, respawn, relog and a world change leave both OFF, `suspensor state` shows the settings back to normal (fly Disabled, 10.32 / 10.32 in Adventure) and a double tap does nothing; creative is unaffected and the toggle says it does nothing there. Server log: only arm, push, cut-off and off lines, no line per tick; stamina is not drained.

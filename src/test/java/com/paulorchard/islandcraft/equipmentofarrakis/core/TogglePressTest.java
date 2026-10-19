@@ -26,7 +26,7 @@ class TogglePressTest {
     }
 
     private ToggleRegistry.Outcome press(String id, UUID who, long now, long gap) {
-        return registry.pressWith(id, who, now, gap, state -> {
+        return registry.pressWith(id, who, now, gap, (toggle, state) -> {
             if (state) {
                 on.add(who);
             } else {
@@ -49,7 +49,7 @@ class TogglePressTest {
     void anIdNobodyRegisteredDoesNothing() {
         UUID who = UUID.randomUUID();
         assertEquals(ToggleRegistry.Outcome.UNKNOWN, press("Nothing", who, 0, DEBOUNCE));
-        assertEquals(ToggleRegistry.Outcome.UNKNOWN, new ToggleRegistry().pressWith("Holtzman", who, 0, DEBOUNCE, s -> log.add("called")),
+        assertEquals(ToggleRegistry.Outcome.UNKNOWN, new ToggleRegistry().pressWith("Holtzman", who, 0, DEBOUNCE, (t, s) -> log.add("called")),
                 "the module that owns it is off: no toggle in the registry");
         assertTrue(log.isEmpty());
     }

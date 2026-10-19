@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 /**
  * The passive toggles of the picker page (the Holtzman Shield, the Personal Light): no item, always listed. A module registers
@@ -40,8 +41,16 @@ public final class ToggleRegistry {
         void forget(UUID player);
     }
 
-    /** One toggle: id, display order, label key, the vanilla item whose icon is shown, and the callbacks. */
-    public record Toggle(String id, int order, String labelKey, String iconItemId, Switch on, Reader reader, Reset reset) {
+    /**
+     * One toggle: id, display order, label key, the vanilla item whose icon is shown, and the callbacks. {@code group} is null for an
+     * independent toggle; the toggles of one group are exclusive: switching one ON first switches the others of the group OFF.
+     */
+    public record Toggle(String id, int order, String labelKey, String iconItemId, Switch on, Reader reader, Reset reset, String group) {
+
+        /** An independent toggle (no group). */
+        public Toggle(String id, int order, String labelKey, String iconItemId, Switch on, Reader reader, Reset reset) {
+            this(id, order, labelKey, iconItemId, on, reader, reset, null);
+        }
 
         public boolean isOn(UUID player) {
             return reader.isOn(player);
@@ -86,11 +95,44 @@ public final class ToggleRegistry {
      * (its module is off) does nothing.
      */
     public Outcome press(String id, Store<EntityStore> store, Ref<EntityStore> ref, PlayerRef player, long nowNanos, long minGapNanos) {
-        return pressWith(id, player.getUuid(), nowNanos, minGapNanos, on -> find(id).on().set(store, ref, player, on));
+        return pressWith(id, player.getUuid(), nowNanos, minGapNanos, (toggle, on) -> toggle.on().set(store, ref, player, on));
     }
 
-    /** {@link #press} with the switching left to {@code apply}, which gets the new state (the tests). */
-    Outcome pressWith(String id, UUID player, long nowNanos, long minGapNanos, java.util.function.Consumer<Boolean> apply) {
+    /**
+     * Sets a toggle to a state for a player (a command), through the same path as a press: ON switches the other toggles of its group
+     * OFF first. Returns false when no toggle has that id.
+     */
+    public boolean set(String id, boolean on, Store<EntityStore> store, Ref<EntityStore> ref, PlayerRef player) {
+        Toggle toggle = find(id);
+        if (toggle == null) {
+            return false;
+        }
+        switchTo(toggle, player.getUuid(), on, (t, state) -> t.on().set(store, ref, player, state));
+        return true;
+    }
+
+    /**
+     * Applies a new state. Turning OFF touches nothing else. Turning ON first turns OFF every other member of the group that is ON
+     * (a hook that throws is skipped, so one failing member cannot keep the rest from being switched off), then switches the toggle
+     * ON; if that hook throws the exception goes to the caller and every member of the group is OFF.
+     */
+    void switchTo(Toggle toggle, UUID player, boolean on, BiConsumer<Toggle, Boolean> apply) {
+        if (on && toggle.group() != null) {
+            for (Toggle other : all()) {
+                if (other != toggle && toggle.group().equals(other.group()) && other.isOn(player)) {
+                    try {
+                        apply.accept(other, false);
+                    } catch (RuntimeException e) {
+                        // the others are still switched off and the new one still on
+                    }
+                }
+            }
+        }
+        apply.accept(toggle, on);
+    }
+
+    /** {@link #press} with the switching left to {@code apply}, which gets the toggle and its new state (the tests). */
+    Outcome pressWith(String id, UUID player, long nowNanos, long minGapNanos, BiConsumer<Toggle, Boolean> apply) {
         Toggle toggle = find(id);
         if (toggle == null) {
             return Outcome.UNKNOWN;
@@ -106,7 +148,7 @@ public final class ToggleRegistry {
             }
         }
         boolean now = !toggle.isOn(player);
-        apply.accept(now);
+        switchTo(toggle, player, now, apply);
         return now ? Outcome.ON : Outcome.OFF;
     }
 

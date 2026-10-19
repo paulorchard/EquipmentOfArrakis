@@ -126,8 +126,8 @@ final class ToolPicker extends InteractiveCustomUIPage<ToolPicker.PageData> {
         if ("Toggle".equals(data.action)) {
             ToggleRegistry.Toggle toggle = ToggleRegistry.get().find(data.id);
             if (toggle != null) {
-                ToggleRegistry.Outcome outcome = ToggleRegistry.get().press(data.id, store, ref, player, System.nanoTime(), 0);
-                player.sendMessage(Message.translation(toggle.labelKey()).insert(": " + (outcome == ToggleRegistry.Outcome.ON ? "ON" : "OFF")));
+                ToggleRegistry.get().press(data.id, store, ref, player, System.nanoTime(), 0);
+                player.sendMessage(Message.translation(toggle.labelKey()).insert(": " + (toggle.isOn(player.getUuid()) ? "ON" : "OFF")));
             }
             rebuild();
         } else if ("Pick".equals(data.action)) {
