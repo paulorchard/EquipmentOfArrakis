@@ -7,6 +7,11 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.protocol.MovementStates;
+import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
+import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageCause;
+import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeferredCorpseRemoval;
@@ -21,7 +26,9 @@ import java.util.List;
  * being added and adds a {@link DeferredCorpseRemoval} whose time is the death animation (a second or a few); this system reacts to that
  * component being added, so it always runs after it, and replaces it with one of {@code CorpseSeconds}, the same death particles kept.
  * {@code DeathSystems.TickCorpseRemoval} counts the new one down and {@code DeathSystems.CorpseRemoval} removes the entity, as for the
- * vanilla one. Players are not in the query. The {@link Corpses#LEDGER} remembers every body handled, so the replacement (which may
+ * vanilla one. Players are not in the query. Only mobs whose own death clip holds its last keyframe (read from the clip, see {@link DeathClips})
+ * are extended, because the body of the others would stand up again; they keep the vanilla timer unless {@code ExtendNonHolding} is set, and
+ * are not in the ledger. The {@link Corpses#LEDGER} remembers every body handled, so the replacement (which may
  * raise the change events again) is never extended a second time. A chunk that would hold more than {@code MaxCorpsesPerChunk} bodies
  * has its oldest ones cut to the quick removal. Runs on the world thread, as every system does.
  */
@@ -50,7 +57,21 @@ final class CorpseTimerSystem extends RefChangeSystem<EntityStore, DeferredCorps
         }
         NPCEntity npc = buffer.getComponent(ref, NPCEntity.getComponentType());
         TransformComponent transform = buffer.getComponent(ref, TransformComponent.getComponentType());
-        if (transform == null || !CorpseRules.shouldExtend(false, npc != null, npc == null ? null : npc.getRoleName(), config.excludedRoles())) {
+        if (transform == null || npc == null) {
+            return;
+        }
+        ModelComponent modelComponent = buffer.getComponent(ref, ModelComponent.getComponentType());
+        DeathComponent death = buffer.getComponent(ref, DeathComponent.getComponentType());
+        MovementStatesComponent movement = buffer.getComponent(ref, MovementStatesComponent.getComponentType());
+        CorpseHold.Verdict verdict = modelComponent == null ? new CorpseHold.Verdict("(no model)", false)
+                : DeathClips.verdict(modelComponent.getModel(), movement == null ? new MovementStates() : movement.getMovementStates(),
+                        death == null || death.getDeathCause() == null ? DamageCause.PHYSICAL : death.getDeathCause());
+        boolean extend = CorpseRules.shouldExtend(false, true, npc.getRoleName(), config.excludedRoles(), verdict.holds(), config.extendNonHolding());
+        String modelId = modelComponent == null ? "?" : modelComponent.getModel().getModelAssetId();
+        if (DeathClips.cache().firstTime(modelId)) {
+            Corpses.log(CorpseHold.logLine(npc.getRoleName(), modelId, verdict, extend, config.corpseSeconds()));
+        }
+        if (!extend) {
             return;
         }
         Vector3d at = transform.getPosition();

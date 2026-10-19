@@ -72,6 +72,11 @@ public class ExtractorGateInteraction extends SimpleInstantInteraction {
     private boolean requireNpc = true;
     private String bagItemId = "Arrakis_Blood_Bag";
 
+    /** How long the poke lasts, seconds: the run time of the poke interaction follows it. */
+    float pokeSeconds() {
+        return pokeSeconds;
+    }
+
     @Override
     protected void firstRun(InteractionType type, InteractionContext context, CooldownHandler cooldowns) {
         CommandBuffer<EntityStore> buffer = context.getCommandBuffer();

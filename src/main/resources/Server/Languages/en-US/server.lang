@@ -68,7 +68,7 @@ arrakis.harvester.flasksFull = Your LitreJon is full.
 items.Arrakis_Blood_Bag.name = Blood Bag
 items.Arrakis_Blood_Bag.description = Holds blood collected with the Blood Extractor. The bar shows how full it is. It does nothing else yet.
 commands.arrakis.blood.desc = Blood helpers: add, corpse, corpses
-commands.arrakis.blood.corpse.desc = Spawns a cow two blocks ahead and kills it (the body stays CorpseSeconds), to try the Blood Extractor
+commands.arrakis.blood.corpse.desc = Spawns a mob (a cow, or the role you name) two blocks ahead and, a second later, kills it, to try the Blood Extractor: arrakis blood corpse [role]
 commands.arrakis.blood.corpses.desc = Shows the bodies kept on the ground (total, your chunk, busiest chunk, seconds left, cut by the limit); add the word clear to make them all vanish
 commands.arrakis.blood.add.desc = Adds blood to the first Blood Bag with room: arrakis blood add <n>
 

@@ -22,6 +22,20 @@ final class Corpses {
     private Corpses() {
     }
 
+    private static volatile com.hypixel.hytale.logger.HytaleLogger logger;
+
+    static void logger(com.hypixel.hytale.logger.HytaleLogger log) {
+        logger = log;
+    }
+
+    /** One INFO line in the server log. */
+    static void log(String line) {
+        com.hypixel.hytale.logger.HytaleLogger log = logger;
+        if (log != null) {
+            log.at(java.util.logging.Level.INFO).log("%s", line);
+        }
+    }
+
     static ExtractorConfig config() {
         return config;
     }

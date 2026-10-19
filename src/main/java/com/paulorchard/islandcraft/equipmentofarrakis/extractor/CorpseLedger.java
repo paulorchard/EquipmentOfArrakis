@@ -118,6 +118,20 @@ final class CorpseLedger<K> {
         return out;
     }
 
+    /** A counted body for display. */
+    record Info<K>(K key, double remainingSeconds) {
+    }
+
+    /** Every counted body with its remaining seconds at {@code nowNanos}. */
+    synchronized List<Info<K>> bodies(long nowNanos, Predicate<K> gone) {
+        prune(gone);
+        List<Info<K>> out = new ArrayList<>();
+        for (Body<K> body : bodies.values()) {
+            out.add(new Info<>(body.key(), Math.max(0, (body.endNanos() - nowNanos) / 1e9)));
+        }
+        return out;
+    }
+
     /** How many bodies the cap has cut since the start. */
     synchronized int cutByCap() {
         return cut;

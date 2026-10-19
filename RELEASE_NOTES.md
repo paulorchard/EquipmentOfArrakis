@@ -2,7 +2,7 @@
 
 ## Next (not yet released)
 
-- **Bodies of killed mobs stay `CorpseSeconds` (120) on the ground** instead of the death animation time, so the Blood Extractor is easy to use; a finished blood draw makes the body vanish in `ExtractedSeconds` (1). At most `MaxCorpsesPerChunk` (5) per chunk (the newest stay), `ExcludedRoles` keeps a role on the vanilla timer. New `Extractor` config section (old files load; the section is added on the next save). New commands `/arrakis blood corpses` and `corpses clear`.
+- **Bodies of killed mobs stay `CorpseSeconds` (120) on the ground** instead of the death animation time, so the Blood Extractor is easy to use; a finished blood draw makes the body vanish in `ExtractedSeconds` (1). At most `MaxCorpsesPerChunk` (5) per chunk (the newest stay), `ExcludedRoles` keeps a role on the vanilla timer. New `Extractor` config section (old files load; the section is added on the next save). Only mobs whose death animation holds its last frame are extended (`ExtendNonHolding` allows the rest). New commands `/arrakis blood corpses` and `corpses clear`; `/arrakis blood corpse [role]` now kills the mob a second after it spawns, so its death animation plays. The Blood Extractor poke uses the Handgun `Interact` animation (`PokeAnimation` in the config; `GuardBash` is the old one).
 
 ## 0.3.0: cleanup release
 

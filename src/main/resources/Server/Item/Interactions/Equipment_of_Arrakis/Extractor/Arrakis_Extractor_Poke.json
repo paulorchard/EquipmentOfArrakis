@@ -1,9 +1,9 @@
 {
-  "$Comment": "The poke, PokeSeconds long: the vanilla GuardBash item animation of the Handgun set (the pistol jab). Animation only; no damage, no sound.",
+  "$Comment": "The poke, PokeSeconds long: the vanilla Interact item animation of the Handgun set (the dry-fire click). The module writes the config PokeAnimation and the gate PokeSeconds over these two defaults at boot. Animation only; no damage, no sound.",
   "Type": "Simple",
   "RunTime": 1.0,
   "Effects": {
-    "ItemAnimationId": "GuardBash",
+    "ItemAnimationId": "Interact",
     "ClearAnimationOnFinish": true
   }
 }
