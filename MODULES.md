@@ -36,6 +36,7 @@ Labels used: **confirmed** (a headless boot, a unit test, javap), **inferred** (
 | `blood add <n>` / `corpse [role]` | fills the first Blood Bag; spawns a mob (default Cow) two blocks ahead and kills it a second later |
 | `blood corpses` / `corpses clear` | the extended bodies (total, your chunk, busiest chunk, seconds left, cut by the cap, and the nearest five with their Status animation); makes them all vanish |
 | `thumper give [n]` / `state` / `clear` | Thumpers into the inventory (default 4); the standing Thumpers, the Worms link and the sand set; removes them all |
+| `lab ...` | EXPERIMENT: the movement lab (see `lab`) |
 | `light on` / `off` / `state` | Personal Light |
 | `hud on` / `off` / `state` / `demo <bar> <percent>` / `component hide|show <Name>|reset` | the four bars |
 | `hud lb|rb|lt|rt [x[,] y]` / `... reset` / `hud nudge reset` | nudge a bar (lb Health, rb Water, lt Power, rt Heat Exposure) |
@@ -240,6 +241,39 @@ world change and death. Settings (`Shield`): `EffectId`, `ImpactEffectId`, `Mana
   `ThumpVolumeDb` 3, `MaxLiveSeconds` 0 (the 8 directions and the 1 block distance are fixed, not settings). **An old config file** has a `Modules` list without `"thumper"`, so the module is off until that word is added (or the file is deleted to be written again).
 - **Checked here (no client, no player):** the build and 204 tests; the headless boot without the Worms jar and with it, and with the module switched off ("removed 7 of its assets"): no PROBLEM line, no asset
   error, the Duplicated Asset count unchanged. Not testable headless (a player is needed to place, entities land in unloaded chunks): the placement, the beat, the sound and the worm.
+
+## lab (EXPERIMENT: the movement lab for the Suspensor Belt)
+
+EXPERIMENT: delete with the lab module. Module id `lab`, package `lab` (classes `Lab*`), assets only in `Lab` folders with ids `Arrakis_Lab_*`, config section `Lab`
+(`WatchSeconds` 0.5, `ManaPerSecond` 1, `FlySpeed` 0.5, `RiseSpeed` 0.5, `BeltUsesEngineFly` false). Operator-only commands under `/arrakis lab`; every change to a player's movement is undone by
+`lab reset`, on death and on a world change (the system checks each tick), and the state is dropped on disconnect. What the Suspensor Belt is: three separate Z-slot items, Mk I slow fall, Mk II flat flight, Mk III
+rising flight, each costing 1 Mana a second while Space is held in the air. The movement facts found by reading the jar are in ARCHIVE.md rule 11; the lab is how the open ones are answered on a client.
+
+| Command | What it does |
+|---|---|
+| `lab watch on|off [seconds]` | a chat and log line every N s: the true state flags, vertical speed twice (the client velocity the fall damage uses, and the position delta), horizontal speed, Mana, selected Z item, game mode, fly mode and speeds, belt state; one more line whenever jumping, flying or gliding flips |
+| `lab fly off|allowed|forced [h] [v]` | sets `fly`, `horizontalFlySpeed`, `verticalFlySpeed` on the player's `MovementManager` settings and pushes them (`UpdateMovementSettings`) |
+| `lab fly flag on|off` / `fly engine on|off` | sends a `SetMovementStates` with the flying flag / calls the engine's own `Player.setFlying` |
+| `lab belt 2|3|off` | the Mk II / Mk III prototype, active only with a lab belt as the selected Z item, in the air, Space held, Mana above 0; `off` resets |
+| `lab fall drag|mass|airdrag|fallforce|set|get|list|reset` | the settings route: `dragCoefficient`, `mass`, `airDragMin/Max`, `variableJumpFallForce`, any float, boolean or fly field by name (67 of them), pushed at once |
+| `lab vel y <v>` / `lab clamp on|off [max]` | the velocity route: one Set velocity instruction (a `ChangeVelocity` packet) / the same every tick the downward speed is above max |
+| `lab give glider|belt|beltglider` | the vanilla `Glider_Scrap`; the belt (Rocket Boots look, Z slot); the belt with the glider block of `Template_Glider` and a ToggleGlider click on both buttons |
+| `lab drop <blocks>` | teleports you that many blocks above the ground where you stand and reports the fastest fall speed, the health lost and what the engine formula gives |
+| `lab state` / `lab reset` | the lab state and the movement settings / puts everything back (`resetDefaultsAndUpdate`, belt off, clamp off, no flying flag, no hum) |
+
+The belt prototype's hum is the vanilla loop `SFX_Ability_Wind_Strike_Imbued_Loop` through the effect `Arrakis_Lab_Hum` (refreshed every tick while active, like the Compactor's). Other vanilla looping candidates: `SFX_Gobliterator_Engine_Loop`
+(a machine drone), `Staff_Charged_LP_01` (the clip the Compactor hums with), `SFX_Emit_Wind_Gusts` (wind). The vanilla Rocket Boots sound is `SFX_Tool_Goblin_Rocket_Boots_Jump` (a one-shot).
+
+### Removing the lab
+
+Run `node tools/lab/remove_lab.js` (it does steps 1 to 5), or by hand:
+1. Delete `src/main/java/com/paulorchard/islandcraft/equipmentofarrakis/lab/` and `src/test/java/com/paulorchard/islandcraft/equipmentofarrakis/lab/`.
+2. Delete every asset folder named `Lab`: `src/main/resources/Server/Item/Items/Equipment_of_Arrakis/Lab/`, `.../Server/Item/RootInteractions/Equipment_of_Arrakis/Lab/`, `.../Server/Entity/Effects/Equipment_of_Arrakis/Lab/`.
+3. In `EquipmentOfArrakisPlugin.java` and `EquipmentOfArrakisConfig.java` delete the lines that end with `// EXPERIMENT: remove with the lab module` (the module in the list; the default `"lab"`; the field, getter, `case` and codec line).
+4. In `server.lang` delete the block from `# LAB BEGIN` to `# LAB END`.
+5. Delete `tools/lab/` and this section. Keep the movement facts in ARCHIVE.md (rule 11).
+Rehearsed on a copy of the repository: the script left no `lab` or `EXPERIMENT` text in `src`, and `gradlew test jar` passed there (215 tests, `AssetReferencesTest` included; 223 with the lab in).
+An old config file that still has a `Lab` section or `"lab"` in `Modules` loads fine afterwards (unknown keys and module ids are ignored).
 
 ## hud (the four bars)
 

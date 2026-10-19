@@ -1,0 +1,12 @@
+{
+  "$Comment": "EXPERIMENT: delete with the lab module. The vanilla glider click without its durability and stamina steps: in the air (GroundedCondition failed) toggle the glider; on the ground nothing. ToggleGlider is a client-side interaction: the server's copy does nothing and only learns of gliding from the movement states the client sends.",
+  "RequireNewClick": true,
+  "Interactions": [
+    {
+      "Type": "GroundedCondition",
+      "Failed": {
+        "Type": "ToggleGlider"
+      }
+    }
+  ]
+}

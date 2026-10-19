@@ -1,0 +1,10 @@
+{
+  "$Comment": "EXPERIMENT: delete with the lab module. The suspensor hum of the belt prototype: the vanilla looping event SFX_Ability_Wind_Strike_Imbued_Loop by id, applied every tick while the prototype is active (OVERWRITE refreshes the time left, so the loop is not restarted; the effect lapses a quarter second after the last refresh). Same structure as Arrakis_Compactor_Active.",
+  "ApplicationEffects": {
+    "WorldSoundEventId": "SFX_Ability_Wind_Strike_Imbued_Loop",
+    "LocalSoundEventId": "SFX_Ability_Wind_Strike_Imbued_Loop"
+  },
+  "OverlapBehavior": "Overwrite",
+  "Infinite": false,
+  "Duration": 0.25
+}

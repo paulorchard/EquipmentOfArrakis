@@ -148,3 +148,21 @@ arrakis.thumper.notSand = A Thumper needs sand to stand on.
 arrakis.thumper.limit = You have as many Thumpers out as you may.
 arrakis.thumper.noRoom = There is no room to plant it there.
 arrakis.thumper.occupied = A Thumper is already there.
+
+# LAB BEGIN (EXPERIMENT: delete with the lab module)
+commands.arrakis.lab.desc = EXPERIMENT: the movement lab (Suspensor Belt research)
+commands.arrakis.lab.watch.desc = Print the movement states, speeds, Mana, Z item and fly settings a few times a second: arrakis lab watch on|off [seconds]
+commands.arrakis.lab.fly.desc = Set the fly mode and speeds, or send the flying flag: arrakis lab fly off|allowed|forced [horizontal] [vertical] | flag on|off | engine on|off
+commands.arrakis.lab.belt.desc = The Mk II and Mk III belt prototype: arrakis lab belt 2|3|off
+commands.arrakis.lab.fall.desc = Slow-fall settings route: arrakis lab fall drag|mass|airdrag|fallforce|set|get|list|reset ...
+commands.arrakis.lab.vel.desc = Set the vertical velocity once: arrakis lab vel y <blocks per second>
+commands.arrakis.lab.clamp.desc = Clamp the downward speed every tick: arrakis lab clamp on|off [max fall speed]
+commands.arrakis.lab.give.desc = Give a test item: arrakis lab give glider|belt|beltglider
+commands.arrakis.lab.drop.desc = Teleport up above the ground and report the landing: arrakis lab drop <blocks>
+commands.arrakis.lab.state.desc = Show the lab state and the movement settings
+commands.arrakis.lab.reset.desc = Put every movement change back
+items.Arrakis_Lab_Belt.name = Lab Belt
+items.Arrakis_Lab_Belt.description = EXPERIMENT: a Z-slot test item with the Rocket Boots look. The belt prototype looks for it.
+items.Arrakis_Lab_Belt_Glider.name = Lab Belt (Glider)
+items.Arrakis_Lab_Belt_Glider.description = EXPERIMENT: the lab belt with glider physics, to see whether the client glides from the Z slot.
+# LAB END

@@ -33,7 +33,9 @@ public class EquipmentOfArrakisConfig {
 
     public static final String FILE_NAME = "Equipment_of_Arrakis";
 
-    private String[] modules = {"core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor", "placeholders", "light", "shield", "weapons", "thumper", "hud"};
+    private String[] modules = {"core", "power", "catalog", "picker", "cutter", "compactor", "litrejon", "harvester", "bloodbag", "extractor", "placeholders", "light", "shield", "weapons", "thumper",
+            "lab", // EXPERIMENT: remove with the lab module
+            "hud"};
     private CoreConfig core = new CoreConfig();
     private PowerConfig power = new PowerConfig();
     private CatalogConfig catalog = new CatalogConfig();
@@ -45,6 +47,7 @@ public class EquipmentOfArrakisConfig {
     private com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsConfig weapons = new com.paulorchard.islandcraft.equipmentofarrakis.weapons.WeaponsConfig();
     private com.paulorchard.islandcraft.equipmentofarrakis.thumper.ThumperConfig thumper = new com.paulorchard.islandcraft.equipmentofarrakis.thumper.ThumperConfig();
     private com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig hud = new com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig();
+    private com.paulorchard.islandcraft.equipmentofarrakis.lab.LabConfig lab = new com.paulorchard.islandcraft.equipmentofarrakis.lab.LabConfig(); // EXPERIMENT: remove with the lab module
 
     /** The ids of the modules to load, lower case. The core module is always loaded whatever this says. */
     public Set<String> enabledModules() {
@@ -91,6 +94,8 @@ public class EquipmentOfArrakisConfig {
         return thumper;
     }
 
+    public com.paulorchard.islandcraft.equipmentofarrakis.lab.LabConfig lab() { return lab; } // EXPERIMENT: remove with the lab module
+
     public com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig hud() {
         return hud;
     }
@@ -109,6 +114,7 @@ public class EquipmentOfArrakisConfig {
             case "shield" -> shield;
             case "weapons" -> weapons;
             case "thumper" -> thumper;
+            case "lab" -> lab; // EXPERIMENT: remove with the lab module
             case "hud" -> hud;
             default -> null;
         };
@@ -150,6 +156,7 @@ public class EquipmentOfArrakisConfig {
             .append(new KeyedCodec<>("Thumper", com.paulorchard.islandcraft.equipmentofarrakis.thumper.ThumperConfig.CODEC, false), (c, v) -> c.thumper = v, c -> c.thumper)
             .documentation("Settings of the thumper module (the sand-planted beat that draws the worm).")
             .add()
+            .append(new KeyedCodec<>("Lab", com.paulorchard.islandcraft.equipmentofarrakis.lab.LabConfig.CODEC, false), (c, v) -> c.lab = v, c -> c.lab).add() // EXPERIMENT: remove with the lab module
             .append(new KeyedCodec<>("Hud", com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig.CODEC, false), (c, v) -> c.hud = v, c -> c.hud)
             .documentation("Settings of the hud module (the four bars above the hotbar).")
             .add()

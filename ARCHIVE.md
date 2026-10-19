@@ -30,6 +30,30 @@ The server log only says "Crash"; the real message is in the client log, `%APPDA
     A deployable config with `LiveDuration` 0 has no despawn timer, `MaxLiveCount` removes the oldest instead of refusing a new one, and `HitboxCollision` exists only when a
     `HitboxCollisionConfig` is named.
 
+11. **Movement facts for the Suspensor Belt (read from the 0.7.0 jar and Assets.zip; the lab module is how the open questions are answered on a client; this entry keeps the facts after the lab is deleted).**
+    - **Gliding is entirely client-side.** `ToggleGliderInteraction.firstRun` on the server is a bare `return`; the interaction only makes a packet for the client. `GlidingCondition` just reads
+      `MovementStates.gliding`, which the client sends. The glider numbers live on the item: an item JSON `Glider` block (`TerminalVelocity` -2, `FallSpeedMultiplier` 6, `HorizontalSpeedMultiplier` 1.1, `Speed` 10,
+      the dive values) is sent in `ItemBase.gliderConfig`. The stat `GlidingActive` (0 to 1) only follows the `Gliding` condition (+1 per 0.1 s while gliding, -1 while not) and drives the open/closed model of the
+      glider. Nothing in the server starts a glide: `SavedMovementStates` (what `SetMovementStates` carries to the client) has one field, `flying`. The vanilla click is `GroundedCondition` (failed = in the air) then
+      `ToggleGlider`, with durability, a tiny stamina cost and `RequireNewClick`. Whether the client glides from a Z-slot item is a client question (the lab item `Arrakis_Lab_Belt_Glider` asked it).
+    - **Fall damage is computed on the server from the vertical speed the client reports at the landing,** not from the height: `DamageSystems.FallDamagePlayers`, on the tick the client says `onGround` with a
+      current fall distance above 0, and not in fluid. With v = |client Y velocity| in blocks a second and `MovementConfig` (Default.json) `MinFallSpeedToEngageRoll` 21: nothing at 21 or less; above it
+      `floor(maxHealth / 100 * ((0.58 * (v - 21))^2 + 10))` of cause Fall, so v = 22 gives 10 % of max health, 31 gives 43 %, 41 gives 144 %. A roll lowers it (full mitigation up to `MaxFallSpeedRollFullMitigation` 25, partial
+      33 % up to `MaxFallSpeedToEngageRoll` 31). `WorldConfig.isFallDamageEnabled` switches it off. So slowing the fall below 21 blocks a second prevents the damage whatever the height; a slow fall that is only
+      server-side bookkeeping does not, because the speed that counts is the client's.
+    - **Movement is client-authoritative.** The client sends `ClientMovement` (states, position, wish movement) every tick; `Velocity.getClientVelocity()` is what it reports. The server can push back with
+      `Velocity.addInstruction(vector, VelocityConfig, Add|Set)`, which `PlayerVelocityInstructionSystem` consumes and (judging by the class and packet names, not read in full) sends as a `ChangeVelocity` packet, with `ClientTeleport` for positions, and with
+      `UpdateMovementSettings` for the physics numbers.
+    - **MovementSettings** (public fields of the protocol class, pushed with `MovementManager.update(packetHandler)`; `getSettings()` is the live copy, `getDefaultSettings()` what a reset returns to,
+      `resetDefaultsAndUpdate(ref, accessor)` restores and pushes): `mass`, `dragCoefficient`, `invertedGravity`, `velocityResistance`, `jumpForce` (11.8), `swimJumpForce`, `jumpBuffer*`, `acceleration`, `airDragMin/Max`
+      (0.96, 0.995) and `airDragMin/MaxSpeed`, `airFriction*`, `airSpeedMultiplier`, `airControl*`, `baseSpeed` (5.5), the climb speeds, `horizontalFlySpeed` and `verticalFlySpeed` (10.32 in the default config),
+      `fly` (`FlyMode`: Disabled, Allowed, Forced), the walk, run, crouch and sprint multipliers, `variableJumpFallForce` (35), `fallEffectDuration`, `fallJumpForce`, `fallMomentumLoss`, the auto-jump and
+      slide values, `minFallSpeedToEngageRoll` (21) and `maxFallSpeedToEngageRoll` (31), the roll values and the slope and wall angles. `MovementConfig.fly` is documented as: Disabled revokes the capability, Allowed
+      grants a toggleable fly, Forced keeps the player flying with the toggle disabled; unset it derives from the game mode (Creative: Allowed). The engine's own server-side switch is `Player.setFlying(ref, flying, accessor)`:
+      on makes the settings' fly Forced (if it was) else Allowed, off puts the default fly mode back, and it pushes the settings and the flying flag.
+    - **The Z slot** is `InventoryComponent.Utility` (an `ActiveSlotInventoryComponent`: `getActiveSlot()`, `getActiveItem()`), readable on the world thread every tick; an item needs `Utility { Usable: true }`. Armor items can carry
+      movement settings (`Rocket_Boots`: `Armor.MovementSettings.ExtraJumpCount`); the Rocket Boots are a Legs armor item, not a Z item.
+
 ## Tried and abandoned
 
 - **Flame Cutter and Flame Beam Cutter (the experiments module).** A flamethrower-style tool and a beam tool with a calibration rig (about 17 `exp cal` commands, particles, a measured angle unit) to place a

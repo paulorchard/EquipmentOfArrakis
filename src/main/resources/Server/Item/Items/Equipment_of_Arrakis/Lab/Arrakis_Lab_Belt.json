@@ -1,0 +1,17 @@
+{
+  "$Comment": "EXPERIMENT: delete with the lab module. A test item for the Z (utility) slot: the vanilla Rocket Boots model, texture and icon by path, no recipe, no durability, no interactions. The belt prototype (/arrakis lab belt 2|3) looks for this item as the selected Z item.",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Lab_Belt.name",
+    "Description": "server.items.Arrakis_Lab_Belt.description"
+  },
+  "Model": "Items/Armors/Gadget/Rocket_Boots_Goblin.blockymodel",
+  "Texture": "Items/Armors/Gadget/Rocket_Boots_Texture.png",
+  "Icon": "Icons/ItemsGenerated/Rocket_Boots.png",
+  "PlayerAnimationsId": "Item",
+  "Utility": {
+    "Usable": true
+  },
+  "Quality": "Technical",
+  "MaxStack": 1,
+  "MaxDurability": 0
+}
