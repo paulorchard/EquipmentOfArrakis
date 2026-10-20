@@ -34,7 +34,10 @@ final class BeltMachine {
     enum Fly { DISABLED, ALLOWED, FORCED }
 
     /** How the Mk I descent is applied. */
-    enum Way { FLYGLIDE, AIRDRAG, COUNTER }
+    enum Way { FLYGLIDE, AIRDRAG, COUNTER, GLIDER }
+
+    /** What the glider route takes as "falling": the raw flag (default), the speed rule or the fallingFar flag. */
+    enum Trigger { FALLING, SPEED, FARFALL }
 
     /** The three movement settings the flying marks write: the fly mode and the two fly speeds. */
     record FlySettings(Fly mode, float horizontal, float vertical) {
@@ -49,17 +52,30 @@ final class BeltMachine {
 
     /** What Mk I needs from the config. */
     record FallRules(Way way, double descentSpeed, double threshold, int ticks, int pushTicks, double tolerance, float glideHorizontal, float airDrag,
-                     boolean reportsTotal, float manaPerSecond) {
+                     boolean reportsTotal, float manaPerSecond, Trigger trigger, int fallingTicks) {
         static final FallRules DEFAULT = new FallRules(Way.FLYGLIDE, 4.0, 12.0, 2, 5, 0.75, 1.0f, 0.9712f, true, 0f);
 
+        FallRules(Way way, double descentSpeed, double threshold, int ticks, int pushTicks, double tolerance, float glideHorizontal, float airDrag,
+                  boolean reportsTotal, float manaPerSecond) {
+            this(way, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, Trigger.FALLING, 1);
+        }
+
         FallRules withWay(Way other) {
-            return new FallRules(other, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond);
+            return new FallRules(other, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, trigger, fallingTicks);
+        }
+
+        FallRules withTrigger(Trigger other, int fallTicks) {
+            return new FallRules(way, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, other, fallTicks);
         }
     }
 
     /** Everything the machine reads from the world in one tick. */
     record Sense(float dt, boolean flying, boolean modeOk, boolean falling, boolean fallingFar, boolean onGround, boolean inFluid, double vy,
-                 double y, float health, float mana, FlySettings fly, Drag drag) {
+                 double y, float health, float mana, FlySettings fly, Drag drag, boolean gliding) {
+        Sense(float dt, boolean flying, boolean modeOk, boolean falling, boolean fallingFar, boolean onGround, boolean inFluid, double vy, double y,
+              float health, float mana, FlySettings fly, Drag drag) {
+            this(dt, flying, modeOk, falling, fallingFar, onGround, inFluid, vy, y, health, mana, fly, drag, false);
+        }
     }
 
     enum Kind {
@@ -92,7 +108,13 @@ final class BeltMachine {
         /** One Set instruction of (0, amount, 0) with a config that does not decay. */
         VELOCITY,
         /** One Set instruction of (0, 0, 0) with the default config: the external velocity is cleared. */
-        VELOCITY_CLEAR
+        VELOCITY_CLEAR,
+        /** Apply the falling signal effect (amount 1: the first time of a descent, 0: a refresh). */
+        EFFECT_ON,
+        /** Remove the falling signal effect. */
+        EFFECT_OFF,
+        /** Take the glider item out of the Utility slot (only ours). */
+        ITEM_REMOVE
     }
 
     record Act(Kind kind, FlySettings settings, float amount, String text, Drag drag) {
@@ -120,6 +142,9 @@ final class BeltMachine {
     /** Seconds a glide gets to start (the flying flag, the first steady speed) before the stall and flight-lost rules apply. */
     static final float GRACE_SECONDS = 0.5f;
 
+    /** Seconds between two refreshes of the falling signal while the trigger holds and the player is not gliding. */
+    static final float EFFECT_REFRESH_SECONDS = 0.25f;
+
     /** Ticks without vertical movement that count as touching down in a glide. */
     static final int STALL_TICKS = 6;
 
@@ -142,6 +167,10 @@ final class BeltMachine {
     private boolean instrActive;
     private double extCur;
     private int streak;
+    private int fallStreak;
+    private boolean effectOn;
+    private float effectClock;
+    private boolean itemPlaced;
     private int groundTicks;
     private int sinceRefresh;
     private int stallTicks;
@@ -232,13 +261,26 @@ final class BeltMachine {
         return instrActive;
     }
 
+    /** The adapter says the glider item is in the Utility slot because of this belt (or is not any more). */
+    synchronized void itemPlaced(boolean placed) {
+        itemPlaced = placed;
+    }
+
+    synchronized boolean itemPlaced() {
+        return itemPlaced;
+    }
+
+    synchronized boolean effectOn() {
+        return effectOn;
+    }
+
     /** Whether the machine has nothing to do or remember (an idle one can be dropped). */
     synchronized boolean idle() {
         return mark == null && !restorePending;
     }
 
     private boolean touched() {
-        return snapshot != null || glideSnap != null || dragSnap != null || instrActive || engaged;
+        return snapshot != null || glideSnap != null || dragSnap != null || instrActive || engaged || effectOn || itemPlaced;
     }
 
     /**
@@ -381,6 +423,14 @@ final class BeltMachine {
             out.add(Act.of(Kind.VELOCITY_CLEAR));
             instrActive = false;
         }
+        if (effectOn) {
+            effectOn = false;
+            out.add(new Act(Kind.EFFECT_OFF, null, 0f, "belt off or reset"));
+        }
+        if (itemPlaced && (mark == null || !mark.falls())) {
+            itemPlaced = false;
+            out.add(Act.of(Kind.ITEM_REMOVE));
+        }
         if (!snapshotTrusted) {
             if (snapshot != null || glideSnap != null || dragSnap != null) {
                 out.add(new Act(Kind.RESET, null, 0f, "defaults"));
@@ -410,6 +460,7 @@ final class BeltMachine {
         flying = false;
         armed = mark != null && mark.falls();
         streak = 0;
+        fallStreak = 0;
         groundTicks = 0;
     }
 
@@ -433,6 +484,8 @@ final class BeltMachine {
         boolean eligible = !s.onGround() && !s.flying() && !s.inFluid();
         boolean fastDown = s.falling() && -s.vy() > rules.threshold();
         streak = eligible && fastDown ? streak + 1 : 0;
+        fallStreak = eligible && s.falling() ? fallStreak + 1 : 0;
+        boolean gliderWay = rules.way() == Way.GLIDER;
         if (!s.onGround()) {
             lastAirVy = s.vy();
         }
@@ -444,7 +497,8 @@ final class BeltMachine {
                 armed = true;
                 out.add(new Act(Kind.LOG, null, 0f, "armed: Mana is back"));
             }
-            boolean trigger = mark == Mark.I_FAR ? eligible && s.fallingFar() : eligible && streak >= Math.max(1, rules.ticks());
+            boolean trigger = gliderWay ? !s.gliding() && gliderTrigger(rules, eligible, s)
+                    : mark == Mark.I_FAR ? eligible && s.fallingFar() : eligible && streak >= Math.max(1, rules.ticks());
             if (trigger && (!paid || s.mana() > EMPTY)) {
                 engage(s, rules, out);
             }
@@ -471,7 +525,7 @@ final class BeltMachine {
             reason = "flight lost";
         } else if (!glide && s.flying()) {
             reason = "flying";
-        } else if (!glide && risingSeconds > RISING_SECONDS) {
+        } else if (!glide && !gliderWay && risingSeconds > RISING_SECONDS) {
             reason = "not falling any more";
         } else if (paid && s.mana() <= EMPTY) {
             reason = "out of Mana";
@@ -483,6 +537,13 @@ final class BeltMachine {
         if (paid) {
             out.add(new Act(Kind.SPEND, null, rules.manaPerSecond() * s.dt(), null));
         }
+        if (gliderWay) {
+            effectClock += s.dt();
+            if (!s.gliding() && effectClock >= EFFECT_REFRESH_SECONDS && gliderTrigger(rules, eligible, s)) {
+                effectClock = 0f;
+                out.add(new Act(Kind.EFFECT_ON, null, 0f, null));
+            }
+        }
         if (sinceRefresh >= Math.max(1, rules.pushTicks())) {
             if (engagedWay == Way.FLYGLIDE && Math.abs(s.vy() + rules.descentSpeed()) > rules.tolerance()) {
                 refresh(-rules.descentSpeed(), out);
@@ -490,6 +551,18 @@ final class BeltMachine {
                 refresh(counterExternal(s.vy(), extCur, rules.descentSpeed(), rules.reportsTotal()), out);
             }
         }
+    }
+
+    /** The glider route trigger: the raw falling flag (with the ticks), the speed rule or fallingFar; the caller has checked the player is not gliding. */
+    private boolean gliderTrigger(FallRules rules, boolean eligible, Sense s) {
+        if (!eligible) {
+            return false;
+        }
+        return switch (rules.trigger()) {
+            case FALLING -> fallStreak >= Math.max(1, rules.fallingTicks());
+            case SPEED -> streak >= Math.max(1, rules.ticks());
+            case FARFALL -> s.fallingFar();
+        };
     }
 
     private void refresh(double ext, List<Act> out) {
@@ -512,6 +585,7 @@ final class BeltMachine {
         groundTicks = 0;
         stallTicks = 0;
         lostTicks = 0;
+        effectClock = 0f;
         risingSeconds = 0f;
         engagedSeconds = 0f;
         sinceRefresh = 0;
@@ -531,6 +605,12 @@ final class BeltMachine {
                 out.add(new Act(Kind.DRAG_ON, null, 0f, null, new Drag(rules.airDrag(), rules.airDrag())));
                 how = "airdrag: airDragMin/Max " + fmt(s.drag().min()) + "/" + fmt(s.drag().max()) + " -> " + rules.airDrag();
             }
+            case GLIDER -> {
+                effectOn = true;
+                effectClock = 0f;
+                out.add(new Act(Kind.EFFECT_ON, null, 1f, null));
+                how = "glider: the falling signal effect applied (trigger " + rules.trigger().name().toLowerCase(Locale.ROOT) + "), nothing else is done to the player";
+            }
             default -> {
                 how = "counter: target " + fmt(-rules.descentSpeed());
                 if (s.vy() < -rules.descentSpeed() - rules.tolerance()) {
@@ -539,7 +619,7 @@ final class BeltMachine {
                 }
             }
         }
-        out.add(new Act(Kind.LOG, null, 0f, "descent ENGAGED by " + (mark == Mark.I_FAR ? "far fall" : "speed") + " at vertical speed " + fmt(s.vy())
+        out.add(new Act(Kind.LOG, null, 0f, "descent ENGAGED by " + (rules.way() == Way.GLIDER ? "trigger " + rules.trigger().name().toLowerCase(Locale.ROOT) : mark == Mark.I_FAR ? "far fall" : "speed") + " at vertical speed " + fmt(s.vy())
                 + ", height y " + fmt(s.y()) + ", " + how));
     }
 
@@ -553,6 +633,10 @@ final class BeltMachine {
         if (instrActive) {
             instrActive = false;
             out.add(Act.of(Kind.VELOCITY_CLEAR));
+        }
+        if (effectOn) {
+            effectOn = false;
+            out.add(new Act(Kind.EFFECT_OFF, null, 0f, reason));
         }
         if (glideSnap != null) {
             pushes++;
@@ -569,6 +653,7 @@ final class BeltMachine {
                 + fmt(s.health()) + "; instruction refreshes so far " + refreshes));
         engagedWay = null;
         streak = 0;
+        fallStreak = 0;
         groundTicks = 0;
         if ("out of Mana".equals(reason)) {
             armed = false;

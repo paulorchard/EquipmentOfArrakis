@@ -19,7 +19,9 @@ import java.util.Locale;
 public class Mk1Config {
 
     private boolean listed = true;
-    private String route = "flyglide";
+    private String route = "glider";
+    private String gliderTrigger = "falling";
+    private int fallingTicks = 1;
     private double descentSpeed = 4.0;
     private double speedThreshold = 12.0;
     private int speedTicks = 2;
@@ -41,12 +43,35 @@ public class Mk1Config {
         return switch (route == null ? "" : route.toLowerCase(Locale.ROOT)) {
             case "airdrag" -> BeltMachine.Way.AIRDRAG;
             case "counter" -> BeltMachine.Way.COUNTER;
-            default -> BeltMachine.Way.FLYGLIDE;
+            case "flyglide" -> BeltMachine.Way.FLYGLIDE;
+            default -> BeltMachine.Way.GLIDER;
         };
     }
 
     void way(BeltMachine.Way value) {
         route = value.name().toLowerCase(Locale.ROOT);
+    }
+
+    /** What the glider route takes as falling; an unknown name is the raw falling flag. */
+    public BeltMachine.Trigger trigger() {
+        return switch (gliderTrigger == null ? "" : gliderTrigger.toLowerCase(Locale.ROOT)) {
+            case "speed" -> BeltMachine.Trigger.SPEED;
+            case "farfall" -> BeltMachine.Trigger.FARFALL;
+            default -> BeltMachine.Trigger.FALLING;
+        };
+    }
+
+    void trigger(BeltMachine.Trigger value) {
+        gliderTrigger = value.name().toLowerCase(Locale.ROOT);
+    }
+
+    /** Consecutive ticks the falling flag must hold for the falling trigger (at least 1). */
+    public int fallingTicks() {
+        return Math.max(1, fallingTicks);
+    }
+
+    void fallingTicks(int value) {
+        fallingTicks = value;
     }
 
     /** Target descent speed in blocks a second. */
@@ -145,14 +170,18 @@ public class Mk1Config {
 
     BeltMachine.FallRules rules() {
         return new BeltMachine.FallRules(way(), descentSpeed(), speedThreshold(), speedTicks(), pushTicks(), holdTolerance(), (float) glideHorizontal(),
-                (float) airDrag(), reportsTotal(), (float) manaPerSecond());
+                (float) airDrag(), reportsTotal(), (float) manaPerSecond(), trigger(), fallingTicks());
     }
 
     static final BuilderCodec<Mk1Config> BUILDER = BuilderCodec.builder(Mk1Config.class, Mk1Config::new)
             .append(new KeyedCodec<>("Listed", Codec.BOOLEAN, false), (c, v) -> c.listed = v, c -> c.listed)
             .documentation("True: the two Mk I toggles are listed on the picker page (this test build). False: not registered.").add()
             .append(new KeyedCodec<>("Route", Codec.STRING, false), (c, v) -> c.route = v, c -> c.route)
-            .documentation("flyglide (fly, then drift down with an external velocity), airdrag (the air drag multipliers) or counter (an upward external velocity). Old values read as flyglide.").add()
+            .documentation("glider (default: the falling signal effect opens the glider item), flyglide (fly, then drift down with an external velocity), airdrag (the air drag multipliers) or counter (an upward external velocity).").add()
+            .append(new KeyedCodec<>("GliderTrigger", Codec.STRING, false), (c, v) -> c.gliderTrigger = v, c -> c.gliderTrigger)
+            .documentation("glider route: what counts as falling. falling (default: the raw flag), speed (the speed rule) or farfall (the fallingFar flag).").add()
+            .append(new KeyedCodec<>("FallingTicks", Codec.INTEGER, false), (c, v) -> c.fallingTicks = v, c -> c.fallingTicks)
+            .documentation("glider route, falling trigger: consecutive ticks of the falling flag before the signal is sent (default 1).").add()
             .append(new KeyedCodec<>("DescentSpeed", Codec.DOUBLE, false), (c, v) -> c.descentSpeed = v, c -> c.descentSpeed)
             .documentation("Target descent speed in blocks a second.").add()
             .append(new KeyedCodec<>("SpeedThreshold", Codec.DOUBLE, false), (c, v) -> c.speedThreshold = v, c -> c.speedThreshold)

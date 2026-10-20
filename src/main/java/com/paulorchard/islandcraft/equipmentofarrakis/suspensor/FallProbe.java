@@ -32,6 +32,43 @@ final class FallProbe {
         return chat;
     }
 
+    private boolean gliding;
+    private boolean glidingStat;
+    private boolean glideStarted;
+    private boolean landedGround = true;
+    private float healthAtTakeoff;
+
+    /**
+     * Flips of the gliding flag and of the stat GlidingActive (with the vertical speed), and at each landing the health change since the
+     * takeoff. {@code health} is -1 when unknown.
+     */
+    List<String> observeGlide(boolean nowGliding, boolean nowStat, boolean nowGround, float health, double vy) {
+        List<String> lines = new ArrayList<>();
+        if (!glideStarted) {
+            glideStarted = true;
+            gliding = nowGliding;
+            glidingStat = nowStat;
+            landedGround = nowGround;
+            healthAtTakeoff = health;
+            return lines;
+        }
+        if (nowGliding != gliding) {
+            lines.add("gliding " + gliding + " -> " + nowGliding + ": vy " + fmt(vy));
+            gliding = nowGliding;
+        }
+        if (nowStat != glidingStat) {
+            lines.add("stat GlidingActive " + glidingStat + " -> " + nowStat + ": vy " + fmt(vy));
+            glidingStat = nowStat;
+        }
+        if (landedGround && !nowGround) {
+            healthAtTakeoff = health;
+        } else if (!landedGround && nowGround) {
+            lines.add("landing: vy " + fmt(vy) + ", health " + fmt(healthAtTakeoff) + " -> " + fmt(health) + " (" + fmt(health - healthAtTakeoff) + ")");
+        }
+        landedGround = nowGround;
+        return lines;
+    }
+
     List<String> observe(boolean nowFalling, boolean nowFar, boolean nowGround, boolean nowFlying, double y, double vy, long nowMs, boolean engaged,
                          int instructions) {
         List<String> lines = new ArrayList<>();

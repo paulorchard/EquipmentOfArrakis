@@ -78,6 +78,22 @@ final class Suspensors {
         }
     }
 
+    /** An INFO line without a player. */
+    static void logPlain(String text) {
+        HytaleLogger log = logger;
+        if (log != null) {
+            log.at(Level.INFO).log("Suspensor: %s", text);
+        }
+    }
+
+    /** A line for the probe, if the player has one running (the effect, the item). */
+    static void probeEvent(com.hypixel.hytale.server.core.universe.PlayerRef player, String line) {
+        FallProbe probe = PROBES.get(player.getUuid());
+        if (probe != null) {
+            probeLine(player, probe, line);
+        }
+    }
+
     static ImpulseWatch impulse(UUID player) {
         return IMPULSES.get(player);
     }

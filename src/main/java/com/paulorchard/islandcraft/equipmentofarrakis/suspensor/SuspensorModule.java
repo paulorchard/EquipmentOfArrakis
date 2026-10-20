@@ -58,7 +58,18 @@ public final class SuspensorModule implements EquipmentModule {
         register(Suspensors.TOGGLE_II, 32, BeltMachine.Mark.II);
         ctx.system(new SuspensorSystem());
         ctx.events().registerGlobal(PlayerDisconnectEvent.class, event -> Suspensors.forget(event.getPlayerRef().getUuid()));
+        // never leave a stray glider: a relog or a world change finds none (the belt is off then, see ToggleRegistry.forget)
+        ctx.events().registerGlobal(com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent.class, event -> {
+            com.hypixel.hytale.component.Holder<EntityStore> holder = event.getHolder();
+            cleanse(holder);
+        });
         SuspensorCommands.register(ctx.group("suspensor"), ctx::saveConfig);
+    }
+
+    private static void cleanse(com.hypixel.hytale.component.Holder<EntityStore> holder) {
+        if (holder != null && GliderItems.removeEverywhere(holder) > 0) {
+            Suspensors.logPlain("glider item found in the inventory at join and removed");
+        }
     }
 
     private static void register(String id, int order, BeltMachine.Mark mark) {
@@ -99,7 +110,12 @@ public final class SuspensorModule implements EquipmentModule {
         float mana = power == null ? Float.MAX_VALUE : power.get(store, ref);
         boolean armed = Suspensors.of(id).switchOn(mark, Suspensors.read(manager.getSettings()), mana, (float) Suspensors.config().resumeMana());
         Suspensors.log(id, player.getUsername(), "state", "Mk " + mark + " on, " + (armed ? "armed" : "unarmed (Mana under " + Suspensors.config().resumeMana() + ")"));
-        if (armed) {
+        if (armed && mark.falls() && Suspensors.config().mk1().way() == BeltMachine.Way.GLIDER) {
+            GliderSlot.Place place = GliderItems.placeInUtility(store, ref);
+            Suspensors.of(id).itemPlaced(place != GliderSlot.Place.BLOCKED);
+            Suspensors.log(id, player.getUsername(), "item", "glider item: " + place + " (active utility slot " + GliderItems.activeUtility(store, ref) + ")");
+            player.sendMessage(Message.translation(LANG + (place == GliderSlot.Place.BLOCKED ? "utilityBusy" : "gliderPlaced")));
+        } else if (armed) {
             player.sendMessage(Message.translation(LANG + switch (mark) {
                 case III -> "ready3";
                 case II -> "ready2";
@@ -124,6 +140,12 @@ public final class SuspensorModule implements EquipmentModule {
         Mk1Config m = Suspensors.config().mk1();
         lines.add("suspensor Mk I route " + m.way().name().toLowerCase(java.util.Locale.ROOT) + ", descent " + m.descentSpeed() + ", speed threshold " + m.speedThreshold() + " x " + m.speedTicks()
                 + " ticks, refresh every " + m.pushTicks() + " ticks, " + m.manaPerSecond() + " Mana a second");
+        lines.add(EntityEffect.getAssetMap().getAsset(SuspensorSystem.FALLING_EFFECT) == null ? "PROBLEM effect " + SuspensorSystem.FALLING_EFFECT + " is not loaded"
+                : "effect " + SuspensorSystem.FALLING_EFFECT + " loaded");
+        com.hypixel.hytale.server.core.asset.type.item.config.Item glider = com.hypixel.hytale.server.core.asset.type.item.config.Item.getAssetMap().getAsset(GliderSlot.ITEM_ID);
+        lines.add(glider == null ? "PROBLEM item " + GliderSlot.ITEM_ID + " is not loaded" : "item " + GliderSlot.ITEM_ID + " loaded, interactions " + glider.getInteractions().keySet()
+                + ", utility " + glider.getUtility());
+        lines.add("suspensor glider trigger " + m.trigger().name().toLowerCase(java.util.Locale.ROOT) + ", falling ticks " + m.fallingTicks());
         lines.add(EntityEffect.getAssetMap().getAsset(SuspensorSystem.HUM_EFFECT) == null ? "PROBLEM effect " + SuspensorSystem.HUM_EFFECT + " is not loaded"
                 : "effect " + SuspensorSystem.HUM_EFFECT + " loaded");
         SuspensorConfig c = Suspensors.config();

@@ -1,0 +1,80 @@
+{
+  "$Comment": "Proof item of the Suspensor Belt Mk I glider route. The vanilla glider by parent (model, texture, the Glider block and the inherited Primary and SwapFrom are untouched: a left click in the air with it in hand is the vanilla glide, the control). No recipe, no durability. Utility true so it can sit in the Utility (Z) slot. Three triggers that read the server signal effect Arrakis_Suspensor_Falling: HeldOffhand (Utility slot), Held (main hand), Secondary (right click); the extra ones are removed once the test shows which the client honours. No category change: it stays in the vanilla creative list of the parent.",
+  "Parent": "Template_Glider",
+  "TranslationProperties": {
+    "Name": "server.items.Arrakis_Suspensor_Glider.name",
+    "Description": "server.items.Arrakis_Suspensor_Glider.description"
+  },
+  "Utility": {
+    "Usable": true,
+    "Compatible": true
+  },
+  "Interactions": {
+    "HeldOffhand": {
+      "Interactions": [
+        {
+          "Type": "Condition",
+          "Gliding": false,
+          "Next": {
+            "Type": "EffectCondition",
+            "EntityEffectIds": [
+              "Arrakis_Suspensor_Falling"
+            ],
+            "Match": "All",
+            "Next": {
+              "Type": "ToggleGlider",
+              "Effects": {
+                "WorldSoundEventId": "SFX_Scrap_Glider_Deploy",
+                "LocalSoundEventId": "SFX_Scrap_Glider_Deploy_Stereo"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Held": {
+      "Interactions": [
+        {
+          "Type": "Condition",
+          "Gliding": false,
+          "Next": {
+            "Type": "EffectCondition",
+            "EntityEffectIds": [
+              "Arrakis_Suspensor_Falling"
+            ],
+            "Match": "All",
+            "Next": {
+              "Type": "ToggleGlider",
+              "Effects": {
+                "WorldSoundEventId": "SFX_Scrap_Glider_Deploy",
+                "LocalSoundEventId": "SFX_Scrap_Glider_Deploy_Stereo"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "Condition",
+          "Gliding": false,
+          "Next": {
+            "Type": "EffectCondition",
+            "EntityEffectIds": [
+              "Arrakis_Suspensor_Falling"
+            ],
+            "Match": "All",
+            "Next": {
+              "Type": "ToggleGlider",
+              "Effects": {
+                "WorldSoundEventId": "SFX_Scrap_Glider_Deploy",
+                "LocalSoundEventId": "SFX_Scrap_Glider_Deploy_Stereo"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

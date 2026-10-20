@@ -454,7 +454,7 @@ class Mk1Test {
     @Test
     void theDefaultsAreTheSpec() {
         Mk1Config m = new Mk1Config();
-        assertEquals(Way.FLYGLIDE, m.way());
+        assertEquals(Way.GLIDER, m.way());
         assertEquals(4.0, m.descentSpeed());
         assertEquals(12.0, m.speedThreshold());
         assertEquals(2, m.speedTicks());
@@ -485,7 +485,7 @@ class Mk1Test {
                         + "\"TerminalSpeed\":22.0,\"PushTicks\":2,\"ManaPerSecond\":0.0}}"), new ExtraInfo());
         Mk1Config m = c.mk1();
         assertFalse(m.listed());
-        assertEquals(Way.FLYGLIDE, m.way(), "the removed routes read as the new default");
+        assertEquals(Way.GLIDER, m.way(), "the removed routes read as the new default");
         assertEquals(6.0, m.descentSpeed());
         assertEquals(15.0, m.speedThreshold());
         assertEquals(3, m.speedTicks());

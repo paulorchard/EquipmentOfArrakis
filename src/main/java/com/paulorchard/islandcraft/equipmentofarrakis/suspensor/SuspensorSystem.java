@@ -39,6 +39,7 @@ import java.util.UUID;
 final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
 
     static final String HUM_EFFECT = "Arrakis_Suspensor_Hum";
+    static final String FALLING_EFFECT = "Arrakis_Suspensor_Falling";
 
     private Query<EntityStore> query;
 
@@ -82,6 +83,9 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
         double y = transform == null ? 0.0 : transform.getPosition().y;
         if (probe != null) {
             int instructions = velocity == null ? 0 : velocity.getInstructions().size();
+            for (String line : probe.observeGlide(states.gliding, glidingActive(buffer, ref), states.onGround, health(buffer, ref), vy)) {
+                Suspensors.probeLine(player, probe, line);
+            }
             for (String line : probe.observe(states.falling, states.fallingFar, states.onGround, states.flying, y, vy, System.currentTimeMillis(),
                     machine != null && machine.engaged(), instructions)) {
                 Suspensors.probeLine(player, probe, line);
@@ -107,7 +111,7 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
         MovementSettings settings = manager.getSettings();
         BeltMachine.Sense sense = new BeltMachine.Sense(dt, states.flying, who.getGameMode() == GameMode.Adventure, states.falling, states.fallingFar,
                 states.onGround, states.inFluid || states.swimming, vy, y, health(buffer, ref), mana, Suspensors.read(settings),
-                new BeltMachine.Drag(settings.airDragMin, settings.airDragMax));
+                new BeltMachine.Drag(settings.airDragMin, settings.airDragMax), states.gliding);
         List<BeltMachine.Act> acts = machine.tick(sense, (float) config.manaPerSecond(), (float) config.resumeMana(), config.mk1().rules(), Suspensors::speeds);
         for (BeltMachine.Act act : acts) {
             carryOut(act, player, who, manager, ref, buffer, power, config, velocity);
@@ -115,10 +119,26 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
         Suspensors.dropIfIdle(id);
     }
 
+    /** The stat GlidingActive (the vanilla mirror of the glide state); false when the stat does not exist. */
+    static boolean glidingActive(com.hypixel.hytale.component.ComponentAccessor<EntityStore> accessor, Ref<EntityStore> ref) {
+        int index = com.hypixel.hytale.server.core.modules.entitystats.asset.EntityStatType.getAssetMap().getIndex("GlidingActive");
+        EntityStatMap stats = accessor.getComponent(ref, EntityStatMap.getComponentType());
+        EntityStatValue value = stats == null || index < 0 ? null : stats.get(index);
+        return value != null && value.get() > 0f;
+    }
+
     static float health(com.hypixel.hytale.component.ComponentAccessor<EntityStore> accessor, Ref<EntityStore> ref) {
         EntityStatMap stats = accessor.getComponent(ref, EntityStatMap.getComponentType());
         EntityStatValue value = stats == null ? null : stats.get(DefaultEntityStatTypes.getHealth());
         return value == null ? -1f : value.get();
+    }
+
+    static void removeFalling(com.hypixel.hytale.component.ComponentAccessor<EntityStore> accessor, Ref<EntityStore> ref) {
+        EffectControllerComponent controller = accessor.getComponent(ref, EffectControllerComponent.getComponentType());
+        int effect = EntityEffect.getAssetMap().getIndex(FALLING_EFFECT);
+        if (controller != null && effect >= 0) {
+            controller.removeEffect(ref, effect, accessor);
+        }
     }
 
     private static void carryOut(BeltMachine.Act act, PlayerRef player, Player who, MovementManager manager, Ref<EntityStore> ref,
@@ -191,6 +211,24 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
                 if (velocity != null) {
                     velocity.addInstruction(new Vector3d(0.0, 0.0, 0.0), new VelocityConfig(), ChangeVelocityType.Set);
                 }
+            }
+            case EFFECT_ON -> {
+                EffectControllerComponent controller = buffer.getComponent(ref, EffectControllerComponent.getComponentType());
+                EntityEffect effect = EntityEffect.getAssetMap().getAsset(FALLING_EFFECT);
+                if (controller != null && effect != null) {
+                    controller.addEffect(ref, effect, buffer);
+                }
+                if (act.amount() > 0f) {
+                    Suspensors.probeEvent(player, "effect " + FALLING_EFFECT + " APPLIED (the falling signal)");
+                }
+            }
+            case EFFECT_OFF -> {
+                removeFalling(buffer, ref);
+                Suspensors.probeEvent(player, "effect " + FALLING_EFFECT + " REMOVED (" + act.text() + ")");
+            }
+            case ITEM_REMOVE -> {
+                String result = GliderItems.removeFromUtility(buffer, ref);
+                Suspensors.probeEvent(player, "glider item " + result + " (belt off, reset or another mark)");
             }
             case NEEDS_MANA -> Notice.say(player, "server.arrakis.suspensor.needsMana");
             case LOG -> Suspensors.log(player.getUuid(), name, act.text().substring(0, Math.min(14, act.text().length())), act.text());

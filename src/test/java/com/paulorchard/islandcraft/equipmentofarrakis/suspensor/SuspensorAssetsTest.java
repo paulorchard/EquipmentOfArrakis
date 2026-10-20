@@ -37,7 +37,7 @@ class SuspensorAssetsTest {
         assertEquals(12.0, c.mk1().speedThreshold());
         assertEquals(2, c.mk1().speedTicks());
         assertTrue(c.mk1().listed());
-        assertEquals(BeltMachine.Way.FLYGLIDE, c.mk1().way());
+        assertEquals(BeltMachine.Way.GLIDER, c.mk1().way());
         assertEquals(0.0, c.mk1().manaPerSecond());
     }
 
@@ -78,5 +78,39 @@ class SuspensorAssetsTest {
         }
         assertFalse(lang.contains("Arrakis_Lab_"));
         assertFalse(lang.contains("commands.arrakis.lab."));
+    }
+
+    @Test
+    void theFallingSignalEffectIsPlainAndShort() throws IOException {
+        JsonObject effect = JsonParser.parseString(text("/Server/Entity/Effects/Equipment_of_Arrakis/Suspensor/Arrakis_Suspensor_Falling.json")).getAsJsonObject();
+        assertEquals("Overwrite", effect.get("OverlapBehavior").getAsString());
+        assertFalse(effect.get("Debuff").getAsBoolean());
+        assertFalse(effect.get("Infinite").getAsBoolean());
+        assertEquals(0.5, effect.get("Duration").getAsDouble());
+        assertFalse(effect.has("ApplicationEffects"), "no visuals, no sound");
+    }
+
+    @Test
+    void theGliderItemIsTheVanillaOneWithThreeTriggersOnTheSignal() throws IOException {
+        JsonObject item = JsonParser.parseString(text("/Server/Item/Items/Equipment_of_Arrakis/Suspensor/Arrakis_Suspensor_Glider.json")).getAsJsonObject();
+        assertEquals("Template_Glider", item.get("Parent").getAsString());
+        assertFalse(item.has("Glider"), "the inherited Glider block is untouched");
+        assertFalse(item.has("Recipe"));
+        assertFalse(item.has("MaxDurability"));
+        assertFalse(item.has("Model"), "the vanilla model comes by the parent");
+        assertTrue(item.getAsJsonObject("Utility").get("Usable").getAsBoolean());
+        assertTrue(item.getAsJsonObject("Utility").get("Compatible").getAsBoolean());
+        JsonObject chains = item.getAsJsonObject("Interactions");
+        assertEquals(java.util.Set.of("HeldOffhand", "Held", "Secondary"), chains.keySet(), "Primary and SwapFrom are inherited, the control");
+        for (String key : chains.keySet()) {
+            String chain = chains.get(key).toString();
+            assertTrue(chain.contains("\"Gliding\":false"), key);
+            assertTrue(chain.contains("\"EntityEffectIds\":[\"Arrakis_Suspensor_Falling\"]"), key);
+            assertTrue(chain.contains("\"ToggleGlider\""), key);
+            assertFalse(chain.contains("Durability"), key);
+        }
+        String lang = text("/Server/Languages/en-US/server.lang");
+        assertTrue(lang.contains("items.Arrakis_Suspensor_Glider.name"));
+        assertTrue(lang.contains("arrakis.suspensor.utilityBusy = Empty your utility slot for the glider."));
     }
 }

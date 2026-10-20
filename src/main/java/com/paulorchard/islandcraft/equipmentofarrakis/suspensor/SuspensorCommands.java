@@ -35,6 +35,8 @@ import java.util.Locale;
  * /arrakis suspensor mk1 route flyglide|airdrag|counter   the way the slow descent is applied (saved)
  * /arrakis suspensor mk1 total true|false           whether the counter way reads the client velocity as the total
  * /arrakis suspensor mk1 set speed|threshold|ticks|glide|tolerance|push|airdrag|gravity|mana value   live tuning (saved)
+ * /arrakis suspensor glider give hand|utility | take | effect on|off   the glider item and the falling signal by hand (test helpers)
+ * /arrakis suspensor mk1 set trigger falling|speed|farfall | fallingticks n   what the glider route takes as falling (saved)
  * /arrakis suspensor impulse y [resistance]|clear   one Set velocity instruction and a two second watch (dev)
  * /arrakis suspensor probe on [chat]|off            log every flip of falling, fallingFar, onGround with height, time and speed
  * /arrakis suspensor drop blocks                    teleport yourself that many blocks straight up (operator test helper)
@@ -53,6 +55,7 @@ final class SuspensorCommands {
         group.addSubCommand(WorldPositional.build("off", LANG + "off.desc", (c, w, s, a) -> off(c, s)));
         group.addSubCommand(WorldPositional.build("mk1", LANG + "mk1.desc", (c, w, s, a) -> mk1(c, s, a, saveConfig), "what", "name", "value"));
         group.addSubCommand(WorldPositional.build("impulse", LANG + "impulse.desc", (c, w, s, a) -> impulse(c, s, a), "y", "resistance"));
+        group.addSubCommand(WorldPositional.build("glider", LANG + "glider.desc", (c, w, s, a) -> glider(c, s, a), "what", "value"));
         group.addSubCommand(WorldPositional.build("probe", LANG + "probe.desc", (c, w, s, a) -> probe(c, s, a), "mode", "chat"));
         group.addSubCommand(WorldPositional.build("drop", LANG + "drop.desc", (c, w, s, a) -> drop(c, w, s, a), "blocks"));
     }
@@ -170,6 +173,24 @@ final class SuspensorCommands {
             m.reportsTotal(Boolean.parseBoolean(name));
             saveConfig.run();
             CoreModule.say(c, "Mk I counter: the client velocity is read as " + (m.reportsTotal() ? "the total (own + external)" : "the own part only") + " (saved)");
+        } else if ("set".equalsIgnoreCase(what) && name != null && name.equalsIgnoreCase("trigger")) {
+            BeltMachine.Trigger t = value == null ? null : switch (value.toLowerCase(Locale.ROOT)) {
+                case "falling" -> BeltMachine.Trigger.FALLING;
+                case "speed" -> BeltMachine.Trigger.SPEED;
+                case "farfall" -> BeltMachine.Trigger.FARFALL;
+                default -> null;
+            };
+            if (t == null) {
+                CoreModule.say(c, "usage: suspensor mk1 set trigger falling|speed|farfall");
+                return;
+            }
+            m.trigger(t);
+            saveConfig.run();
+            CoreModule.say(c, "Mk I glider trigger: " + t.name().toLowerCase(Locale.ROOT) + " (saved)");
+        } else if ("route".equalsIgnoreCase(what) && name != null && name.equalsIgnoreCase("glider")) {
+            m.way(BeltMachine.Way.GLIDER);
+            saveConfig.run();
+            CoreModule.say(c, "Mk I route: glider (saved; switch the mark off and on to get the item)");
         } else if ("set".equalsIgnoreCase(what) && name != null) {
             Float v = number(value);
             if (v == null || !setNumber(m, name.toLowerCase(Locale.ROOT), v)) {
@@ -194,6 +215,7 @@ final class SuspensorCommands {
             case "airdrag" -> m.airDrag(v);
             case "gravity" -> m.gravityStep(v);
             case "mana" -> m.manaPerSecond(v);
+            case "fallingticks" -> m.fallingTicks(Math.round(v));
             default -> {
                 return false;
             }
@@ -202,7 +224,8 @@ final class SuspensorCommands {
     }
 
     private static void mk1State(CommandContext c, Store<EntityStore> store, Mk1Config m) {
-        CoreModule.say(c, "Mk I: route " + m.way().name().toLowerCase(Locale.ROOT) + ", listed " + m.listed() + ", target " + m.descentSpeed() + " blocks a second, speed trigger "
+        CoreModule.say(c, "Mk I: route " + m.way().name().toLowerCase(Locale.ROOT) + (m.way() == BeltMachine.Way.GLIDER ? " (trigger " + m.trigger().name().toLowerCase(Locale.ROOT)
+                + ", falling ticks " + m.fallingTicks() + ")" : "") + ", listed " + m.listed() + ", target " + m.descentSpeed() + " blocks a second, speed trigger "
                 + m.speedThreshold() + " blocks a second for " + m.speedTicks() + " ticks; glide horizontal " + m.glideHorizontal() + ", hold tolerance " + m.holdTolerance()
                 + ", refresh at most every " + m.pushTicks() + " ticks; air drag " + String.format(Locale.ROOT, "%.5f", m.airDrag()) + (m.airDragSetting() > 0 ? " (set)" : " (derived, step "
                 + m.gravityStep() + ")") + "; counter reads the client velocity as " + (m.reportsTotal() ? "total" : "own") + "; " + m.manaPerSecond() + " Mana a second");
@@ -217,7 +240,18 @@ final class SuspensorCommands {
         }
         String trigger = machine.mark() == BeltMachine.Mark.I_FAR ? "fallingFar true while in the air" : "falling and faster than " + m.speedThreshold() + " blocks a second on "
                 + m.speedTicks() + " ticks in a row";
+        if (m.way() == BeltMachine.Way.GLIDER) {
+            trigger = "glider route, trigger " + m.trigger().name().toLowerCase(Locale.ROOT);
+        }
         double landing = machine.lastLanding();
+        com.hypixel.hytale.server.core.entity.entities.Player who = store.getComponent(c.senderAsPlayerRef(), com.hypixel.hytale.server.core.entity.entities.Player.getComponentType());
+        com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent effects = store.getComponent(c.senderAsPlayerRef(),
+                com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent.getComponentType());
+        int signal = com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect.getAssetMap().getIndex(SuspensorSystem.FALLING_EFFECT);
+        MovementStatesComponent movement = store.getComponent(c.senderAsPlayerRef(), MovementStatesComponent.getComponentType());
+        CoreModule.say(c, "glider: item in the Utility slot " + GliderItems.inUtility(store, c.senderAsPlayerRef())
+                + ", item placed by the belt " + machine.itemPlaced() + ", falling signal " + (effects != null && signal >= 0 && effects.hasEffect(signal)) + " (machine says " + machine.effectOn()
+                + "), gliding flag " + (movement != null && movement.getMovementStates().gliding) + ", stat GlidingActive " + SuspensorSystem.glidingActive(store, c.senderAsPlayerRef()));
         CoreModule.say(c, markName(machine.mark()) + ": " + (machine.engaged() ? "ENGAGED (" + machine.engagedWay().name().toLowerCase(Locale.ROOT) + ")" : "ARMED") + ", trigger " + trigger
                 + "; engages " + machine.engages() + ", ends " + machine.ends() + " (last: " + (machine.lastEnd().isEmpty() ? "none" : machine.lastEnd()) + "), settings pushes " + machine.pushes()
                 + ", instruction refreshes " + machine.refreshes() + ", instruction active " + machine.instructionActive() + ", last landing speed "
@@ -253,6 +287,45 @@ final class SuspensorCommands {
         velocity.addInstruction(new Vector3d(0, y, 0), Suspensors.resistance(resistance), ChangeVelocityType.Set);
         Suspensors.impulseOn(player.getUuid(), new ImpulseWatch(System.currentTimeMillis(), "y " + y + " r " + resistance));
         CoreModule.say(c, "impulse: sent Set (0, " + y + ", 0) with resistance " + resistance + " on ground and air; the client vertical speed is logged every 0.1 s for 2 s");
+    }
+
+    // ---- the glider by hand
+
+    private static void glider(CommandContext c, Store<EntityStore> store, String[] args) {
+        if (!c.isPlayer() || c.senderAsPlayerRef() == null) {
+            CoreModule.say(c, "Run this as a player in the game.");
+            return;
+        }
+        Ref<EntityStore> ref = c.senderAsPlayerRef();
+        com.hypixel.hytale.server.core.entity.entities.Player who = store.getComponent(ref, com.hypixel.hytale.server.core.entity.entities.Player.getComponentType());
+        String what = arg(args, 0);
+        String value = arg(args, 1);
+        if (who == null || what == null) {
+            CoreModule.say(c, "usage: suspensor glider give hand|utility | take | effect on|off");
+        } else if (what.equalsIgnoreCase("give") && value != null && (value.equalsIgnoreCase("hand") || value.equalsIgnoreCase("utility"))) {
+            CoreModule.say(c, "glider: " + GliderItems.give(store, ref, value.equalsIgnoreCase("utility")));
+        } else if (what.equalsIgnoreCase("take")) {
+            CoreModule.say(c, "glider: " + GliderItems.removeEverywhere(store, ref) + " removed from your inventory");
+        } else if (what.equalsIgnoreCase("effect") && value != null && (value.equalsIgnoreCase("on") || value.equalsIgnoreCase("off"))) {
+            com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent controller = store.getComponent(ref,
+                    com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent.getComponentType());
+            com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect effect =
+                    com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect.getAssetMap().getAsset(SuspensorSystem.FALLING_EFFECT);
+            PlayerRef player = store.getComponent(ref, PlayerRef.getComponentType());
+            if (controller == null || effect == null) {
+                CoreModule.say(c, "glider: no effect controller or the effect is not loaded");
+            } else if (value.equalsIgnoreCase("on")) {
+                controller.addEffect(ref, effect, 10f, com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior.OVERWRITE, store);
+                Suspensors.probeEvent(player, "effect " + SuspensorSystem.FALLING_EFFECT + " APPLIED by hand for 10 s");
+                CoreModule.say(c, "glider: the falling signal is on for 10 s");
+            } else {
+                SuspensorSystem.removeFalling(store, ref);
+                Suspensors.probeEvent(player, "effect " + SuspensorSystem.FALLING_EFFECT + " REMOVED by hand");
+                CoreModule.say(c, "glider: the falling signal is off");
+            }
+        } else {
+            CoreModule.say(c, "usage: suspensor glider give hand|utility | take | effect on|off");
+        }
     }
 
     // ---- probe and drop
