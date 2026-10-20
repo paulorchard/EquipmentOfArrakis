@@ -304,18 +304,175 @@ class GliderRouteTest {
         assertNull(null);
     }
 
+// ---- the pulse signal
+
+    private static final FallRules PULSE = RULES.withPulse(0.15f, 1.0f, 1);
+
+    private List<Act> glideTick(FallRules rules, boolean gliding) {
+        return tick(rules, !gliding, false, false, false, false, gliding, true, gliding ? -2 : -8);
+    }
+
+    private static List<Act> pulses(List<Act> acts) {
+        return acts.stream().filter(a -> a.kind() == Kind.EFFECT_PULSE).toList();
+    }
+
+    @Test
+    void aPulseIsSentOnceWithTheShortDurationAndNeverRefreshed() {
+        belt.switchOn(Mark.I_SPEED, NORMAL, 50f, 5f);
+        List<Act> first = air(PULSE, true, 0);
+        assertEquals(1, pulses(first).size());
+        assertEquals(0.15f, pulses(first).get(0).amount());
+        assertEquals(0, count(first, Kind.EFFECT_ON), "not the level signal");
+        long more = 0;
+        for (int i = 0; i < 19; i++) {
+            List<Act> acts = glideTick(PULSE, true);
+            more += pulses(acts).size() + count(acts, Kind.EFFECT_ON);
+        }
+        assertEquals(0, more, "a glide that opened: no refresh and no retry in a second of gliding");
+        assertEquals(1, belt.pulses());
+        assertEquals(0, belt.retries());
+    }
+
+    @Test
+    void noRefreshAndOneRetryWhenNoGlideOpens() {
+        belt.switchOn(Mark.I_SPEED, NORMAL, 50f, 5f);
+        air(PULSE, true, 0);
+        long pulses = 0;
+        long refreshes = 0;
+        List<Act> retry = new ArrayList<>();
+        for (int i = 0; i < 60; i++) {
+            List<Act> acts = glideTick(PULSE, false);
+            pulses += pulses(acts).size();
+            refreshes += count(acts, Kind.EFFECT_ON);
+            retry.addAll(pulses(acts));
+        }
+        assertEquals(1, pulses, "one retry in three seconds of falling, at most PulseRetries");
+        assertEquals(0, refreshes);
+        assertTrue(retry.get(0).text().startsWith("retry 1"));
+        assertEquals(2, belt.pulses());
+        assertEquals(1, belt.retries());
+    }
+
+    @Test
+    void theRetryComesAfterTheRetrySecondsNotBefore() {
+        belt.switchOn(Mark.I_SPEED, NORMAL, 50f, 5f);
+        air(PULSE, true, 0);
+        for (int i = 0; i < 19; i++) {
+            assertTrue(pulses(glideTick(PULSE, false)).isEmpty(), "tick " + i);
+        }
+        assertEquals(1, pulses(glideTick(PULSE, false)).size(), "after 1.0 s");
+    }
+
+    @Test
+    void noRetryWhenAGlideWasSeenEvenIfItEndedAgain() {
+        belt.switchOn(Mark.I_SPEED, NORMAL, 50f, 5f);
+        air(PULSE, true, 0);
+        glideTick(PULSE, true);
+        long pulses = 0;
+        for (int i = 0; i < 60; i++) {
+            pulses += pulses(glideTick(PULSE, false)).size();
+        }
+        assertEquals(0, pulses, "one signal, one glide: a glide that closed is not asked for again in the same fall");
+    }
+
+    @Test
+    void zeroRetriesMeansNone() {
+        FallRules none = RULES.withPulse(0.15f, 1.0f, 0);
+        belt.switchOn(Mark.I_SPEED, NORMAL, 50f, 5f);
+        air(none, true, 0);
+        long pulses = 0;
+        for (int i = 0; i < 80; i++) {
+            pulses += pulses(glideTick(none, false)).size();
+        }
+        assertEquals(0, pulses);
+    }
+
+    @Test
+    void pulseRearmsOnlyAfterTheGroundTicksAndThenPulsesOnceAgain() {
+        belt.switchOn(Mark.I_SPEED, NORMAL, 50f, 5f);
+        air(PULSE, true, 0);
+        glideTick(PULSE, true);
+        assertTrue(pulses(tick(PULSE, true, false, true, false, false, false, true, -3)).isEmpty(), "one ground tick: still engaged");
+        assertTrue(belt.engaged());
+        // a falling flag in the air again before two ground ticks is not a new pulse while engaged
+        assertTrue(pulses(air(PULSE, true, -2)).isEmpty());
+        tick(PULSE, false, false, true, false, false, false, true, -3);
+        List<Act> end = tick(PULSE, false, false, true, false, false, false, true, -3);
+        assertFalse(belt.engaged());
+        assertEquals(1, count(end, Kind.EFFECT_OFF));
+        assertEquals(1, pulses(air(PULSE, true, 0)).size(), "armed again: the next fall pulses once");
+        assertEquals(1, belt.pulses(), "the counters start over for the new descent");
+    }
+
+    @Test
+    void theSummaryLineCountsTheFlipsTheLongestGlideAndTheEnd() {
+        belt.switchOn(Mark.I_SPEED, NORMAL, 50f, 5f);
+        air(PULSE, true, 0);
+        for (int i = 0; i < 10; i++) {
+            glideTick(PULSE, true);
+        }
+        glideTick(PULSE, false);
+        glideTick(PULSE, true);
+        glideTick(PULSE, true);
+        glideTick(PULSE, false);
+        tick(PULSE, false, false, true, false, false, false, true, -3);
+        List<Act> end = tick(PULSE, false, false, true, false, false, false, true, -3);
+        String summary = end.stream().filter(a -> a.kind() == Kind.LOG && a.text().startsWith("descent SUMMARY")).findFirst().orElseThrow().text();
+        assertTrue(summary.contains("signal pulse"), summary);
+        assertTrue(summary.contains("pulses sent 1 (retries 0)"), summary);
+        assertTrue(summary.contains("gliding false->true flips 2"), summary);
+        assertTrue(summary.contains("true->false flips 2"), summary);
+        assertTrue(summary.contains("longest glide 0.50 s"), summary);
+        assertTrue(summary.contains("glide ended by itself at the ground: yes"), summary);
+    }
+
+    @Test
+    void theSummaryNamesAGlideThatNeverOpenedOrWasStillGoing() {
+        belt.switchOn(Mark.I_SPEED, NORMAL, 50f, 5f);
+        air(PULSE, true, 0);
+        tick(PULSE, false, false, true, false, false, false, true, -3);
+        String none = tick(PULSE, false, false, true, false, false, false, true, -3).stream().filter(a -> a.kind() == Kind.LOG && a.text().startsWith("descent SUMMARY")).findFirst()
+                .orElseThrow().text();
+        assertTrue(none.contains("no glide opened"), none);
+
+        BeltMachine other = new BeltMachine();
+        other.switchOn(Mark.I_SPEED, NORMAL, 50f, 5f);
+        other.tick(new Sense(DT, false, true, true, false, false, false, 0, 100, 100f, 50f, NORMAL, null, false), 1f, 5f, PULSE, GliderRouteTest::speeds);
+        other.tick(new Sense(DT, false, true, false, false, false, false, -2, 100, 100f, 50f, NORMAL, null, true), 1f, 5f, PULSE, GliderRouteTest::speeds);
+        other.tick(new Sense(DT, false, true, false, false, true, false, -2, 100, 100f, 50f, NORMAL, null, true), 1f, 5f, PULSE, GliderRouteTest::speeds);
+        String still = other.tick(new Sense(DT, false, true, false, false, true, false, -2, 100, 100f, 50f, NORMAL, null, true), 1f, 5f, PULSE, GliderRouteTest::speeds).stream()
+                .filter(a -> a.kind() == Kind.LOG && a.text().startsWith("descent SUMMARY")).findFirst().orElseThrow().text();
+        assertTrue(still.contains("still gliding when the descent ended"), still);
+    }
+
+    @Test
+    void theSignalSettingAndThePulseKeysAreRead() throws IOException {
+        Mk1Config d = new Mk1Config();
+        assertEquals(BeltMachine.Signal.LEVEL, d.signal());
+        assertEquals(0.15, d.pulseSeconds());
+        assertEquals(1.0, d.pulseRetrySeconds());
+        assertEquals(1, d.pulseRetries());
+        Mk1Config m = SuspensorConfig.CODEC.decodeJson(RawJsonReader.fromJsonString("{\"Mk1\":{\"Signal\":\"pulse\",\"PulseSeconds\":0.5,\"PulseRetrySeconds\":2.0,\"PulseRetries\":0}}"),
+                new ExtraInfo()).mk1();
+        assertEquals(BeltMachine.Signal.PULSE, m.signal());
+        assertEquals(0.5f, m.rules().pulseSeconds());
+        assertEquals(2.0f, m.rules().pulseRetrySeconds());
+        assertEquals(0, m.rules().pulseRetries());
+        assertEquals(BeltMachine.Signal.LEVEL, SuspensorConfig.CODEC.decodeJson(RawJsonReader.fromJsonString("{\"Mk1\":{\"Signal\":\"nonsense\"}}"), new ExtraInfo()).mk1().signal());
+    }
+
     // ---- the probe
 
     @Test
     void theProbeLogsGlidingFlipsStatFlipsAndTheLandingHealth() {
         FallProbe probe = new FallProbe(false);
-        assertTrue(probe.observeGlide(false, false, true, 100f, 0).isEmpty());
-        assertTrue(probe.observeGlide(false, false, false, 100f, -3).isEmpty());
-        List<String> flip = probe.observeGlide(true, true, false, 100f, -2.1);
+        assertTrue(probe.observeGlide(false, false, true, 100f, 0, 1000L).isEmpty());
+        assertTrue(probe.observeGlide(false, false, false, 100f, -3, 1100L).isEmpty());
+        List<String> flip = probe.observeGlide(true, true, false, 100f, -2.1, 1570L);
         assertEquals(2, flip.size());
         assertTrue(flip.get(0).startsWith("gliding false -> true"));
         assertTrue(flip.get(1).startsWith("stat GlidingActive false -> true"));
-        List<String> landing = probe.observeGlide(false, false, true, 91f, -4);
+        List<String> landing = probe.observeGlide(false, false, true, 91f, -4, 1600L);
         assertEquals(3, landing.size());
         assertTrue(landing.get(2).contains("health 100.00 -> 91.00"));
     }

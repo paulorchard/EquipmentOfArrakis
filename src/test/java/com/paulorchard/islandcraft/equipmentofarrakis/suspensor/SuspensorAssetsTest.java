@@ -91,7 +91,7 @@ class SuspensorAssetsTest {
     }
 
     @Test
-    void theGliderItemIsTheVanillaOneWithThreeTriggersOnTheSignal() throws IOException {
+    void theGliderItemIsTheVanillaOneWithOneTriggerOnTheSignal() throws IOException {
         JsonObject item = JsonParser.parseString(text("/Server/Item/Items/Equipment_of_Arrakis/Suspensor/Arrakis_Suspensor_Glider.json")).getAsJsonObject();
         assertEquals("Template_Glider", item.get("Parent").getAsString());
         assertFalse(item.has("Glider"), "the inherited Glider block is untouched");
@@ -101,7 +101,7 @@ class SuspensorAssetsTest {
         assertTrue(item.getAsJsonObject("Utility").get("Usable").getAsBoolean());
         assertTrue(item.getAsJsonObject("Utility").get("Compatible").getAsBoolean());
         JsonObject chains = item.getAsJsonObject("Interactions");
-        assertEquals(java.util.Set.of("HeldOffhand", "Held", "Secondary"), chains.keySet(), "Primary and SwapFrom are inherited, the control");
+        assertEquals(java.util.Set.of("HeldOffhand"), chains.keySet(), "one added chain; Primary and SwapFrom are inherited, the control");
         for (String key : chains.keySet()) {
             String chain = chains.get(key).toString();
             assertTrue(chain.contains("\"Gliding\":false"), key);

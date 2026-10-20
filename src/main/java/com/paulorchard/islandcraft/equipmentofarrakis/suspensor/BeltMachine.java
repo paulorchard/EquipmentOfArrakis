@@ -39,6 +39,9 @@ final class BeltMachine {
     /** What the glider route takes as "falling": the raw flag (default), the speed rule or the fallingFar flag. */
     enum Trigger { FALLING, SPEED, FARFALL }
 
+    /** How the glider signal is sent: LEVEL refreshes the effect while the trigger holds, PULSE applies it once with a short duration. */
+    enum Signal { LEVEL, PULSE }
+
     /** The three movement settings the flying marks write: the fly mode and the two fly speeds. */
     record FlySettings(Fly mode, float horizontal, float vertical) {
     }
@@ -52,20 +55,31 @@ final class BeltMachine {
 
     /** What Mk I needs from the config. */
     record FallRules(Way way, double descentSpeed, double threshold, int ticks, int pushTicks, double tolerance, float glideHorizontal, float airDrag,
-                     boolean reportsTotal, float manaPerSecond, Trigger trigger, int fallingTicks) {
+                     boolean reportsTotal, float manaPerSecond, Trigger trigger, int fallingTicks, Signal signal, float pulseSeconds, float pulseRetrySeconds,
+                     int pulseRetries) {
         static final FallRules DEFAULT = new FallRules(Way.FLYGLIDE, 4.0, 12.0, 2, 5, 0.75, 1.0f, 0.9712f, true, 0f);
 
         FallRules(Way way, double descentSpeed, double threshold, int ticks, int pushTicks, double tolerance, float glideHorizontal, float airDrag,
                   boolean reportsTotal, float manaPerSecond) {
-            this(way, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, Trigger.FALLING, 1);
+            this(way, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, Trigger.FALLING, 1, Signal.LEVEL, 0.15f, 1.0f, 1);
+        }
+
+        FallRules(Way way, double descentSpeed, double threshold, int ticks, int pushTicks, double tolerance, float glideHorizontal, float airDrag,
+                  boolean reportsTotal, float manaPerSecond, Trigger trigger, int fallingTicks) {
+            this(way, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, trigger, fallingTicks, Signal.LEVEL, 0.15f, 1.0f, 1);
         }
 
         FallRules withWay(Way other) {
-            return new FallRules(other, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, trigger, fallingTicks);
+            return new FallRules(other, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, trigger, fallingTicks, signal, pulseSeconds, pulseRetrySeconds, pulseRetries);
+        }
+
+        FallRules withPulse(float seconds, float retrySeconds, int retries) {
+            return new FallRules(way, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, trigger, fallingTicks, Signal.PULSE, seconds,
+                    retrySeconds, retries);
         }
 
         FallRules withTrigger(Trigger other, int fallTicks) {
-            return new FallRules(way, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, other, fallTicks);
+            return new FallRules(way, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond, other, fallTicks, signal, pulseSeconds, pulseRetrySeconds, pulseRetries);
         }
     }
 
@@ -111,6 +125,8 @@ final class BeltMachine {
         VELOCITY_CLEAR,
         /** Apply the falling signal effect (amount 1: the first time of a descent, 0: a refresh). */
         EFFECT_ON,
+        /** Apply the falling signal effect once for {@code amount} seconds (the pulse; text says "pulse n" or "retry n"). */
+        EFFECT_PULSE,
         /** Remove the falling signal effect. */
         EFFECT_OFF,
         /** Take the glider item out of the Utility slot (only ours). */
@@ -171,6 +187,20 @@ final class BeltMachine {
     private boolean effectOn;
     private float effectClock;
     private boolean itemPlaced;
+    // glider route counters and the pulse state
+    private int pulses;
+    private int retriesUsed;
+    private float pulseClock;
+    private boolean glideSeenSincePulse;
+    private boolean prevGliding;
+    private int glideOnFlips;
+    private int glideOffFlips;
+    private float glideStartSeconds;
+    private float longestGlide;
+    private long tickNo;
+    private long firstGroundTick;
+    private long lastGlideOffTick;
+    private Signal engagedSignal = Signal.LEVEL;
     private int groundTicks;
     private int sinceRefresh;
     private int stallTicks;
@@ -268,6 +298,15 @@ final class BeltMachine {
 
     synchronized boolean itemPlaced() {
         return itemPlaced;
+    }
+
+    /** Pulses sent in the current or last glider descent (the first one and the retries). */
+    synchronized int pulses() {
+        return pulses;
+    }
+
+    synchronized int retries() {
+        return retriesUsed;
     }
 
     synchronized boolean effectOn() {
@@ -508,6 +547,13 @@ final class BeltMachine {
         fastestVy = Math.min(fastestVy, s.vy());
         groundTicks = s.onGround() ? groundTicks + 1 : 0;
         engagedSeconds += s.dt();
+        tickNo++;
+        if (groundTicks == 1) {
+            firstGroundTick = tickNo;
+        }
+        if (gliderWay) {
+            trackGlide(s);
+        }
         sinceRefresh++;
         risingSeconds = s.vy() > -0.1 ? risingSeconds + s.dt() : 0f;
         boolean settled = engagedSeconds > GRACE_SECONDS;
@@ -537,7 +583,17 @@ final class BeltMachine {
         if (paid) {
             out.add(new Act(Kind.SPEND, null, rules.manaPerSecond() * s.dt(), null));
         }
-        if (gliderWay) {
+        if (gliderWay && engagedSignal == Signal.PULSE) {
+            pulseClock += s.dt();
+            if (s.gliding()) {
+                glideSeenSincePulse = true;
+            } else if (!glideSeenSincePulse && pulseClock >= rules.pulseRetrySeconds() && retriesUsed < rules.pulseRetries()) {
+                retriesUsed++;
+                pulses++;
+                pulseClock = 0f;
+                out.add(new Act(Kind.EFFECT_PULSE, null, rules.pulseSeconds(), "retry " + retriesUsed + " (no glide " + fmt(rules.pulseRetrySeconds()) + " s after the last pulse)"));
+            }
+        } else if (gliderWay) {
             effectClock += s.dt();
             if (!s.gliding() && effectClock >= EFFECT_REFRESH_SECONDS && gliderTrigger(rules, eligible, s)) {
                 effectClock = 0f;
@@ -563,6 +619,19 @@ final class BeltMachine {
             case SPEED -> streak >= Math.max(1, rules.ticks());
             case FARFALL -> s.fallingFar();
         };
+    }
+
+    /** Counts the flips of the gliding flag and the glide lengths of the descent. */
+    private void trackGlide(Sense s) {
+        if (s.gliding() && !prevGliding) {
+            glideOnFlips++;
+            glideStartSeconds = engagedSeconds;
+        } else if (!s.gliding() && prevGliding) {
+            glideOffFlips++;
+            lastGlideOffTick = tickNo;
+            longestGlide = Math.max(longestGlide, engagedSeconds - glideStartSeconds);
+        }
+        prevGliding = s.gliding();
     }
 
     private void refresh(double ext, List<Act> out) {
@@ -608,8 +677,27 @@ final class BeltMachine {
             case GLIDER -> {
                 effectOn = true;
                 effectClock = 0f;
-                out.add(new Act(Kind.EFFECT_ON, null, 1f, null));
-                how = "glider: the falling signal effect applied (trigger " + rules.trigger().name().toLowerCase(Locale.ROOT) + "), nothing else is done to the player";
+                engagedSignal = rules.signal();
+                pulses = 0;
+                retriesUsed = 0;
+                pulseClock = 0f;
+                glideSeenSincePulse = false;
+                prevGliding = s.gliding();
+                glideOnFlips = 0;
+                glideOffFlips = 0;
+                glideStartSeconds = 0f;
+                longestGlide = 0f;
+                tickNo = 0;
+                firstGroundTick = Long.MAX_VALUE;
+                lastGlideOffTick = Long.MIN_VALUE / 2;
+                if (engagedSignal == Signal.PULSE) {
+                    pulses = 1;
+                    out.add(new Act(Kind.EFFECT_PULSE, null, rules.pulseSeconds(), "pulse 1"));
+                } else {
+                    out.add(new Act(Kind.EFFECT_ON, null, 1f, null));
+                }
+                how = "glider: the falling signal effect applied (signal " + engagedSignal.name().toLowerCase(Locale.ROOT) + ", trigger " + rules.trigger().name().toLowerCase(Locale.ROOT)
+                        + "), nothing else is done to the player";
             }
             default -> {
                 how = "counter: target " + fmt(-rules.descentSpeed());
@@ -647,6 +735,20 @@ final class BeltMachine {
             pushes++;
             out.add(new Act(Kind.DRAG_OFF, null, 0f, "snapshot", dragSnap));
             dragSnap = null;
+        }
+        if (engagedWay == Way.GLIDER) {
+            if (s.gliding() != prevGliding) {
+                trackGlide(s);
+            }
+            if (prevGliding) {
+                longestGlide = Math.max(longestGlide, engagedSeconds - glideStartSeconds);
+            }
+            String byItself = glideOnFlips == 0 ? "no glide opened" : !s.gliding() && glideOffFlips > 0 && lastGlideOffTick >= firstGroundTick - 3 ? "yes" : s.gliding()
+                    ? "no, still gliding when the descent ended" : "no, the glide ended " + (firstGroundTick == Long.MAX_VALUE ? "in the air" : "away from the ground");
+            out.add(new Act(Kind.LOG, null, 0f, "descent SUMMARY: signal " + engagedSignal.name().toLowerCase(Locale.ROOT) + ", pulses sent " + pulses + " (retries " + retriesUsed
+                    + "), gliding false->true flips " + glideOnFlips + ", true->false flips " + glideOffFlips + ", longest glide " + fmt(longestGlide) + " s, glide ended by itself at the ground: "
+                    + byItself + ", average descent " + fmt(engagedSeconds > 0 ? (engageY - s.y()) / engagedSeconds : 0) + " blocks a second over " + fmt(engagedSeconds)
+                    + " s, landing speed " + fmt(lastAirVy) + ", health " + fmt(engageHealth) + " -> " + fmt(s.health()) + " (" + fmt(s.health() - engageHealth) + ")"));
         }
         out.add(new Act(Kind.LOG, null, 0f, "descent END (" + reason + "): fell " + fmt(engageY - s.y()) + " blocks since the trigger; speed at the trigger "
                 + fmt(engageVy) + ", at the landing " + fmt(lastAirVy) + ", fastest " + fmt(fastestVy) + "; health " + fmt(engageHealth) + " -> "

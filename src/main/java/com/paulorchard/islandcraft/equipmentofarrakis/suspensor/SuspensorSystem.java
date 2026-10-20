@@ -81,9 +81,10 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
         TransformComponent transform = chunk.getComponent(index, TransformComponent.getComponentType());
         double vy = velocity == null ? 0.0 : velocity.getClientVelocity().y;
         double y = transform == null ? 0.0 : transform.getPosition().y;
+        Suspensors.tickNow = store.getExternalData().getWorld().getTick();
         if (probe != null) {
             int instructions = velocity == null ? 0 : velocity.getInstructions().size();
-            for (String line : probe.observeGlide(states.gliding, glidingActive(buffer, ref), states.onGround, health(buffer, ref), vy)) {
+            for (String line : probe.observeGlide(states.gliding, glidingActive(buffer, ref), states.onGround, health(buffer, ref), vy, System.currentTimeMillis())) {
                 Suspensors.probeLine(player, probe, line);
             }
             for (String line : probe.observe(states.falling, states.fallingFar, states.onGround, states.flying, y, vy, System.currentTimeMillis(),
@@ -219,8 +220,17 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
                     controller.addEffect(ref, effect, buffer);
                 }
                 if (act.amount() > 0f) {
-                    Suspensors.probeEvent(player, "effect " + FALLING_EFFECT + " APPLIED (the falling signal)");
+                    Suspensors.probeEvent(player, "effect " + FALLING_EFFECT + " APPLIED (the falling signal, level, the asset's own duration)");
                 }
+            }
+            case EFFECT_PULSE -> {
+                EffectControllerComponent controller = buffer.getComponent(ref, EffectControllerComponent.getComponentType());
+                EntityEffect effect = EntityEffect.getAssetMap().getAsset(FALLING_EFFECT);
+                if (controller != null && effect != null) {
+                    controller.addEffect(ref, effect, act.amount(), com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior.OVERWRITE, buffer);
+                }
+                Suspensors.probeEvent(player, "effect " + FALLING_EFFECT + " PULSE " + act.text() + ", duration " + act.amount() + " s");
+                Suspensors.log(player.getUuid(), name, "pulse", "the falling signal pulsed: " + act.text() + ", " + act.amount() + " s");
             }
             case EFFECT_OFF -> {
                 removeFalling(buffer, ref);

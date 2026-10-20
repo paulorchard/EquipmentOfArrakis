@@ -2,6 +2,8 @@
 
 ## Next (not yet released)
 
+- **Suspensor glider: one chain, optional pulse signal.** The glider item keeps only the `HeldOffhand` chain (the other two made the glide toggle twice). New `Mk1.Signal` (`level` default, or `pulse`: one short effect application, `Mk1.PulseSeconds`, `PulseRetrySeconds`, `PulseRetries`; `/arrakis suspensor mk1 set signal|pulse|pulseretry|pulseretries`). The probe lines carry times and the world tick, and each glider descent ends with a summary line.
+
 - **Suspensor Belt Mk I, glider route (proof, default `Mk1.Route` glider; a saved route stays: run `/arrakis suspensor mk1 route glider`).** Turning a Mk I mark on puts the new `Arrakis_Suspensor_Glider` (the vanilla glider's model and physics, no recipe) into the Utility slot; when the server sees you falling (`Mk1.GliderTrigger`: `falling`, `speed` or `farfall`) it applies the plain effect `Arrakis_Suspensor_Falling`, and the item's chains
   open the glider when that effect is on. Nothing else is done to you. Empty utility slot needed. New config keys `Mk1.GliderTrigger`, `Mk1.FallingTicks`; commands `/arrakis suspensor glider give hand|utility|take|effect on|off` and `mk1 set trigger|fallingticks`; the probe logs the gliding flag and the stat. The flyglide, airdrag and counter routes are unchanged.
 

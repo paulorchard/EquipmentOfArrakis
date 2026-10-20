@@ -6,6 +6,7 @@ import java.util.Locale;
  * The watch after {@code /arrakis suspensor impulse}: for two seconds, a line every 0.1 s with the client vertical speed, the server
  * side velocity, the number of velocity instructions still queued and the flying and onGround flags. No engine types.
  */
+// TEST DEVICE: belongs to the impulse probe of the abandoned velocity routes.
 final class ImpulseWatch {
 
     static final long DURATION_MS = 2000;

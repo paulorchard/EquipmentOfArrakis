@@ -9,6 +9,7 @@ import java.util.Locale;
  * falling, fallingFar and onGround (with the height above the last ground, the time since the last onGround and the client vertical
  * speed), and, while a descent is engaged, the vertical speed every quarter second. It is how the fallingFar threshold is learned.
  */
+// TEST DEVICE: a developer tool for tuning the definition of falling.
 final class FallProbe {
 
     static final long ENGAGED_INTERVAL_MS = 250;
@@ -37,12 +38,21 @@ final class FallProbe {
     private boolean glideStarted;
     private boolean landedGround = true;
     private float healthAtTakeoff;
+    private long lastFlipMs = -1;
+
+    /** The time since the previous flip of gliding or falling, for the line of this flip; then this flip becomes the previous one. */
+    private String interval(long nowMs) {
+        String text = lastFlipMs < 0 ? "" : ", +" + (nowMs - lastFlipMs) + " ms since the previous gliding/falling flip";
+        lastFlipMs = nowMs;
+        return text;
+    }
 
     /**
      * Flips of the gliding flag and of the stat GlidingActive (with the vertical speed), and at each landing the health change since the
      * takeoff. {@code health} is -1 when unknown.
      */
-    List<String> observeGlide(boolean nowGliding, boolean nowStat, boolean nowGround, float health, double vy) {
+    // TEST DEVICE: the glider probe lines (flip intervals, landing health) are for the proof runs, not the final belt.
+    List<String> observeGlide(boolean nowGliding, boolean nowStat, boolean nowGround, float health, double vy, long nowMs) {
         List<String> lines = new ArrayList<>();
         if (!glideStarted) {
             glideStarted = true;
@@ -53,7 +63,7 @@ final class FallProbe {
             return lines;
         }
         if (nowGliding != gliding) {
-            lines.add("gliding " + gliding + " -> " + nowGliding + ": vy " + fmt(vy));
+            lines.add("gliding " + gliding + " -> " + nowGliding + ": vy " + fmt(vy) + interval(nowMs));
             gliding = nowGliding;
         }
         if (nowStat != glidingStat) {
@@ -93,7 +103,7 @@ final class FallProbe {
         }
         String where = "height above the last ground " + fmt(groundY - y) + ", " + fmt((nowMs - groundMs) / 1000.0) + " s since onGround, vy " + fmt(vy);
         if (nowFalling != falling) {
-            lines.add("falling " + falling + " -> " + nowFalling + ": " + where);
+            lines.add("falling " + falling + " -> " + nowFalling + ": " + where + interval(nowMs));
         }
         if (nowFar != far) {
             lines.add("fallingFar " + far + " -> " + nowFar + ": " + where);

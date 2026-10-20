@@ -22,6 +22,10 @@ public class Mk1Config {
     private String route = "glider";
     private String gliderTrigger = "falling";
     private int fallingTicks = 1;
+    private String signal = "level";
+    private double pulseSeconds = 0.15;
+    private double pulseRetrySeconds = 1.0;
+    private int pulseRetries = 1;
     private double descentSpeed = 4.0;
     private double speedThreshold = 12.0;
     private int speedTicks = 2;
@@ -63,6 +67,42 @@ public class Mk1Config {
 
     void trigger(BeltMachine.Trigger value) {
         gliderTrigger = value.name().toLowerCase(Locale.ROOT);
+    }
+
+    /** How the glider signal is sent: level (refreshed while the trigger holds) or pulse (once, with a short duration). */
+    public BeltMachine.Signal signal() {
+        return "pulse".equalsIgnoreCase(signal) ? BeltMachine.Signal.PULSE : BeltMachine.Signal.LEVEL;
+    }
+
+    void signal(BeltMachine.Signal value) {
+        signal = value.name().toLowerCase(Locale.ROOT);
+    }
+
+    /** Duration of the pulse (seconds). */
+    public double pulseSeconds() {
+        return Math.max(0.01, pulseSeconds);
+    }
+
+    void pulseSeconds(double value) {
+        pulseSeconds = value;
+    }
+
+    /** Seconds after a pulse before a new one may be sent when no glide opened. */
+    public double pulseRetrySeconds() {
+        return Math.max(0.05, pulseRetrySeconds);
+    }
+
+    void pulseRetrySeconds(double value) {
+        pulseRetrySeconds = value;
+    }
+
+    /** How many retry pulses a fall may send (0: none). */
+    public int pulseRetries() {
+        return Math.max(0, pulseRetries);
+    }
+
+    void pulseRetries(int value) {
+        pulseRetries = value;
     }
 
     /** Consecutive ticks the falling flag must hold for the falling trigger (at least 1). */
@@ -170,7 +210,7 @@ public class Mk1Config {
 
     BeltMachine.FallRules rules() {
         return new BeltMachine.FallRules(way(), descentSpeed(), speedThreshold(), speedTicks(), pushTicks(), holdTolerance(), (float) glideHorizontal(),
-                (float) airDrag(), reportsTotal(), (float) manaPerSecond(), trigger(), fallingTicks());
+                (float) airDrag(), reportsTotal(), (float) manaPerSecond(), trigger(), fallingTicks(), signal(), (float) pulseSeconds(), (float) pulseRetrySeconds(), pulseRetries());
     }
 
     static final BuilderCodec<Mk1Config> BUILDER = BuilderCodec.builder(Mk1Config.class, Mk1Config::new)
@@ -180,6 +220,14 @@ public class Mk1Config {
             .documentation("glider (default: the falling signal effect opens the glider item), flyglide (fly, then drift down with an external velocity), airdrag (the air drag multipliers) or counter (an upward external velocity).").add()
             .append(new KeyedCodec<>("GliderTrigger", Codec.STRING, false), (c, v) -> c.gliderTrigger = v, c -> c.gliderTrigger)
             .documentation("glider route: what counts as falling. falling (default: the raw flag), speed (the speed rule) or farfall (the fallingFar flag).").add()
+            .append(new KeyedCodec<>("Signal", Codec.STRING, false), (c, v) -> c.signal = v, c -> c.signal)
+            .documentation("glider route: level (the effect is refreshed every 0.25 s while the trigger holds) or pulse (applied once for PulseSeconds, re-armed on the ground).").add()
+            .append(new KeyedCodec<>("PulseSeconds", Codec.DOUBLE, false), (c, v) -> c.pulseSeconds = v, c -> c.pulseSeconds)
+            .documentation("glider route, pulse: duration of the one effect application (seconds, default 0.15).").add()
+            .append(new KeyedCodec<>("PulseRetrySeconds", Codec.DOUBLE, false), (c, v) -> c.pulseRetrySeconds = v, c -> c.pulseRetrySeconds)
+            .documentation("glider route, pulse: seconds after a pulse without a glide before a new pulse may be sent (default 1.0).").add()
+            .append(new KeyedCodec<>("PulseRetries", Codec.INTEGER, false), (c, v) -> c.pulseRetries = v, c -> c.pulseRetries)
+            .documentation("glider route, pulse: how many new pulses a fall may send when no glide opened (default 1).").add()
             .append(new KeyedCodec<>("FallingTicks", Codec.INTEGER, false), (c, v) -> c.fallingTicks = v, c -> c.fallingTicks)
             .documentation("glider route, falling trigger: consecutive ticks of the falling flag before the signal is sent (default 1).").add()
             .append(new KeyedCodec<>("DescentSpeed", Codec.DOUBLE, false), (c, v) -> c.descentSpeed = v, c -> c.descentSpeed)

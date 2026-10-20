@@ -36,7 +36,7 @@ import java.util.Locale;
  * /arrakis suspensor mk1 total true|false           whether the counter way reads the client velocity as the total
  * /arrakis suspensor mk1 set speed|threshold|ticks|glide|tolerance|push|airdrag|gravity|mana value   live tuning (saved)
  * /arrakis suspensor glider give hand|utility | take | effect on|off   the glider item and the falling signal by hand (test helpers)
- * /arrakis suspensor mk1 set trigger falling|speed|farfall | fallingticks n   what the glider route takes as falling (saved)
+ * /arrakis suspensor mk1 set trigger falling|speed|farfall | fallingticks n | signal level|pulse | pulse s | pulseretry s | pulseretries n   what the glider route takes as falling (saved)
  * /arrakis suspensor impulse y [resistance]|clear   one Set velocity instruction and a two second watch (dev)
  * /arrakis suspensor probe on [chat]|off            log every flip of falling, fallingFar, onGround with height, time and speed
  * /arrakis suspensor drop blocks                    teleport yourself that many blocks straight up (operator test helper)
@@ -187,6 +187,15 @@ final class SuspensorCommands {
             m.trigger(t);
             saveConfig.run();
             CoreModule.say(c, "Mk I glider trigger: " + t.name().toLowerCase(Locale.ROOT) + " (saved)");
+        } else if ("set".equalsIgnoreCase(what) && name != null && name.equalsIgnoreCase("signal")) {
+            BeltMachine.Signal sig = "level".equalsIgnoreCase(value) ? BeltMachine.Signal.LEVEL : "pulse".equalsIgnoreCase(value) ? BeltMachine.Signal.PULSE : null;
+            if (sig == null) {
+                CoreModule.say(c, "usage: suspensor mk1 set signal level|pulse");
+                return;
+            }
+            m.signal(sig);
+            saveConfig.run();
+            CoreModule.say(c, "Mk I glider signal: " + sig.name().toLowerCase(Locale.ROOT) + " (saved; the next descent uses it)");
         } else if ("route".equalsIgnoreCase(what) && name != null && name.equalsIgnoreCase("glider")) {
             m.way(BeltMachine.Way.GLIDER);
             saveConfig.run();
@@ -216,6 +225,9 @@ final class SuspensorCommands {
             case "gravity" -> m.gravityStep(v);
             case "mana" -> m.manaPerSecond(v);
             case "fallingticks" -> m.fallingTicks(Math.round(v));
+            case "pulse" -> m.pulseSeconds(v);
+            case "pulseretry" -> m.pulseRetrySeconds(v);
+            case "pulseretries" -> m.pulseRetries(Math.round(v));
             default -> {
                 return false;
             }
@@ -225,7 +237,8 @@ final class SuspensorCommands {
 
     private static void mk1State(CommandContext c, Store<EntityStore> store, Mk1Config m) {
         CoreModule.say(c, "Mk I: route " + m.way().name().toLowerCase(Locale.ROOT) + (m.way() == BeltMachine.Way.GLIDER ? " (trigger " + m.trigger().name().toLowerCase(Locale.ROOT)
-                + ", falling ticks " + m.fallingTicks() + ")" : "") + ", listed " + m.listed() + ", target " + m.descentSpeed() + " blocks a second, speed trigger "
+                + ", falling ticks " + m.fallingTicks() + ", signal " + m.signal().name().toLowerCase(Locale.ROOT) + (m.signal() == BeltMachine.Signal.PULSE ? " " + m.pulseSeconds() + " s, retry after "
+                + m.pulseRetrySeconds() + " s, up to " + m.pulseRetries() + " time(s)" : "") + ")" : "") + ", listed " + m.listed() + ", target " + m.descentSpeed() + " blocks a second, speed trigger "
                 + m.speedThreshold() + " blocks a second for " + m.speedTicks() + " ticks; glide horizontal " + m.glideHorizontal() + ", hold tolerance " + m.holdTolerance()
                 + ", refresh at most every " + m.pushTicks() + " ticks; air drag " + String.format(Locale.ROOT, "%.5f", m.airDrag()) + (m.airDragSetting() > 0 ? " (set)" : " (derived, step "
                 + m.gravityStep() + ")") + "; counter reads the client velocity as " + (m.reportsTotal() ? "total" : "own") + "; " + m.manaPerSecond() + " Mana a second");
@@ -241,7 +254,8 @@ final class SuspensorCommands {
         String trigger = machine.mark() == BeltMachine.Mark.I_FAR ? "fallingFar true while in the air" : "falling and faster than " + m.speedThreshold() + " blocks a second on "
                 + m.speedTicks() + " ticks in a row";
         if (m.way() == BeltMachine.Way.GLIDER) {
-            trigger = "glider route, trigger " + m.trigger().name().toLowerCase(Locale.ROOT);
+            trigger = "glider route, trigger " + m.trigger().name().toLowerCase(Locale.ROOT) + ", signal " + m.signal().name().toLowerCase(Locale.ROOT) + ", pulses sent " + machine.pulses()
+                    + " (retries " + machine.retries() + ")";
         }
         double landing = machine.lastLanding();
         com.hypixel.hytale.server.core.entity.entities.Player who = store.getComponent(c.senderAsPlayerRef(), com.hypixel.hytale.server.core.entity.entities.Player.getComponentType());
@@ -258,6 +272,7 @@ final class SuspensorCommands {
                 + (Double.isNaN(landing) ? "none yet" : String.format(Locale.ROOT, "%.2f", landing)));
     }
 
+    // TEST DEVICE: the impulse probe belongs to the abandoned velocity routes; remove with them.
     /** One Set instruction of (0, y, 0) with the given resistance, and a two second watch of what the client reports. */
     private static void impulse(CommandContext c, Store<EntityStore> store, String[] args) {
         if (!c.isPlayer() || c.senderAsPlayerRef() == null) {
@@ -291,6 +306,7 @@ final class SuspensorCommands {
 
     // ---- the glider by hand
 
+    // TEST DEVICE: give, take and effect are manual controls for the proof runs, not part of the final belt.
     private static void glider(CommandContext c, Store<EntityStore> store, String[] args) {
         if (!c.isPlayer() || c.senderAsPlayerRef() == null) {
             CoreModule.say(c, "Run this as a player in the game.");
@@ -330,6 +346,7 @@ final class SuspensorCommands {
 
     // ---- probe and drop
 
+    // TEST DEVICE: the fall probe is kept for tuning, but it is a developer tool.
     private static void probe(CommandContext c, Store<EntityStore> store, String[] args) {
         if (!c.isPlayer() || c.senderAsPlayerRef() == null) {
             CoreModule.say(c, "Run this as a player in the game.");
@@ -349,6 +366,7 @@ final class SuspensorCommands {
         }
     }
 
+    // TEST DEVICE: the drop helper (operator only) is kept for tests.
     private static void drop(CommandContext c, World world, Store<EntityStore> store, String[] args) {
         if (!c.isPlayer() || c.senderAsPlayerRef() == null) {
             CoreModule.say(c, "Run this as a player in the game.");

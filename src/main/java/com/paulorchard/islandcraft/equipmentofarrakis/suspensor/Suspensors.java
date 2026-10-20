@@ -21,6 +21,7 @@ final class Suspensors {
     private static final Map<String, Long> LAST_LOG = new ConcurrentHashMap<>();
     private static final Map<UUID, FallProbe> PROBES = new ConcurrentHashMap<>();
     private static final Map<UUID, ImpulseWatch> IMPULSES = new ConcurrentHashMap<>();
+    private static final java.time.format.DateTimeFormatter STAMP = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static volatile SuspensorConfig config = new SuspensorConfig();
     private static volatile HytaleLogger logger;
 
@@ -68,10 +69,14 @@ final class Suspensors {
     }
 
     /** One probe line: INFO in the log and, if the probe was started with chat, in the player's chat. */
+    // TEST DEVICE: tick and timestamp of the probe lines.
+    /** The world tick of the player being ticked now (set by the system), for the order of the probe lines within a tick. */
+    static volatile long tickNow;
+
     static void probeLine(com.hypixel.hytale.server.core.universe.PlayerRef player, FallProbe probe, String line) {
         HytaleLogger log = logger;
         if (log != null) {
-            log.at(Level.INFO).log("Suspensor probe [%s]: %s", player.getUsername(), line);
+            log.at(Level.INFO).log("Suspensor probe [%s] t=%s tick=%d: %s", player.getUsername(), STAMP.format(java.time.LocalTime.now()), tickNow, line);
         }
         if (probe.chat()) {
             player.sendMessage(com.hypixel.hytale.server.core.Message.raw("probe " + line));

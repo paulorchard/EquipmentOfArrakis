@@ -3,6 +3,7 @@ package com.paulorchard.islandcraft.equipmentofarrakis.suspensor;
 import java.util.function.IntPredicate;
 
 /** The checks of {@code /arrakis suspensor drop}: how far up, and whether the column above is free. No engine types. */
+// TEST DEVICE: the rules of the drop helper.
 final class DropRules {
 
     /** The highest block row the world has (a 320 block world: rows 0 to 319). */
