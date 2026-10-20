@@ -33,7 +33,12 @@ class SuspensorAssetsTest {
         assertEquals(0.0, c.mk2().verticalSpeed());
         assertEquals(1.0, c.manaPerSecond());
         assertEquals(5.0, c.resumeMana());
-        assertTrue(c.mk1().contains("not"), "Mk I is a documented placeholder");
+        assertEquals(4.0, c.mk1().descentSpeed());
+        assertEquals(12.0, c.mk1().speedThreshold());
+        assertEquals(2, c.mk1().speedTicks());
+        assertTrue(c.mk1().listed());
+        assertEquals(Mk1Config.Route.SETTINGS, c.mk1().route());
+        assertEquals(0.0, c.mk1().manaPerSecond());
     }
 
     @Test

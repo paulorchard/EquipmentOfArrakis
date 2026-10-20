@@ -145,6 +145,36 @@ class ToggleGroupTest {
     }
 
     @Test
+    void fourMembersOfOneGroupAreExclusiveAndALonerNextToThemIsNot() {
+        ToggleRegistry four = new ToggleRegistry();
+        Set<UUID>[] on = new Set[4];
+        for (int i = 0; i < 4; i++) {
+            on[i] = new HashSet<>();
+            four.register(new ToggleRegistry.Toggle("m" + i, i, "l", "i", null, on[i]::contains, on[i]::remove, "belt"));
+        }
+        Set<UUID> loner = new HashSet<>();
+        four.register(new ToggleRegistry.Toggle("loner", 9, "l", "i", null, loner::contains, loner::remove));
+        loner.add(who);
+        int[] order = {0, 1, 2, 3, 3, 1, 0, 2, 2, 3};
+        for (int id : order) {
+            four.pressWith("m" + id, who, 0, 0, (toggle, state) -> {
+                int index = Integer.parseInt(toggle.id().substring(1));
+                if (state) {
+                    on[index].add(who);
+                } else {
+                    on[index].remove(who);
+                }
+            });
+            int ons = 0;
+            for (Set<UUID> s : on) {
+                ons += s.contains(who) ? 1 : 0;
+            }
+            assertTrue(ons <= 1, "after m" + id + " " + ons + " members were on");
+        }
+        assertTrue(loner.contains(who), "the ungrouped toggle was never touched");
+    }
+
+    @Test
     void forgetClearsEveryMemberAndAFailingResetDoesNotStopTheOthers() {
         press("a");
         press("solo");

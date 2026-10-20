@@ -14,9 +14,12 @@ final class Suspensors {
 
     static final String TOGGLE_III = "suspensor3";
     static final String TOGGLE_II = "suspensor2";
+    static final String TOGGLE_I_FAR = "suspensor1f";
+    static final String TOGGLE_I_SPEED = "suspensor1s";
 
     private static final Map<UUID, BeltMachine> MACHINES = new ConcurrentHashMap<>();
     private static final Map<String, Long> LAST_LOG = new ConcurrentHashMap<>();
+    private static final Map<UUID, FallProbe> PROBES = new ConcurrentHashMap<>();
     private static volatile SuspensorConfig config = new SuspensorConfig();
     private static volatile HytaleLogger logger;
 
@@ -46,7 +49,31 @@ final class Suspensors {
 
     static void forget(UUID player) {
         MACHINES.remove(player);
+        PROBES.remove(player);
         LAST_LOG.keySet().removeIf(key -> key.startsWith(player + "|"));
+    }
+
+    static FallProbe probe(UUID player) {
+        return PROBES.get(player);
+    }
+
+    static void probeOn(UUID player, boolean chat) {
+        PROBES.put(player, new FallProbe(chat));
+    }
+
+    static void probeOff(UUID player) {
+        PROBES.remove(player);
+    }
+
+    /** One probe line: INFO in the log and, if the probe was started with chat, in the player's chat. */
+    static void probeLine(com.hypixel.hytale.server.core.universe.PlayerRef player, FallProbe probe, String line) {
+        HytaleLogger log = logger;
+        if (log != null) {
+            log.at(Level.INFO).log("Suspensor probe [%s]: %s", player.getUsername(), line);
+        }
+        if (probe.chat()) {
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw("probe " + line));
+        }
     }
 
     static int count() {

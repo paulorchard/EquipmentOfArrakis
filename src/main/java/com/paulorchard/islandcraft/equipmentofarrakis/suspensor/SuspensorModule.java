@@ -50,6 +50,10 @@ public final class SuspensorModule implements EquipmentModule {
     public void setup(ModuleContext ctx) {
         guard.activate();
         Suspensors.configure(ctx.settings(ID, SuspensorConfig.class), ctx.logger());
+        if (Suspensors.config().mk1().listed()) {
+            register(Suspensors.TOGGLE_I_FAR, 29, BeltMachine.Mark.I_FAR);
+            register(Suspensors.TOGGLE_I_SPEED, 30, BeltMachine.Mark.I_SPEED);
+        }
         register(Suspensors.TOGGLE_III, 31, BeltMachine.Mark.III);
         register(Suspensors.TOGGLE_II, 32, BeltMachine.Mark.II);
         ctx.system(new SuspensorSystem());
@@ -96,7 +100,11 @@ public final class SuspensorModule implements EquipmentModule {
         boolean armed = Suspensors.of(id).switchOn(mark, Suspensors.read(manager.getSettings()), mana, (float) Suspensors.config().resumeMana());
         Suspensors.log(id, player.getUsername(), "state", "Mk " + mark + " on, " + (armed ? "armed" : "unarmed (Mana under " + Suspensors.config().resumeMana() + ")"));
         if (armed) {
-            player.sendMessage(Message.translation(LANG + (mark == BeltMachine.Mark.III ? "ready3" : "ready2")));
+            player.sendMessage(Message.translation(LANG + switch (mark) {
+                case III -> "ready3";
+                case II -> "ready2";
+                default -> "ready1";
+            }));
         } else {
             Notice.say(player, LANG + "needsMana");
         }
@@ -108,6 +116,14 @@ public final class SuspensorModule implements EquipmentModule {
         for (String id : new String[] {Suspensors.TOGGLE_III, Suspensors.TOGGLE_II}) {
             lines.add(ToggleRegistry.get().find(id) == null ? "PROBLEM the toggle " + id + " is not registered" : "toggle " + id + " registered");
         }
+        boolean listed = Suspensors.config().mk1().listed();
+        for (String id : new String[] {Suspensors.TOGGLE_I_FAR, Suspensors.TOGGLE_I_SPEED}) {
+            boolean there = ToggleRegistry.get().find(id) != null;
+            lines.add(there == listed ? "toggle " + id + (there ? " registered" : " not listed (Mk1.Listed false)") : "PROBLEM the toggle " + id + " is " + (there ? "registered" : "missing"));
+        }
+        Mk1Config m = Suspensors.config().mk1();
+        lines.add("suspensor Mk I route " + m.route() + ", descent " + m.descentSpeed() + ", speed threshold " + m.speedThreshold() + " x " + m.speedTicks() + " ticks, "
+                + (m.massField() ? "mass" : "drag") + " factor " + m.dragFactor() + ", " + m.manaPerSecond() + " Mana a second");
         lines.add(EntityEffect.getAssetMap().getAsset(SuspensorSystem.HUM_EFFECT) == null ? "PROBLEM effect " + SuspensorSystem.HUM_EFFECT + " is not loaded"
                 : "effect " + SuspensorSystem.HUM_EFFECT + " loaded");
         SuspensorConfig c = Suspensors.config();

@@ -66,6 +66,15 @@ The server log only says "Crash"; the real message is in the client log, `%APPDA
       correctly every tick. The glider route, the settings route, the velocity clamp and fall damage numbers were not exercised and were dropped with the lab.
     - **Engine helper:** `Player.setFlying(ref, boolean, accessor)` starts or stops flying, pushes settings and flag and restores the default fly mode when stopping; it is what ends the belt's flight at 0 Mana.
 
+13. **Terminal fall speed and fallingFar (Mk I, read from the jar; the client numbers are inferred).**
+    - `MovementManager` takes `mass`, `dragCoefficient` and `invertedGravity` of the settings from `PhysicsValues` (defaults: mass 1.0, drag 0.5) and everything else from `MovementConfig.toPacket`. The server's own physics constant is gravity 32 blocks a second squared
+      (`PhysicsConstants.GRAVITY_ACCELERATION`), and `PhysicsMath.computeTerminalSpeed` is a square root of a product over a product of two factors, i.e. the terminal speed goes as the square root of mass over drag. The terminal fall speed seen on the client is about
+      22 blocks a second (the fastest fall in the lab log was -22.08). **Inferred (not verified):** if the client uses the same quadratic drag, lowering the terminal speed from 22 to a target T takes drag multiplied (or mass divided) by (22 / T) squared, 30.25 for T = 4. Mk I's
+      settings route pushes exactly that and the probe shows whether the client settles near -T; if it does not, the next fields to try are the air-drag pair and `variableJumpFallForce`.
+    - **`fallingFar` is set by the client.** The server only copies it (`MovementStatesSystems.TickingSystem` copies the flag from the client's states). Nothing in the server jar says when it flips; the probe (`/arrakis suspensor probe`) logs the height, time and speed
+      at the flip. Result: pending a client run.
+    - **Velocity instructions** (`Velocity.addInstruction(Vector3d, VelocityConfig, ChangeVelocityType)`, `Set`) are consumed by the player velocity system and reach the client as a `ChangeVelocity` packet; the lab already used it for a clamp.
+
 ## Tried and abandoned
 
 - **Flame Cutter and Flame Beam Cutter (the experiments module).** A flamethrower-style tool and a beam tool with a calibration rig (about 17 `exp cal` commands, particles, a measured angle unit) to place a
