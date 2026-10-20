@@ -20,6 +20,7 @@ final class Suspensors {
     private static final Map<UUID, BeltMachine> MACHINES = new ConcurrentHashMap<>();
     private static final Map<String, Long> LAST_LOG = new ConcurrentHashMap<>();
     private static final Map<UUID, FallProbe> PROBES = new ConcurrentHashMap<>();
+    private static final Map<UUID, ImpulseWatch> IMPULSES = new ConcurrentHashMap<>();
     private static volatile SuspensorConfig config = new SuspensorConfig();
     private static volatile HytaleLogger logger;
 
@@ -50,6 +51,7 @@ final class Suspensors {
     static void forget(UUID player) {
         MACHINES.remove(player);
         PROBES.remove(player);
+        IMPULSES.remove(player);
         LAST_LOG.keySet().removeIf(key -> key.startsWith(player + "|"));
     }
 
@@ -74,6 +76,37 @@ final class Suspensors {
         if (probe.chat()) {
             player.sendMessage(com.hypixel.hytale.server.core.Message.raw("probe " + line));
         }
+    }
+
+    static ImpulseWatch impulse(UUID player) {
+        return IMPULSES.get(player);
+    }
+
+    static void impulseOn(UUID player, ImpulseWatch watch) {
+        IMPULSES.put(player, watch);
+    }
+
+    static void impulseOff(UUID player) {
+        IMPULSES.remove(player);
+    }
+
+    /**
+     * A velocity config that does not decay the instructed velocity. By the reading of the NPC motion controller (which applies the same
+     * config on the server) the resistances are per-step multipliers (the default air 0.96, ground 0.82), so 1.0 keeps the speed; the
+     * Max values are used with the threshold and are set to 1.0 too, so whatever blend is applied gives 1.0.
+     */
+    static com.hypixel.hytale.server.core.modules.splitvelocity.VelocityConfig noDecay() {
+        return resistance(1.0f);
+    }
+
+    /** A config with the given resistance on the ground and in the air (and the same for the Max values). */
+    static com.hypixel.hytale.server.core.modules.splitvelocity.VelocityConfig resistance(float r) {
+        com.hypixel.hytale.server.core.modules.splitvelocity.VelocityConfig c = new com.hypixel.hytale.server.core.modules.splitvelocity.VelocityConfig();
+        c.setGroundResistance(r);
+        c.setGroundResistanceMax(r);
+        c.setAirResistance(r);
+        c.setAirResistanceMax(r);
+        return c;
     }
 
     static int count() {

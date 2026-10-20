@@ -81,8 +81,21 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
         double vy = velocity == null ? 0.0 : velocity.getClientVelocity().y;
         double y = transform == null ? 0.0 : transform.getPosition().y;
         if (probe != null) {
-            for (String line : probe.observe(states.falling, states.fallingFar, states.onGround, y, vy, System.currentTimeMillis(), machine != null && machine.engaged())) {
+            int instructions = velocity == null ? 0 : velocity.getInstructions().size();
+            for (String line : probe.observe(states.falling, states.fallingFar, states.onGround, states.flying, y, vy, System.currentTimeMillis(),
+                    machine != null && machine.engaged(), instructions)) {
                 Suspensors.probeLine(player, probe, line);
+            }
+        }
+        ImpulseWatch impulse = Suspensors.impulse(id);
+        if (impulse != null && velocity != null) {
+            long now = System.currentTimeMillis();
+            String line = impulse.sample(now, vy, velocity.getVelocity().y, velocity.getInstructions().size(), states.flying, states.onGround);
+            if (line != null) {
+                Suspensors.probeLine(player, new FallProbe(true), "impulse " + line);
+            }
+            if (impulse.finished(now)) {
+                Suspensors.impulseOff(id);
             }
         }
         if (machine == null) {
@@ -94,7 +107,7 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
         MovementSettings settings = manager.getSettings();
         BeltMachine.Sense sense = new BeltMachine.Sense(dt, states.flying, who.getGameMode() == GameMode.Adventure, states.falling, states.fallingFar,
                 states.onGround, states.inFluid || states.swimming, vy, y, health(buffer, ref), mana, Suspensors.read(settings),
-                new BeltMachine.Physics(settings.mass, settings.dragCoefficient));
+                new BeltMachine.Drag(settings.airDragMin, settings.airDragMax));
         List<BeltMachine.Act> acts = machine.tick(sense, (float) config.manaPerSecond(), (float) config.resumeMana(), config.mk1().rules(), Suspensors::speeds);
         for (BeltMachine.Act act : acts) {
             carryOut(act, player, who, manager, ref, buffer, power, config, velocity);
@@ -149,18 +162,34 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
                     controller.removeEffect(ref, effect, buffer);
                 }
             }
-            case DESCENT_ON, DESCENT_OFF -> {
+            case GLIDE_ON -> {
+                // the settings are written first so that Player.setFlying keeps Forced and pushes settings and flag once
+                Suspensors.write(manager.getSettings(), act.settings());
+                who.setFlying(ref, true, buffer);
+                Suspensors.log(player.getUuid(), name, "glide", "glide on: fly Forced, h " + act.settings().horizontal() + " v " + act.settings().vertical() + ", setFlying(true)");
+            }
+            case GLIDE_OFF -> {
+                Suspensors.write(manager.getSettings(), act.settings());
+                who.setFlying(ref, false, buffer);
+                Suspensors.log(player.getUuid(), name, "glide-off", "glide off: setFlying(false), snapshot written back (fly " + act.settings().mode() + " h "
+                        + act.settings().horizontal() + " v " + act.settings().vertical() + ")");
+            }
+            case DRAG_ON, DRAG_OFF -> {
                 MovementSettings settings = manager.getSettings();
-                settings.mass = act.physics().mass();
-                settings.dragCoefficient = act.physics().drag();
+                settings.airDragMin = act.drag().min();
+                settings.airDragMax = act.drag().max();
                 manager.update(player.getPacketHandler());
-                Suspensors.log(player.getUuid(), name, act.kind() == BeltMachine.Kind.DESCENT_ON ? "descent" : "descent-off", "pushed mass " + settings.mass
-                        + " drag " + settings.dragCoefficient + (act.kind() == BeltMachine.Kind.DESCENT_ON ? " (descent on)" : " (descent off: back to the snapshot)"));
+                Suspensors.log(player.getUuid(), name, act.kind() == BeltMachine.Kind.DRAG_ON ? "drag" : "drag-off", "pushed airDragMin " + settings.airDragMin
+                        + " airDragMax " + settings.airDragMax + (act.kind() == BeltMachine.Kind.DRAG_ON ? " (descent on)" : " (descent off: back to the snapshot)"));
             }
             case VELOCITY -> {
                 if (velocity != null) {
-                    Vector3d client = velocity.getClientVelocity();
-                    velocity.addInstruction(new Vector3d(client.x, act.amount(), client.z), new VelocityConfig(), ChangeVelocityType.Set);
+                    velocity.addInstruction(new Vector3d(0.0, act.amount(), 0.0), Suspensors.noDecay(), ChangeVelocityType.Set);
+                }
+            }
+            case VELOCITY_CLEAR -> {
+                if (velocity != null) {
+                    velocity.addInstruction(new Vector3d(0.0, 0.0, 0.0), new VelocityConfig(), ChangeVelocityType.Set);
                 }
             }
             case NEEDS_MANA -> Notice.say(player, "server.arrakis.suspensor.needsMana");

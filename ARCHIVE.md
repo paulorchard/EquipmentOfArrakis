@@ -66,14 +66,19 @@ The server log only says "Crash"; the real message is in the client log, `%APPDA
       correctly every tick. The glider route, the settings route, the velocity clamp and fall damage numbers were not exercised and were dropped with the lab.
     - **Engine helper:** `Player.setFlying(ref, boolean, accessor)` starts or stops flying, pushes settings and flag and restores the default fly mode when stopping; it is what ends the belt's flight at 0 Mana.
 
-13. **Terminal fall speed and fallingFar (Mk I, read from the jar; the client numbers are inferred).**
-    - `MovementManager` takes `mass`, `dragCoefficient` and `invertedGravity` of the settings from `PhysicsValues` (defaults: mass 1.0, drag 0.5) and everything else from `MovementConfig.toPacket`. The server's own physics constant is gravity 32 blocks a second squared
-      (`PhysicsConstants.GRAVITY_ACCELERATION`), and `PhysicsMath.computeTerminalSpeed` is a square root of a product over a product of two factors, i.e. the terminal speed goes as the square root of mass over drag. The terminal fall speed seen on the client is about
-      22 blocks a second (the fastest fall in the lab log was -22.08). **Inferred (not verified):** if the client uses the same quadratic drag, lowering the terminal speed from 22 to a target T takes drag multiplied (or mass divided) by (22 / T) squared, 30.25 for T = 4. Mk I's
-      settings route pushes exactly that and the probe shows whether the client settles near -T; if it does not, the next fields to try are the air-drag pair and `variableJumpFallForce`.
-    - **`fallingFar` is set by the client.** The server only copies it (`MovementStatesSystems.TickingSystem` copies the flag from the client's states). Nothing in the server jar says when it flips; the probe (`/arrakis suspensor probe`) logs the height, time and speed
-      at the flip. Result: pending a client run.
-    - **Velocity instructions** (`Velocity.addInstruction(Vector3d, VelocityConfig, ChangeVelocityType)`, `Set`) are consumed by the player velocity system and reach the client as a `ChangeVelocity` packet; the lab already used it for a clamp.
+13. **What the first Mk I test build proved (world "Suspensor Test", logs of 2026-10-19; the first routes are removed).**
+    - **`dragCoefficient` and `mass` do nothing to the fall.** Pushing `dragCoefficient` 0.5 -> 15.125 (x30.25) on engage changed nothing: landing speeds stayed -22.1 to -23.6 blocks a second (terminal about -23.58, even after an 84 to 97 block fall) and the damage stayed 10 to 12 health a fall, as the formula of rule 11 gives.
+      The client does not use them for falling (the server uses them for its own entities; `PhysicsValues` defaults are mass 1.0, drag 0.5, gravity `PhysicsConstants.GRAVITY_ACCELERATION` 32).
+    - **A Set of -4 made the fall faster.** Engaged at -13.33 with `Velocity.addInstruction(Vector3d(x, -4, z), new VelocityConfig(), Set)` and landed at -36.41 (fastest -37.46), health 100 -> 11. `Hytale:SplitVelocity` splits a player's velocity into the client's own physics velocity and an instructed (external) one; the instruction
+      becomes a `ChangeVelocity` packet that sets or adds the external part, which is **added on top of** the client's own falling speed. It cannot clamp gravity by itself. (The default `VelocityConfig` also decays: ground 0.82, air 0.96 per step.)
+    - **`fallingFar`** is set by the client (the server only copies it, `MovementStatesSystems.TickingSystem`) and flipped after about 1.0 s and 16.2 to 18.4 blocks of falling at a speed of -31 to -35: it is late, a time or distance rather than a speed. `falling` flips with the first tick off the ground, and the speed trigger (12 blocks a second on 2 ticks) fired at -13.3, about 0.4 s into a fall.
+    - `fallingFar`, `falling` and `onGround` all return to false/true on the landing tick, with the client vertical speed at that tick equal to the landing speed.
+14. **VelocityConfig and the Mk I ways (read from the classes; the client behaviour is to be measured).**
+    - `VelocityConfig` (server and protocol): `groundResistance` 0.82, `groundResistanceMax` 0, `airResistance` 0.96, `airResistanceMax` 0, `threshold` 1, `style` Linear (or Exp). The NPC `MotionControllerBase`, which applies the same config to its own applied velocities, multiplies each velocity by `pow(resistance, step)`
+      with the resistance blended between the plain and the Max value by the speed relative to the threshold (and uses the plain value when the Max is negative); a velocity under 0.001 squared is dropped. So the values are per-step multipliers: **1.0 means no decay**, 0 would remove the velocity at once. (The brief assumed 0 means no decay; the class says the opposite.)
+    - `Player.setFlying(ref, true, accessor)` sets fly Forced if it already is, otherwise Allowed, and pushes the settings and the flying flag once; with the fly fields written first it is a single push. Flying has no gravity on the client, so an external downward velocity should be the whole vertical motion: that is the flyglide way.
+    - The airdrag hypothesis: `airDragMin/Max` (0.96, 0.995, with `airDragMinSpeed/MaxSpeed` 6 and 10) are per-tick multipliers; if the vertical speed obeys v = (v + step) * m the terminal speed is step * m / (1 - m) and the measured -23.58 at m = 0.995 gives step 0.1185, so m = 0.9712 gives -4.
+      These fields also shape horizontal air motion. Pending a client run.
 
 ## Tried and abandoned
 

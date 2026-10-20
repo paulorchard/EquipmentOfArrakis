@@ -17,6 +17,7 @@ final class FallProbe {
     private boolean falling;
     private boolean far;
     private boolean ground = true;
+    private boolean flyingFlag;
     private boolean started;
     private double groundY;
     private long groundMs;
@@ -31,16 +32,18 @@ final class FallProbe {
         return chat;
     }
 
-    List<String> observe(boolean nowFalling, boolean nowFar, boolean nowGround, double y, double vy, long nowMs, boolean engaged) {
+    List<String> observe(boolean nowFalling, boolean nowFar, boolean nowGround, boolean nowFlying, double y, double vy, long nowMs, boolean engaged,
+                         int instructions) {
         List<String> lines = new ArrayList<>();
         if (!started) {
             started = true;
             falling = nowFalling;
             far = nowFar;
             ground = nowGround;
+            flyingFlag = nowFlying;
             groundY = y;
             groundMs = nowMs;
-            lines.add("probe on: falling " + nowFalling + ", fallingFar " + nowFar + ", onGround " + nowGround + ", y " + fmt(y) + ", vy " + fmt(vy));
+            lines.add("probe on: falling " + nowFalling + ", fallingFar " + nowFar + ", onGround " + nowGround + ", flying " + nowFlying + ", y " + fmt(y) + ", vy " + fmt(vy));
             return lines;
         }
         double fastestFall = fastest;
@@ -61,13 +64,17 @@ final class FallProbe {
         if (nowGround != ground) {
             lines.add("onGround " + ground + " -> " + nowGround + ": " + where + (nowGround ? ", fastest fall " + fmt(fastestFall) : ""));
         }
+        if (nowFlying != flyingFlag) {
+            lines.add("flying " + flyingFlag + " -> " + nowFlying + ": " + where);
+        }
         falling = nowFalling;
         far = nowFar;
         ground = nowGround;
+        flyingFlag = nowFlying;
         if (engaged) {
             if (nowMs >= nextEngagedMs) {
                 nextEngagedMs = nowMs + ENGAGED_INTERVAL_MS;
-                lines.add("engaged: vy " + fmt(vy) + ", height above the last ground " + fmt(groundY - y));
+                lines.add("engaged: vy " + fmt(vy) + ", flying " + nowFlying + ", onGround " + nowGround + ", instructions " + instructions + ", height above the last ground " + fmt(groundY - y));
             }
         } else {
             nextEngagedMs = 0;

@@ -37,7 +37,7 @@ class SuspensorAssetsTest {
         assertEquals(12.0, c.mk1().speedThreshold());
         assertEquals(2, c.mk1().speedTicks());
         assertTrue(c.mk1().listed());
-        assertEquals(Mk1Config.Route.SETTINGS, c.mk1().route());
+        assertEquals(BeltMachine.Way.FLYGLIDE, c.mk1().way());
         assertEquals(0.0, c.mk1().manaPerSecond());
     }
 

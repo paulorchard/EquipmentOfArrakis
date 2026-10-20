@@ -18,18 +18,17 @@ import java.util.Locale;
  */
 public class Mk1Config {
 
-    /** How the descent is applied. */
-    public enum Route { SETTINGS, VELOCITY }
-
     private boolean listed = true;
-    private String route = "settings";
+    private String route = "flyglide";
     private double descentSpeed = 4.0;
     private double speedThreshold = 12.0;
     private int speedTicks = 2;
-    private double dragFactor = 0.0;
-    private String field = "drag";
-    private double terminalSpeed = 22.0;
-    private int pushTicks = 2;
+    private double glideHorizontal = 1.0;
+    private double holdTolerance = 0.75;
+    private int pushTicks = 5;
+    private double airDrag = 0.0;
+    private double gravityStep = AirDragMath.FITTED_STEP;
+    private boolean reportsTotal = true;
     private double manaPerSecond = 0.0;
 
     /** False: the two Mk I toggles are not registered at all. */
@@ -37,11 +36,16 @@ public class Mk1Config {
         return listed;
     }
 
-    public Route route() {
-        return "velocity".equalsIgnoreCase(route) ? Route.VELOCITY : Route.SETTINGS;
+    /** The way the descent is applied; an unknown name (the old settings and velocity routes) is flyglide. */
+    public BeltMachine.Way way() {
+        return switch (route == null ? "" : route.toLowerCase(Locale.ROOT)) {
+            case "airdrag" -> BeltMachine.Way.AIRDRAG;
+            case "counter" -> BeltMachine.Way.COUNTER;
+            default -> BeltMachine.Way.FLYGLIDE;
+        };
     }
 
-    void route(Route value) {
+    void way(BeltMachine.Way value) {
         route = value.name().toLowerCase(Locale.ROOT);
     }
 
@@ -72,52 +76,62 @@ public class Mk1Config {
         speedTicks = value;
     }
 
-    /** The factor the settings route multiplies drag by (or divides mass by); 0 or less: derived from the observed terminal speed and the target. */
-    public double dragFactorSetting() {
-        return dragFactor;
+    /** Horizontal fly speed while gliding (flyglide). */
+    public double glideHorizontal() {
+        return Math.max(0, glideHorizontal);
     }
 
-    void dragFactor(double value) {
-        dragFactor = value;
+    void glideHorizontal(double value) {
+        glideHorizontal = value;
     }
 
-    /**
-     * The factor in force. Under quadratic drag the terminal speed goes as the square root of mass over drag, so lowering it from the
-     * observed {@link #terminalSpeed()} to the target takes a factor of (observed / target) squared.
-     */
-    public double dragFactor() {
-        if (dragFactor > 0) {
-            return dragFactor;
-        }
-        double ratio = terminalSpeed() / descentSpeed();
-        return Math.max(1.0, ratio * ratio);
+    /** How far the vertical speed may drift from the target before the instruction is refreshed (blocks a second). */
+    public double holdTolerance() {
+        return Math.max(0.05, holdTolerance);
     }
 
-    /** True: the settings route changes {@code mass} (divided) instead of {@code dragCoefficient} (multiplied). */
-    public boolean massField() {
-        return "mass".equalsIgnoreCase(field);
+    void holdTolerance(double value) {
+        holdTolerance = value;
     }
 
-    void field(String value) {
-        field = value;
-    }
-
-    /** The terminal fall speed seen at the default settings (blocks a second). */
-    public double terminalSpeed() {
-        return Math.max(1.0, terminalSpeed);
-    }
-
-    void terminalSpeed(double value) {
-        terminalSpeed = value;
-    }
-
-    /** Ticks between two velocity pushes (velocity route). */
+    /** Ticks between two instruction refreshes at most (flyglide, counter). */
     public int pushTicks() {
         return Math.max(1, pushTicks);
     }
 
     void pushTicks(int value) {
         pushTicks = value;
+    }
+
+    /** The air drag multiplier of the airdrag way: the setting if above 0, otherwise derived from the target and the fitted step. */
+    public double airDrag() {
+        return airDrag > 0 ? Math.min(airDrag, 0.9999) : AirDragMath.airDragFor(descentSpeed(), gravityStep());
+    }
+
+    public double airDragSetting() {
+        return airDrag;
+    }
+
+    void airDrag(double value) {
+        airDrag = value;
+    }
+
+    /** The gravity step of the airdrag formula (see {@link AirDragMath}). */
+    public double gravityStep() {
+        return Math.max(0.0001, gravityStep);
+    }
+
+    void gravityStep(double value) {
+        gravityStep = value;
+    }
+
+    /** True: the client velocity the probe and the counter way read includes the external velocity (to be confirmed by the impulse probe). */
+    public boolean reportsTotal() {
+        return reportsTotal;
+    }
+
+    void reportsTotal(boolean value) {
+        reportsTotal = value;
     }
 
     /** Mana a second while the descent is engaged (0: free). */
@@ -130,29 +144,33 @@ public class Mk1Config {
     }
 
     BeltMachine.FallRules rules() {
-        return new BeltMachine.FallRules(route() == Route.VELOCITY, descentSpeed(), speedThreshold(), speedTicks(), (float) dragFactor(), massField(),
-                pushTicks(), (float) manaPerSecond());
+        return new BeltMachine.FallRules(way(), descentSpeed(), speedThreshold(), speedTicks(), pushTicks(), holdTolerance(), (float) glideHorizontal(),
+                (float) airDrag(), reportsTotal(), (float) manaPerSecond());
     }
 
     static final BuilderCodec<Mk1Config> BUILDER = BuilderCodec.builder(Mk1Config.class, Mk1Config::new)
             .append(new KeyedCodec<>("Listed", Codec.BOOLEAN, false), (c, v) -> c.listed = v, c -> c.listed)
             .documentation("True: the two Mk I toggles are listed on the picker page (this test build). False: not registered.").add()
             .append(new KeyedCodec<>("Route", Codec.STRING, false), (c, v) -> c.route = v, c -> c.route)
-            .documentation("settings: push heavier drag once at the start of the descent and back at the end. velocity: push the vertical speed every PushTicks ticks.").add()
+            .documentation("flyglide (fly, then drift down with an external velocity), airdrag (the air drag multipliers) or counter (an upward external velocity). Old values read as flyglide.").add()
             .append(new KeyedCodec<>("DescentSpeed", Codec.DOUBLE, false), (c, v) -> c.descentSpeed = v, c -> c.descentSpeed)
             .documentation("Target descent speed in blocks a second.").add()
             .append(new KeyedCodec<>("SpeedThreshold", Codec.DOUBLE, false), (c, v) -> c.speedThreshold = v, c -> c.speedThreshold)
             .documentation("The speed mark engages when the client falls faster than this (blocks a second; fall damage starts at 21).").add()
             .append(new KeyedCodec<>("SpeedTicks", Codec.INTEGER, false), (c, v) -> c.speedTicks = v, c -> c.speedTicks)
             .documentation("Consecutive ticks above the threshold before the speed mark engages.").add()
-            .append(new KeyedCodec<>("DragFactor", Codec.DOUBLE, false), (c, v) -> c.dragFactor = v, c -> c.dragFactor)
-            .documentation("Settings route: drag is multiplied by this (mass divided, with Field mass). 0: derived as (TerminalSpeed / DescentSpeed) squared.").add()
-            .append(new KeyedCodec<>("Field", Codec.STRING, false), (c, v) -> c.field = v, c -> c.field)
-            .documentation("Settings route: drag (dragCoefficient, the default) or mass.").add()
-            .append(new KeyedCodec<>("TerminalSpeed", Codec.DOUBLE, false), (c, v) -> c.terminalSpeed = v, c -> c.terminalSpeed)
-            .documentation("The terminal fall speed seen at the default physics (about 22 blocks a second), used to derive DragFactor.").add()
+            .append(new KeyedCodec<>("GlideHorizontal", Codec.DOUBLE, false), (c, v) -> c.glideHorizontal = v, c -> c.glideHorizontal)
+            .documentation("flyglide: the horizontal fly speed while gliding (the vertical one is 0).").add()
+            .append(new KeyedCodec<>("HoldTolerance", Codec.DOUBLE, false), (c, v) -> c.holdTolerance = v, c -> c.holdTolerance)
+            .documentation("flyglide and counter: the instruction is refreshed when the vertical speed is further than this from the target.").add()
             .append(new KeyedCodec<>("PushTicks", Codec.INTEGER, false), (c, v) -> c.pushTicks = v, c -> c.pushTicks)
-            .documentation("Velocity route: ticks between two pushes.").add()
+            .documentation("flyglide and counter: ticks between two instruction refreshes at most (default 5).").add()
+            .append(new KeyedCodec<>("AirDrag", Codec.DOUBLE, false), (c, v) -> c.airDrag = v, c -> c.airDrag)
+            .documentation("airdrag: the multiplier pushed for airDragMin and airDragMax. 0: derived from DescentSpeed and GravityStep.").add()
+            .append(new KeyedCodec<>("GravityStep", Codec.DOUBLE, false), (c, v) -> c.gravityStep = v, c -> c.gravityStep)
+            .documentation("airdrag: the fitted step of v = step * m / (1 - m); 0.1185 from the terminal speed 23.58 at m = 0.995.").add()
+            .append(new KeyedCodec<>("ReportsTotal", Codec.BOOLEAN, false), (c, v) -> c.reportsTotal = v, c -> c.reportsTotal)
+            .documentation("counter: true when the client velocity includes the external velocity (to be confirmed with suspensor impulse).").add()
             .append(new KeyedCodec<>("ManaPerSecond", Codec.DOUBLE, false), (c, v) -> c.manaPerSecond = v, c -> c.manaPerSecond)
             .documentation("Mana a second while the descent is engaged (0: free).").add()
             .build();

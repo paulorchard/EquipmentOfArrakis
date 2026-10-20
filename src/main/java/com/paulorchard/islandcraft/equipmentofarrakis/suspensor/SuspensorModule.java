@@ -122,8 +122,8 @@ public final class SuspensorModule implements EquipmentModule {
             lines.add(there == listed ? "toggle " + id + (there ? " registered" : " not listed (Mk1.Listed false)") : "PROBLEM the toggle " + id + " is " + (there ? "registered" : "missing"));
         }
         Mk1Config m = Suspensors.config().mk1();
-        lines.add("suspensor Mk I route " + m.route() + ", descent " + m.descentSpeed() + ", speed threshold " + m.speedThreshold() + " x " + m.speedTicks() + " ticks, "
-                + (m.massField() ? "mass" : "drag") + " factor " + m.dragFactor() + ", " + m.manaPerSecond() + " Mana a second");
+        lines.add("suspensor Mk I route " + m.way().name().toLowerCase(java.util.Locale.ROOT) + ", descent " + m.descentSpeed() + ", speed threshold " + m.speedThreshold() + " x " + m.speedTicks()
+                + " ticks, refresh every " + m.pushTicks() + " ticks, " + m.manaPerSecond() + " Mana a second");
         lines.add(EntityEffect.getAssetMap().getAsset(SuspensorSystem.HUM_EFFECT) == null ? "PROBLEM effect " + SuspensorSystem.HUM_EFFECT + " is not loaded"
                 : "effect " + SuspensorSystem.HUM_EFFECT + " loaded");
         SuspensorConfig c = Suspensors.config();

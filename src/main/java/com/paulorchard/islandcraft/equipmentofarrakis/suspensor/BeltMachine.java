@@ -10,10 +10,12 @@ import java.util.function.Function;
  * ({@link #switchOn}, {@link #switchOff}, {@link #reset}) and {@link #tick} decides what to do about it, as a list of {@link Act}s.
  * The adapter ({@link SuspensorSystem}) carries the acts out. The rule that keeps the client quiet: a settings push is an act only
  * when the settings that should be in force differ from the ones last pushed (the flying marks) or when a descent starts or ends
- * (the Mk I marks), so a quiet belt sends nothing, tick after tick.
+ * (the Mk I marks); the instruction routes of Mk I refresh their velocity instruction at a limited rate and count it.
  *
  * <p>Mk II and Mk III arm the client's own double tap of Space and charge Mana while it flies. Mk I (far fall, speed) watch the
- * fall: ARMED until their trigger fires, then ENGAGED (a slow descent) until the player is on the ground.
+ * fall: ARMED until their trigger fires, then ENGAGED until the player is on the ground. How the descent is slowed is the
+ * {@link Way}: FLYGLIDE (fly, with an external downward velocity of the target speed), AIRDRAG (the air drag multipliers of the
+ * movement settings) or COUNTER (an upward external velocity that cancels the excess fall speed).
  */
 final class BeltMachine {
 
@@ -31,6 +33,9 @@ final class BeltMachine {
 
     enum Fly { DISABLED, ALLOWED, FORCED }
 
+    /** How the Mk I descent is applied. */
+    enum Way { FLYGLIDE, AIRDRAG, COUNTER }
+
     /** The three movement settings the flying marks write: the fly mode and the two fly speeds. */
     record FlySettings(Fly mode, float horizontal, float vertical) {
     }
@@ -38,19 +43,23 @@ final class BeltMachine {
     record Speeds(float horizontal, float vertical) {
     }
 
-    /** The two physics numbers the settings route of Mk I changes. */
-    record Physics(float mass, float drag) {
+    /** The two air drag multipliers of the movement settings, which the AIRDRAG way changes. */
+    record Drag(float min, float max) {
     }
 
     /** What Mk I needs from the config. */
-    record FallRules(boolean velocityRoute, double descentSpeed, double threshold, int ticks, float factor, boolean massField, int pushTicks,
-                     float manaPerSecond) {
-        static final FallRules DEFAULT = new FallRules(false, 4.0, 12.0, 2, 30.25f, false, 2, 0f);
+    record FallRules(Way way, double descentSpeed, double threshold, int ticks, int pushTicks, double tolerance, float glideHorizontal, float airDrag,
+                     boolean reportsTotal, float manaPerSecond) {
+        static final FallRules DEFAULT = new FallRules(Way.FLYGLIDE, 4.0, 12.0, 2, 5, 0.75, 1.0f, 0.9712f, true, 0f);
+
+        FallRules withWay(Way other) {
+            return new FallRules(other, descentSpeed, threshold, ticks, pushTicks, tolerance, glideHorizontal, airDrag, reportsTotal, manaPerSecond);
+        }
     }
 
     /** Everything the machine reads from the world in one tick. */
     record Sense(float dt, boolean flying, boolean modeOk, boolean falling, boolean fallingFar, boolean onGround, boolean inFluid, double vy,
-                 double y, float health, float mana, FlySettings fly, Physics physics) {
+                 double y, float health, float mana, FlySettings fly, Drag drag) {
     }
 
     enum Kind {
@@ -72,15 +81,21 @@ final class BeltMachine {
         NEEDS_MANA,
         /** An INFO log line. */
         LOG,
-        /** Write these mass and drag numbers and push once (the slow descent starts). */
-        DESCENT_ON,
-        /** Write these mass and drag numbers back and push once (the slow descent ends). */
-        DESCENT_OFF,
-        /** One Set velocity instruction: the vertical speed in {@code amount}. */
-        VELOCITY
+        /** Write these fly settings, then Player.setFlying(true) (one push). */
+        GLIDE_ON,
+        /** Write these fly settings (the snapshot), then Player.setFlying(false) (one push). */
+        GLIDE_OFF,
+        /** Write these air drag numbers and push once. */
+        DRAG_ON,
+        /** Write the air drag numbers back and push once. */
+        DRAG_OFF,
+        /** One Set instruction of (0, amount, 0) with a config that does not decay. */
+        VELOCITY,
+        /** One Set instruction of (0, 0, 0) with the default config: the external velocity is cleared. */
+        VELOCITY_CLEAR
     }
 
-    record Act(Kind kind, FlySettings settings, float amount, String text, Physics physics) {
+    record Act(Kind kind, FlySettings settings, float amount, String text, Drag drag) {
         Act(Kind kind, FlySettings settings, float amount, String text) {
             this(kind, settings, amount, text, null);
         }
@@ -99,8 +114,14 @@ final class BeltMachine {
     /** Ticks on the ground before a descent ends. */
     static final int GROUND_TICKS = 2;
 
-    /** Seconds of not falling before a descent ends. */
+    /** Seconds of not falling before a descent ends (AIRDRAG, COUNTER). */
     static final float RISING_SECONDS = 0.5f;
+
+    /** Seconds a glide gets to start (the flying flag, the first steady speed) before the stall and flight-lost rules apply. */
+    static final float GRACE_SECONDS = 0.5f;
+
+    /** Ticks without vertical movement that count as touching down in a glide. */
+    static final int STALL_TICKS = 6;
 
     private Mark mark;
     private Mark lastOff;
@@ -115,12 +136,19 @@ final class BeltMachine {
 
     // Mk I
     private boolean engaged;
-    private boolean engagedVelocity;
-    private Physics descentSnap;
+    private Way engagedWay;
+    private FlySettings glideSnap;
+    private Drag dragSnap;
+    private boolean instrActive;
+    private double extCur;
     private int streak;
     private int groundTicks;
-    private int sinceVelocity;
+    private int sinceRefresh;
+    private int stallTicks;
+    private int lostTicks;
     private float risingSeconds;
+    private float engagedSeconds;
+    private double lastY;
     private double engageY;
     private double engageVy;
     private float engageHealth;
@@ -128,7 +156,8 @@ final class BeltMachine {
     private double fastestVy;
     private int engages;
     private int ends;
-    private int velocityPushes;
+    private int refreshes;
+    private String lastEnd = "";
     private double lastLanding = Double.NaN;
 
     synchronized Mark mark() {
@@ -172,6 +201,10 @@ final class BeltMachine {
         return engaged;
     }
 
+    synchronized Way engagedWay() {
+        return engagedWay;
+    }
+
     synchronized int engages() {
         return engages;
     }
@@ -180,8 +213,9 @@ final class BeltMachine {
         return ends;
     }
 
-    synchronized int velocityPushes() {
-        return velocityPushes;
+    /** How many times the velocity instruction was sent or refreshed (not counting the clears). */
+    synchronized int refreshes() {
+        return refreshes;
     }
 
     /** The vertical speed at the last landing of a descent (NaN: none yet). */
@@ -189,9 +223,22 @@ final class BeltMachine {
         return lastLanding;
     }
 
+    synchronized String lastEnd() {
+        return lastEnd;
+    }
+
+    /** Whether an external velocity instruction was sent and not cleared yet. */
+    synchronized boolean instructionActive() {
+        return instrActive;
+    }
+
     /** Whether the machine has nothing to do or remember (an idle one can be dropped). */
     synchronized boolean idle() {
         return mark == null && !restorePending;
+    }
+
+    private boolean touched() {
+        return snapshot != null || glideSnap != null || dragSnap != null || instrActive || engaged;
     }
 
     /**
@@ -223,17 +270,18 @@ final class BeltMachine {
         if (mark != null) {
             lastOff = mark;
             mark = null;
-            restorePending = snapshot != null || descentSnap != null || engaged;
+            restorePending = touched();
             armed = false;
         }
     }
 
     /**
      * Death, respawn, world change, disconnect: the belt is off and the movement settings must go back, but the snapshot is not
-     * trusted (the world or the game mode may have changed them), so the settings are reset to the defaults instead.
+     * trusted (the world or the game mode may have changed them), so the settings are reset to the defaults instead; a velocity
+     * instruction that was active is cleared.
      */
     synchronized void reset() {
-        if (snapshot != null || descentSnap != null || engaged) {
+        if (touched()) {
             restorePending = true;
             snapshotTrusted = false;
         }
@@ -316,19 +364,25 @@ final class BeltMachine {
         return out;
     }
 
-    /** The belt went off (or a Mk I mark replaced a flying one): stop flight, end a descent, put the settings back, once. */
+    /** The belt went off (or a Mk I mark replaced a flying one): stop flight, clear the instruction, end a descent, put the settings back, once. */
     private void restore(Sense s, List<Act> out) {
-        if (s.flying() || flying) {
+        boolean glideHandlesFlight = snapshotTrusted && glideSnap != null;
+        if ((s.flying() || flying) && !glideHandlesFlight) {
             out.add(Act.of(Kind.STOP_FLYING));
             out.add(Act.of(Kind.HUM_OFF));
         }
         if (engaged) {
             engaged = false;
             ends++;
+            lastEnd = "belt off or reset";
             out.add(new Act(Kind.LOG, null, 0f, "descent ended: belt off or reset (landing speed so far " + fmt(lastAirVy) + ")"));
         }
+        if (instrActive) {
+            out.add(Act.of(Kind.VELOCITY_CLEAR));
+            instrActive = false;
+        }
         if (!snapshotTrusted) {
-            if (snapshot != null || descentSnap != null) {
+            if (snapshot != null || glideSnap != null || dragSnap != null) {
                 out.add(new Act(Kind.RESET, null, 0f, "defaults"));
                 pushes++;
             }
@@ -337,14 +391,20 @@ final class BeltMachine {
                 out.add(new Act(Kind.RESTORE, snapshot, 0f, "snapshot"));
                 pushes++;
             }
-            if (descentSnap != null) {
-                out.add(new Act(Kind.DESCENT_OFF, null, 0f, "snapshot", descentSnap));
+            if (glideSnap != null) {
+                out.add(new Act(Kind.GLIDE_OFF, glideSnap, 0f, "snapshot"));
+                pushes++;
+            }
+            if (dragSnap != null) {
+                out.add(new Act(Kind.DRAG_OFF, null, 0f, "snapshot", dragSnap));
                 pushes++;
             }
         }
         snapshot = null;
         pushed = null;
-        descentSnap = null;
+        glideSnap = null;
+        dragSnap = null;
+        engagedWay = null;
         restorePending = false;
         snapshotTrusted = true;
         flying = false;
@@ -355,6 +415,16 @@ final class BeltMachine {
 
     private static String fmt(double v) {
         return String.format(Locale.ROOT, "%.2f", v);
+    }
+
+    /**
+     * The upward (or downward) external velocity that makes the client's total vertical speed the target. {@code reportsTotal}: the
+     * reported client velocity already includes the external part sent before ({@code extCur}), so the client's own part is the
+     * difference.
+     */
+    static double counterExternal(double vy, double extCur, double target, boolean reportsTotal) {
+        double own = reportsTotal ? vy - extCur : vy;
+        return -target - own;
     }
 
     /** The Mk I marks: ARMED until the trigger fires, ENGAGED until the player is on the ground. */
@@ -380,17 +450,28 @@ final class BeltMachine {
             }
             return;
         }
+        boolean glide = engagedWay == Way.FLYGLIDE;
         fastestVy = Math.min(fastestVy, s.vy());
         groundTicks = s.onGround() ? groundTicks + 1 : 0;
+        engagedSeconds += s.dt();
+        sinceRefresh++;
         risingSeconds = s.vy() > -0.1 ? risingSeconds + s.dt() : 0f;
+        boolean settled = engagedSeconds > GRACE_SECONDS;
+        stallTicks = glide && settled && Math.abs(s.y() - lastY) < 0.02 && Math.abs(s.vy()) < 0.5 ? stallTicks + 1 : 0;
+        lostTicks = glide && settled && !s.flying() ? lostTicks + 1 : 0;
+        lastY = s.y();
         String reason = null;
         if (groundTicks >= GROUND_TICKS) {
             reason = "landed";
-        } else if (s.flying()) {
-            reason = "flying";
+        } else if (stallTicks >= STALL_TICKS) {
+            reason = "landed (stalled, no vertical movement)";
         } else if (s.inFluid()) {
             reason = "fluid";
-        } else if (risingSeconds > RISING_SECONDS) {
+        } else if (glide && lostTicks >= STALL_TICKS) {
+            reason = "flight lost";
+        } else if (!glide && s.flying()) {
+            reason = "flying";
+        } else if (!glide && risingSeconds > RISING_SECONDS) {
             reason = "not falling any more";
         } else if (paid && s.mana() <= EMPTY) {
             reason = "out of Mana";
@@ -402,42 +483,61 @@ final class BeltMachine {
         if (paid) {
             out.add(new Act(Kind.SPEND, null, rules.manaPerSecond() * s.dt(), null));
         }
-        if (engagedVelocity) {
-            sinceVelocity++;
-            if (sinceVelocity >= Math.max(1, rules.pushTicks()) && -s.vy() > rules.descentSpeed() + 0.25) {
-                sinceVelocity = 0;
-                velocityPushes++;
-                out.add(new Act(Kind.VELOCITY, null, (float) -rules.descentSpeed(), null));
+        if (sinceRefresh >= Math.max(1, rules.pushTicks())) {
+            if (engagedWay == Way.FLYGLIDE && Math.abs(s.vy() + rules.descentSpeed()) > rules.tolerance()) {
+                refresh(-rules.descentSpeed(), out);
+            } else if (engagedWay == Way.COUNTER && s.vy() < -rules.descentSpeed() - rules.tolerance()) {
+                refresh(counterExternal(s.vy(), extCur, rules.descentSpeed(), rules.reportsTotal()), out);
             }
         }
     }
 
+    private void refresh(double ext, List<Act> out) {
+        sinceRefresh = 0;
+        extCur = ext;
+        instrActive = true;
+        refreshes++;
+        out.add(new Act(Kind.VELOCITY, null, (float) ext, null));
+    }
+
     private void engage(Sense s, FallRules rules, List<Act> out) {
         engaged = true;
-        engagedVelocity = rules.velocityRoute();
+        engagedWay = rules.way();
         engages++;
         engageY = s.y();
+        lastY = s.y();
         engageVy = s.vy();
         engageHealth = s.health();
         fastestVy = s.vy();
         groundTicks = 0;
+        stallTicks = 0;
+        lostTicks = 0;
         risingSeconds = 0f;
-        sinceVelocity = 0;
+        engagedSeconds = 0f;
+        sinceRefresh = 0;
+        extCur = 0;
         String how;
-        if (engagedVelocity) {
-            how = "velocity route, target " + fmt(-rules.descentSpeed());
-            if (-s.vy() > rules.descentSpeed() + 0.25) {
-                velocityPushes++;
-                out.add(new Act(Kind.VELOCITY, null, (float) -rules.descentSpeed(), null));
+        switch (rules.way()) {
+            case FLYGLIDE -> {
+                glideSnap = s.fly();
+                pushes++;
+                out.add(new Act(Kind.GLIDE_ON, new FlySettings(Fly.FORCED, rules.glideHorizontal(), 0f), 0f, null));
+                refresh(-rules.descentSpeed(), out);
+                how = "flyglide: fly Forced, h " + rules.glideHorizontal() + " v 0, external velocity " + fmt(-rules.descentSpeed());
             }
-        } else {
-            Physics now = s.physics();
-            descentSnap = now;
-            Physics want = rules.massField() ? new Physics(now.mass() / rules.factor(), now.drag()) : new Physics(now.mass(), now.drag() * rules.factor());
-            pushes++;
-            out.add(new Act(Kind.DESCENT_ON, null, 0f, null, want));
-            how = "settings route, " + (rules.massField() ? "mass " + now.mass() + " -> " + want.mass() : "drag " + now.drag() + " -> " + want.drag())
-                    + " (factor " + rules.factor() + ")";
+            case AIRDRAG -> {
+                dragSnap = s.drag();
+                pushes++;
+                out.add(new Act(Kind.DRAG_ON, null, 0f, null, new Drag(rules.airDrag(), rules.airDrag())));
+                how = "airdrag: airDragMin/Max " + fmt(s.drag().min()) + "/" + fmt(s.drag().max()) + " -> " + rules.airDrag();
+            }
+            default -> {
+                how = "counter: target " + fmt(-rules.descentSpeed());
+                if (s.vy() < -rules.descentSpeed() - rules.tolerance()) {
+                    refresh(counterExternal(s.vy(), 0, rules.descentSpeed(), rules.reportsTotal()), out);
+                    how += ", first external velocity " + fmt(extCur);
+                }
+            }
         }
         out.add(new Act(Kind.LOG, null, 0f, "descent ENGAGED by " + (mark == Mark.I_FAR ? "far fall" : "speed") + " at vertical speed " + fmt(s.vy())
                 + ", height y " + fmt(s.y()) + ", " + how));
@@ -446,17 +546,28 @@ final class BeltMachine {
     private void end(Sense s, String reason, List<Act> out) {
         engaged = false;
         ends++;
-        if ("landed".equals(reason)) {
+        lastEnd = reason;
+        if (reason.startsWith("landed")) {
             lastLanding = lastAirVy;
         }
-        if (descentSnap != null) {
+        if (instrActive) {
+            instrActive = false;
+            out.add(Act.of(Kind.VELOCITY_CLEAR));
+        }
+        if (glideSnap != null) {
             pushes++;
-            out.add(new Act(Kind.DESCENT_OFF, null, 0f, "snapshot", descentSnap));
-            descentSnap = null;
+            out.add(new Act(Kind.GLIDE_OFF, glideSnap, 0f, "snapshot"));
+            glideSnap = null;
+        }
+        if (dragSnap != null) {
+            pushes++;
+            out.add(new Act(Kind.DRAG_OFF, null, 0f, "snapshot", dragSnap));
+            dragSnap = null;
         }
         out.add(new Act(Kind.LOG, null, 0f, "descent END (" + reason + "): fell " + fmt(engageY - s.y()) + " blocks since the trigger; speed at the trigger "
                 + fmt(engageVy) + ", at the landing " + fmt(lastAirVy) + ", fastest " + fmt(fastestVy) + "; health " + fmt(engageHealth) + " -> "
-                + fmt(s.health())));
+                + fmt(s.health()) + "; instruction refreshes so far " + refreshes));
+        engagedWay = null;
         streak = 0;
         groundTicks = 0;
         if ("out of Mana".equals(reason)) {
