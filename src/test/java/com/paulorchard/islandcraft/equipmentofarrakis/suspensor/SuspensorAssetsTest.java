@@ -52,8 +52,6 @@ class SuspensorAssetsTest {
         SuspensorConfig partial = read("{\"HorizontalSpeed\":0.75}");
         assertEquals(0.75, partial.horizontalSpeed());
         assertEquals(2.0, partial.verticalSpeed());
-        assertEquals(6.0, new SuspensorConfig().pushCap(), "TEST DEVICE: the push cap default");
-        assertEquals(3.0, read("{\"PushCap\":3}").pushCap());
     }
 
     @Test
@@ -74,6 +72,36 @@ class SuspensorAssetsTest {
         assertEquals(BeltMachine.GateMode.GROUND_OPEN, c.tapMode());
         assertEquals(1.0, c.reopenSeconds());
         assertTrue(SuspensorConfig.CODEC.encode(c, new ExtraInfo()).toString().contains("groundOpen"));
+    }
+
+    @Test
+    void theDescentSettingsHaveTheirDefaultsAreReadAndTunedLiveAndTheOldPushCapIsIgnored() throws IOException {
+        SuspensorConfig c = new SuspensorConfig();
+        assertEquals(2.0, c.descentSpeed());
+        assertEquals(0.4, c.ascendFraction());
+        assertEquals(4, c.debounceTicks());
+        assertEquals(2, c.groundTicks());
+        assertEquals(0.5, c.takeoffGrace());
+        assertEquals(1.0, c.refreshSeconds());
+        assertEquals(1.0, c.descentCostFactor());
+        SuspensorConfig old = read("{\"HorizontalSpeed\":0.5,\"PushCap\":6.0,\"TapWindow\":0.35}");
+        assertEquals(2.0, old.descentSpeed(), "an old file without the keys gets the defaults; the removed PushCap key is ignored");
+        SuspensorConfig r = read("{\"DescentSpeed\":3,\"AscendFraction\":0.5,\"DebounceTicks\":6,\"GroundTicks\":3,\"TakeoffGrace\":0.8,\"RefreshSeconds\":0.5,\"DescentCostFactor\":0}");
+        assertEquals(3.0, r.descentSpeed());
+        assertEquals(6, r.debounceTicks());
+        assertEquals(0.0, r.descentCostFactor());
+        assertTrue(c.tune("AscendFraction", 0.6) && c.tune("debounceticks", 5) && c.tune("GROUNDTICKS", 3) && c.tune("takeoffGrace", 0.7)
+                && c.tune("refreshSeconds", 2) && c.tune("descentCostFactor", 0));
+        assertFalse(c.tune("nonsense", 1));
+        assertEquals(0.6, c.ascendFraction());
+        assertEquals(5, c.debounceTicks());
+        assertEquals(0.0, c.descentCostFactor());
+        c.setDescentSpeed(100);
+        assertEquals(6.0, c.descentSpeed(), "never above the cap of the push test that proved it");
+        c.setDescentSpeed(0);
+        assertEquals(0.0, c.descentSpeed());
+        assertTrue(SuspensorConfig.CODEC.encode(c, new ExtraInfo()).toString().contains("DescentSpeed"));
+        assertFalse(SuspensorConfig.CODEC.encode(c, new ExtraInfo()).toString().contains("PushCap"));
     }
 
     @Test
@@ -142,7 +170,7 @@ class SuspensorAssetsTest {
         String lang = text("/Server/Languages/en-US/server.lang");
         for (String key : new String[] {"customUI.arrakisPicker.suspensor = Suspensor Belt", "arrakis.suspensor.ready = Suspensor Belt ready: double-tap Space to fly.",
                 "arrakis.suspensor.needsMana = The belt needs Mana.", "arrakis.suspensor.creative = ", "commands.arrakis.suspensor.state.desc",
-                "commands.arrakis.suspensor.set.desc", "commands.arrakis.suspensor.off.desc", "commands.arrakis.suspensor.window.desc", "commands.arrakis.suspensor.probe.desc", "commands.arrakis.suspensor.push.desc", "commands.arrakis.suspensor.desc"}) {
+                "commands.arrakis.suspensor.set.desc", "commands.arrakis.suspensor.off.desc", "commands.arrakis.suspensor.window.desc", "commands.arrakis.suspensor.probe.desc", "commands.arrakis.suspensor.descent.desc", "commands.arrakis.suspensor.tune.desc", "commands.arrakis.suspensor.desc"}) {
             assertTrue(lang.contains(key), "missing " + key);
         }
         assertFalse(lang.contains("Arrakis_Lab_"));

@@ -39,8 +39,34 @@ final class BeltMachine {
     }
 
     /** What the adapter reads of the player each tick for the gate: the jumping and onGround flags, the wall clock and the world tick. */
-    record Ground(boolean jumping, boolean onGround, long nowMs, long tick) {
-        static final Ground NONE = new Ground(false, false, 0L, 0L);
+    record Ground(boolean jumping, boolean onGround, long nowMs, long tick, double vy) {
+        static final Ground NONE = new Ground(false, false, 0L, 0L, 0.0);
+
+        Ground(boolean jumping, boolean onGround, long nowMs, long tick) {
+            this(jumping, onGround, nowMs, tick, 0.0);
+        }
+    }
+
+    /**
+     * The descent (the belt's gravity), all live: {@code speed} blocks a second of sink while flying and not asking to go up (0 = off: the
+     * hover of the earlier builds); {@code ascendFraction} of the vertical fly speed is what the player's own vertical speed must exceed to
+     * count as asking to go up; {@code debounceTicks} of ignored input after the machine changes state; {@code groundTicks} consecutive
+     * ticks on the ground (not ascending) before flight ends; {@code takeoffGrace} seconds after the flight start or the last ascending
+     * tick in which the ground is ignored; {@code refreshSeconds} between safety re-sends of the push; {@code costFactor} multiplies the
+     * Mana cost while DESCENDING.
+     */
+    record Descent(float speed, float ascendFraction, int debounceTicks, int groundTicks, float takeoffGrace, float refreshSeconds, float costFactor) {
+        static final Descent OFF = new Descent(0f, 0.4f, 4, 2, 0.5f, 1.0f, 1.0f);
+
+        boolean off() {
+            return speed <= 0f;
+        }
+    }
+
+    enum DescentState { NONE, UNDECIDED, DESCENDING, ASCENDING }
+
+    /** The descent as the probe and `state` show it. */
+    record DescentInfo(DescentState state, double own, double vy, boolean pushInForce, int sends, int refreshes, int drifts, int groundExits, int transitions) {
     }
 
     /** The gate as the probe and `state` show it. */
@@ -64,6 +90,10 @@ final class BeltMachine {
         HUM_OFF,
         /** "The belt needs Mana." */
         NEEDS_MANA,
+        /** Velocity Set (0, amount, 0) with the no-decay config: the descent push (amount is negative). */
+        PUSH_DESCENT,
+        /** Velocity Set (0, 0, 0) with the default config: the push ends. */
+        CLEAR_PUSH,
         /** An INFO log line. */
         LOG
     }
@@ -89,6 +119,25 @@ final class BeltMachine {
     private boolean snapshotTrusted = true;
     private float sinceStop;
     private int pushes;
+    // the descent
+    private DescentState dstate = DescentState.NONE;
+    private boolean pushInForce;
+    private float pushSpeed;
+    private int debounce;
+    private float sinceSend;
+    private int driftTicks;
+    private double ownBaseline;
+    private double own;
+    private double lastVy;
+    private int groundContact;
+    private int suppress;
+    private float flightStartClock = -1f;
+    private float lastAscendClock = -1f;
+    private int descentSends;
+    private int refreshSends;
+    private int driftSends;
+    private int groundExits;
+    private int transitions;
     // the tap gate
     private float clock;
     private boolean gateInit;
@@ -141,6 +190,11 @@ final class BeltMachine {
     /** How many settings writes (pushes or restores) the machine has asked for: state changes only. */
     synchronized int pushes() {
         return pushes;
+    }
+
+    /** The descent state: DESCENDING, ASCENDING, the player's own vertical speed, the sends and the ground exits so far. */
+    synchronized DescentInfo descent() {
+        return new DescentInfo(dstate, own, lastVy, pushInForce, descentSends, refreshSends, driftSends, groundExits, transitions);
     }
 
     /** The gate state and the counters (windows opened, settings writes, flights started inside a window, flights started with a gap). */
@@ -203,12 +257,17 @@ final class BeltMachine {
         return tick(dt, flyingNow, modeOk, mana, manaPerSecond, resumeMana, current, speeds, Gate.OFF, Ground.NONE);
     }
 
+    synchronized List<Act> tick(float dt, boolean flyingNow, boolean modeOk, float mana, float manaPerSecond, float resumeMana,
+                                FlySettings current, Speeds speeds, Gate gate, Ground ground) {
+        return tick(dt, flyingNow, modeOk, mana, manaPerSecond, resumeMana, current, speeds, gate, ground, Descent.OFF);
+    }
+
     /**
      * The same with the tap gate. While the belt is on and armed and the player is not flying, fly is Disabled except while the gate is
      * open; flying keeps it Allowed (see {@link #gateStep}). {@code gate} off gives the behaviour of the belt without a gate.
      */
     synchronized List<Act> tick(float dt, boolean flyingNow, boolean modeOk, float mana, float manaPerSecond, float resumeMana,
-                                FlySettings current, Speeds speeds, Gate gate, Ground ground) {
+                                FlySettings current, Speeds speeds, Gate gate, Ground ground, Descent descent) {
         List<Act> out = new ArrayList<>();
         if (on && !modeOk) {
             on = false;
@@ -230,18 +289,25 @@ final class BeltMachine {
         boolean wasFlying = flying;
         flying = flyingNow;
         gateStep(dt, wasFlying, flyingNow, gate, ground);
+        if (armed && mana > EMPTY) {
+            descentStep(dt, flyingNow, wasFlying, ground, speeds, descent, out);
+        } else if (pushInForce || dstate != DescentState.NONE) {
+            endDescent(out);
+        }
         if (armed) {
             if (flyingNow) {
                 if (mana <= EMPTY) {
                     armed = false;
                     sinceStop = 0f;
                     flying = false;
+                    endDescent(out);
                     out.add(Act.of(Kind.STOP_FLYING));
                     out.add(Act.of(Kind.HUM_OFF));
                     out.add(Act.of(Kind.NEEDS_MANA));
                     out.add(new Act(Kind.LOG, null, 0f, "cut off: out of Mana while flying"));
                 } else {
-                    out.add(new Act(Kind.SPEND, null, manaPerSecond * dt, null));
+                    float factor = dstate == DescentState.DESCENDING ? descent.costFactor() : 1f;
+                    out.add(new Act(Kind.SPEND, null, manaPerSecond * dt * factor, null));
                     out.add(Act.of(Kind.HUM));
                 }
             } else if (wasFlying) {
@@ -279,6 +345,136 @@ final class BeltMachine {
             out.add(new Act(Kind.PUSH, want, 0f, null));
         }
         return out;
+    }
+
+    private void clearPush(List<Act> out) {
+        if (pushInForce) {
+            out.add(Act.of(Kind.CLEAR_PUSH));
+        }
+        pushInForce = false;
+        pushSpeed = 0f;
+    }
+
+    private void sendPush(float speed, List<Act> out) {
+        out.add(new Act(Kind.PUSH_DESCENT, null, -speed, null));
+        pushInForce = true;
+        pushSpeed = -speed;
+        sinceSend = 0f;
+        driftTicks = 0;
+        ownBaseline = own;
+        descentSends++;
+    }
+
+    /** Every end of a flight, the cut-off and every reset: the push is cleared if one is in force and the descent state forgotten. */
+    private void endDescent(List<Act> out) {
+        clearPush(out);
+        dstate = DescentState.NONE;
+        groundContact = 0;
+        debounce = 0;
+        driftTicks = 0;
+        suppress = 0;
+        own = 0;
+    }
+
+    private void log(List<Act> out, String text) {
+        out.add(new Act(Kind.LOG, null, 0f, text));
+    }
+
+    /**
+     * One tick of the descent while the belt is armed (see {@link Descent}). The player's own vertical speed is read from the client's total,
+     * which includes the push in force: own = vy + N while a push of -N is in force, own = vy otherwise. Ascending = own above
+     * {@code ascendFraction} of the vertical fly speed. After every change of state the input is ignored for {@code debounceTicks} (the
+     * client's report lags the change by a tick or two), so a held, released or tapped Space cannot flip the state every tick. A flight
+     * starts UNDECIDED (no push) and decides when the debounce is over: ascending reads as ASCENDING and never pushes, otherwise DESCENDING.
+     * The ground ends the flight after {@code groundTicks} ticks of onGround without ascending, never within {@code takeoffGrace} of the
+     * flight start or the last ascending tick.
+     */
+    private void descentStep(float dt, boolean flyingNow, boolean wasFlying, Ground g, Speeds speeds, Descent d, List<Act> out) {
+        if (!flyingNow) {
+            if (pushInForce || dstate != DescentState.NONE) {
+                endDescent(out);
+            }
+            return;
+        }
+        if (d.off()) {
+            if (pushInForce || dstate != DescentState.NONE) {
+                endDescent(out);
+            }
+            own = g.vy();
+            lastVy = g.vy();
+            return;
+        }
+        lastVy = g.vy();
+        own = g.vy() - (pushInForce ? pushSpeed : 0f);
+        boolean ascending = own > d.ascendFraction() * speeds.vertical();
+        if (ascending) {
+            lastAscendClock = clock;
+        }
+        if (suppress > 0) {
+            suppress--;
+            return;
+        }
+        if (!wasFlying || dstate == DescentState.NONE) {
+            dstate = DescentState.UNDECIDED;
+            debounce = d.debounceTicks();
+            flightStartClock = clock;
+            lastAscendClock = ascending ? clock : -1f;
+            groundContact = 0;
+            driftTicks = 0;
+        }
+        // the ground
+        groundContact = g.onGround() && !ascending ? groundContact + 1 : 0;
+        boolean grace = clock - flightStartClock < d.takeoffGrace() - EPS || (lastAscendClock >= 0f && clock - lastAscendClock < d.takeoffGrace() - EPS);
+        if (groundContact >= d.groundTicks() && !grace) {
+            groundExits++;
+            log(out, String.format(java.util.Locale.ROOT, "descent: ground exit after %d ticks on the ground (own %.2f, vy %.2f, %s): flight ended, push cleared",
+                    groundContact, own, g.vy(), dstate));
+            endDescent(out);
+            suppress = 10;
+            out.add(Act.of(Kind.STOP_FLYING));
+            out.add(Act.of(Kind.HUM_OFF));
+            return;
+        }
+        // the state
+        sinceSend += dt;
+        if (debounce > 0) {
+            debounce--;
+        } else if (dstate == DescentState.DESCENDING) {
+            if (ascending) {
+                clearPush(out);
+                dstate = DescentState.ASCENDING;
+                debounce = d.debounceTicks();
+                transitions++;
+                log(out, String.format(java.util.Locale.ROOT, "descent: ASCENDING (own %.2f, vy %.2f): push cleared, sends so far %d", own, g.vy(), descentSends));
+            } else {
+                // a changed speed goes out at once; the drift of the reading from what the push should give, six ticks running, re-sends
+                double expected = pushSpeed + ownBaseline;
+                driftTicks = Math.abs(g.vy() - expected) > 0.5 ? driftTicks + 1 : 0;
+                if (Math.abs(pushSpeed + d.speed()) > 1e-6) {
+                    sendPush(d.speed(), out);
+                    refreshSends++;
+                } else if (driftTicks >= 6) {
+                    sendPush(d.speed(), out);
+                    driftSends++;
+                    log(out, String.format(java.util.Locale.ROOT, "descent: drift refresh (vy %.2f, expected %.2f)", g.vy(), expected));
+                }
+            }
+        } else if (!ascending) {
+            sendPush(d.speed(), out);
+            dstate = DescentState.DESCENDING;
+            debounce = d.debounceTicks();
+            transitions++;
+            log(out, String.format(java.util.Locale.ROOT, "descent: DESCENDING (own %.2f, vy %.2f): push %.2f, sends so far %d", own, g.vy(), -d.speed(), descentSends));
+        } else if (dstate == DescentState.UNDECIDED) {
+            dstate = DescentState.ASCENDING;
+            transitions++;
+            log(out, String.format(java.util.Locale.ROOT, "descent: ASCENDING from the start (own %.2f, vy %.2f): no push", own, g.vy()));
+        }
+        // the safety refresh of a push that is in force
+        if (dstate == DescentState.DESCENDING && pushInForce && sinceSend >= d.refreshSeconds() - EPS) {
+            sendPush(d.speed(), out);
+            refreshSends++;
+        }
     }
 
     private void resetGate() {
@@ -366,6 +562,7 @@ final class BeltMachine {
 
     /** The belt went off: stop flight, put the settings back, once. */
     private void restore(boolean flyingNow, List<Act> out) {
+        endDescent(out);
         if (flyingNow || flying) {
             out.add(Act.of(Kind.STOP_FLYING));
             out.add(Act.of(Kind.HUM_OFF));

@@ -3,34 +3,28 @@ package com.paulorchard.islandcraft.equipmentofarrakis.suspensor;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.protocol.ChangeVelocityType;
 import com.hypixel.hytale.protocol.MovementStates;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entity.player.PlayerInput;
 import com.hypixel.hytale.server.core.modules.physics.component.Velocity;
-import com.hypixel.hytale.server.core.modules.splitvelocity.VelocityConfig;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.paulorchard.islandcraft.equipmentofarrakis.power.Power;
-import org.joml.Vector3d;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 
 /**
- * TEST DEVICE: the adapter of {@link FlightProbe} and {@link PushRig}. Called by {@link SuspensorSystem} for a player who has either,
- * before the belt's own tick; it reads the engine and carries the rig's steps out. It never touches the belt machine. Delete with the
- * proofs (see the cleanup list in MODULES.md).
+ * TEST DEVICE: the adapter of {@link FlightProbe}. Called by {@link SuspensorSystem} for a player who has the probe on, before the belt's
+ * own tick; it reads the engine and logs. It never touches the belt machine. It is how the descent is tuned; delete it with the probe
+ * (see the cleanup list in MODULES.md).
  */
 final class TestDevices {
 
     private static final Map<UUID, FlightProbe> PROBES = new ConcurrentHashMap<>();
-    private static final Map<UUID, PushRig> RIGS = new ConcurrentHashMap<>();
-    private static final Map<UUID, Double> PREVIOUS_Y = new ConcurrentHashMap<>();
 
     private TestDevices() {
     }
@@ -43,99 +37,48 @@ final class TestDevices {
         PROBES.remove(player);
     }
 
-    static boolean probing(UUID player) {
+    static boolean any(UUID player) {
         return PROBES.containsKey(player);
     }
 
-    static PushRig rig(UUID player) {
-        return RIGS.computeIfAbsent(player, id -> new PushRig());
-    }
-
-    static PushRig peekRig(UUID player) {
-        return RIGS.get(player);
-    }
-
-    static boolean any(UUID player) {
-        return PROBES.containsKey(player) || RIGS.containsKey(player);
-    }
-
-    /** The push ends at the next tick with a CLEAR (belt off, death, respawn, world change). */
-    static void cancelPush(UUID player) {
-        PushRig rig = RIGS.get(player);
-        if (rig != null) {
-            rig.cancel();
-        }
-    }
-
-    /** Disconnect: nothing is left to clear, the player is gone. */
+    /** Disconnect: the player is gone. */
     static void forget(UUID player) {
         PROBES.remove(player);
-        RIGS.remove(player);
-        PREVIOUS_Y.remove(player);
-    }
-
-    /** No downward decay: both resistances are multipliers per step, so 1.0 keeps the speed (read from the config class, see ARCHIVE.md). */
-    static VelocityConfig resistance(float resistance) {
-        if (Float.isNaN(resistance)) {
-            return new VelocityConfig();
-        }
-        VelocityConfig config = new VelocityConfig();
-        config.setGroundResistance(resistance);
-        config.setGroundResistanceMax(resistance);
-        config.setAirResistance(resistance);
-        config.setAirResistanceMax(resistance);
-        return config;
     }
 
     static void tick(float dt, int index, ArchetypeChunk<EntityStore> chunk, CommandBuffer<EntityStore> buffer, PlayerRef player, Ref<EntityStore> ref,
                      MovementStates states, BeltMachine machine) {
-        UUID id = player.getUuid();
-        FlightProbe probe = PROBES.get(id);
-        PushRig rig = RIGS.get(id);
-        if (probe == null && rig == null) {
+        FlightProbe probe = PROBES.get(player.getUuid());
+        if (probe == null) {
             return;
         }
         long now = System.currentTimeMillis();
         Velocity velocity = chunk.getComponent(index, Velocity.getComponentType());
         TransformComponent transform = chunk.getComponent(index, TransformComponent.getComponentType());
         double y = transform == null ? 0 : transform.getPosition().y;
-        Double before = PREVIOUS_Y.put(id, y);
-        double actualVy = before == null || dt <= 0 ? 0 : (y - before) / dt;
         double clientVy = velocity == null ? 0 : velocity.getClientVelocity().y;
         Power power = Power.get();
         float mana = power == null ? -1f : power.get(buffer, ref);
-        if (probe != null) {
-            long tick = buffer.getExternalData().getWorld().getTick();
-            List<String> lines = probe.observe(new FlightProbe.Sample(tick, now, dt, states.flying, states.jumping, states.crouching, states.onGround,
-                    states.falling, states.fallingFar, y, clientVy, wish(chunk.getComponent(index, PlayerInput.getComponentType())), mana,
-                    machine != null && machine.armed(), gateText(machine)));
-            for (String line : lines) {
-                Suspensors.logTest(player.getUsername(), "probe", line);
-            }
+        long tick = buffer.getExternalData().getWorld().getTick();
+        List<String> lines = probe.observe(new FlightProbe.Sample(tick, now, dt, states.flying, states.jumping, states.crouching, states.onGround,
+                states.falling, states.fallingFar, y, clientVy, wish(chunk.getComponent(index, PlayerInput.getComponentType())), mana,
+                machine != null && machine.armed(), gateText(machine), descentText(machine)));
+        for (String line : lines) {
+            Suspensors.logTest(player.getUsername(), "probe", line);
         }
-        if (rig != null) {
-            for (PushRig.Step step : rig.tick(states.flying, machine != null && machine.isOn(), now, clientVy, actualVy, states.onGround)) {
-                switch (step.kind()) {
-                    case SEND -> {
-                        if (velocity != null) {
-                            velocity.addInstruction(new Vector3d(0, step.y(), 0), resistance(step.resistance()), ChangeVelocityType.Set);
-                        }
-                    }
-                    case CLEAR -> {
-                        if (velocity != null) {
-                            velocity.addInstruction(new Vector3d(0, 0, 0), new VelocityConfig(), ChangeVelocityType.Set);
-                        }
-                    }
-                    case LOG -> Suspensors.logTest(player.getUsername(), "push", step.text());
-                }
-            }
-            if (!rig.active()) {
-                RIGS.remove(id, rig);
-            }
+    }
+
+    /** The descent as the probe prints it on its sample line: the state, the player's own vertical speed, the sends and the ground exits. */
+    static String descentText(BeltMachine machine) {
+        if (machine == null) {
+            return "n/a (no belt)";
         }
-        if (probe == null && RIGS.get(id) == null) {
-            PREVIOUS_Y.remove(id);
+        if (Suspensors.descent().off()) {
+            return "off (DescentSpeed 0)";
         }
+        BeltMachine.DescentInfo info = machine.descent();
+        return String.format(Locale.ROOT, "%s own %.2f vy %.2f push %s sends %d (refresh %d, drift %d) transitions %d exits %d", info.state(), info.own(), info.vy(),
+                info.pushInForce() ? "in force" : "none", info.sends(), info.refreshes(), info.drifts(), info.transitions(), info.groundExits());
     }
 
     /** The gate as the probe prints it at a flight start: the state the client had (the machine has not ticked yet), the mode and the last window. */
@@ -154,8 +97,8 @@ final class TestDevices {
     }
 
     /**
-     * What the server holds of the client's wish movement: the newest {@code WishMovement} still in the player's input queue. The queue is
-     * the server's copy of what the client reported and may already be consumed when this system runs; the text says which.
+     * What the server holds of the client's wish movement: the newest {@code WishMovement} still in the player's input queue. The log of
+     * 2026-10-21 shows the queue is empty by the time this system runs, so the text says so; the descent does not use it.
      */
     static String wish(PlayerInput input) {
         if (input == null) {

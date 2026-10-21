@@ -7,6 +7,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
+import com.hypixel.hytale.protocol.ChangeVelocityType;
 import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.MovementStates;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
@@ -14,7 +15,10 @@ import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
+import com.hypixel.hytale.server.core.modules.physics.component.Velocity;
+import com.hypixel.hytale.server.core.modules.splitvelocity.VelocityConfig;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import org.joml.Vector3d;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.paulorchard.islandcraft.equipmentofarrakis.core.Notice;
 import com.paulorchard.islandcraft.equipmentofarrakis.power.Power;
@@ -72,17 +76,19 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
         SuspensorConfig config = Suspensors.config();
         Power power = Power.get();
         float mana = power == null ? Float.MAX_VALUE : power.get(buffer, ref);
+        Velocity velocity = chunk.getComponent(index, Velocity.getComponentType());
+        double clientVy = velocity == null ? 0 : velocity.getClientVelocity().y;
         List<BeltMachine.Act> acts = machine.tick(dt, states.flying, who.getGameMode() == GameMode.Adventure, mana, (float) config.manaPerSecond(),
                 (float) config.resumeMana(), Suspensors.read(manager.getSettings()), Suspensors.speeds(), Suspensors.gate(),
-                new BeltMachine.Ground(states.jumping, states.onGround, System.currentTimeMillis(), buffer.getExternalData().getWorld().getTick()));
+                new BeltMachine.Ground(states.jumping, states.onGround, System.currentTimeMillis(), buffer.getExternalData().getWorld().getTick(), clientVy), Suspensors.descent());
         for (BeltMachine.Act act : acts) {
-            carryOut(act, player, who, manager, ref, buffer, power, config);
+            carryOut(act, player, who, manager, ref, buffer, power, config, velocity);
         }
         Suspensors.dropIfIdle(id);
     }
 
     private static void carryOut(BeltMachine.Act act, PlayerRef player, Player who, MovementManager manager, Ref<EntityStore> ref,
-                                 CommandBuffer<EntityStore> buffer, Power power, SuspensorConfig config) {
+                                 CommandBuffer<EntityStore> buffer, Power power, SuspensorConfig config, Velocity velocity) {
         String name = player.getUsername();
         switch (act.kind()) {
             case PUSH -> {
@@ -101,6 +107,16 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
                 Suspensors.log(player.getUuid(), name, "off", "belt off: the snapshot is not trusted, movement settings reset to the defaults");
             }
             case STOP_FLYING -> who.setFlying(ref, false, buffer);
+            case PUSH_DESCENT -> {
+                if (velocity != null) {
+                    velocity.addInstruction(new Vector3d(0.0, act.amount(), 0.0), Suspensors.noDecay(), ChangeVelocityType.Set);
+                }
+            }
+            case CLEAR_PUSH -> {
+                if (velocity != null) {
+                    velocity.addInstruction(new Vector3d(0.0, 0.0, 0.0), new VelocityConfig(), ChangeVelocityType.Set);
+                }
+            }
             case SPEND -> {
                 if (power != null) {
                     power.spendUpTo(buffer, ref, act.amount());
@@ -124,7 +140,7 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
             }
             case NEEDS_MANA -> Notice.say(player, "server.arrakis.suspensor.needsMana");
             case LOG -> {
-                if (act.text().startsWith("gate ")) {
+                if (act.text().startsWith("gate ") || act.text().startsWith("descent")) {
                     Suspensors.logGate(name, act.text());
                 } else {
                     Suspensors.log(player.getUuid(), name, act.text().substring(0, Math.min(14, act.text().length())), act.text());

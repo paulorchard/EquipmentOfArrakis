@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FlightProbeTest {
 
     private static Sample s(long tick, long ms, boolean flying, boolean jumping, boolean crouching, boolean onGround, double y, double vy) {
-        return new Sample(tick, ms, 0.05f, flying, jumping, crouching, onGround, false, false, y, vy, "(0.00, 1.00, 0.00)", 80f, true, "OPEN (afterJump, window 0.35 s)");
+        return new Sample(tick, ms, 0.05f, flying, jumping, crouching, onGround, false, false, y, vy, "(0.00, 1.00, 0.00)", 80f, true, "OPEN (afterJump, window 0.35 s)", "DESCENDING own 0.00 vy -2.00 sends 1");
     }
 
     @Test

@@ -20,10 +20,9 @@ import com.paulorchard.islandcraft.equipmentofarrakis.power.Power;
  * /arrakis suspensor set horizontal vertical [manaPerSecond]  live tuning, saved to the config; players who have the belt on get it on the next tick
  * /arrakis suspensor off                                     turn your belt off
  * /arrakis suspensor window <seconds> [afterJump|groundOpen] [reopenSeconds]   the tap gate, live and saved (0 = off)
- * /arrakis suspensor probe on|off                            TEST DEVICE: log the flags, speeds and wish movement of your flight (INFO)
- * /arrakis suspensor push <y> [resistance|default]           TEST DEVICE: one external velocity Set (0, y, 0) while you fly; resistance 1 (the default here) keeps it
- * /arrakis suspensor push hold <y> <everyTicks> [resistance] TEST DEVICE: the same push every N ticks until push off
- * /arrakis suspensor push off                                TEST DEVICE: Set (0, 0, 0) with the default config and stop
+ * /arrakis suspensor descent <speed>                         the belt's gravity in blocks a second (0 = off: hover), live and saved
+ * /arrakis suspensor tune <key> <value>                      ascendFraction, debounceTicks, groundTicks, takeoffGrace, refreshSeconds, descentCostFactor
+ * /arrakis suspensor probe on|off                            TEST DEVICE: log the flags, speeds and descent of your flight (INFO)
  * </pre>
  */
 final class SuspensorCommands {
@@ -38,9 +37,10 @@ final class SuspensorCommands {
         group.addSubCommand(WorldPositional.build("set", LANG + "set.desc", (c, w, s, a) -> set(c, a, saveConfig), "horizontal", "vertical", "manaPerSecond"));
         group.addSubCommand(WorldPositional.build("off", LANG + "off.desc", (c, w, s, a) -> off(c, s)));
         group.addSubCommand(WorldPositional.build("window", LANG + "window.desc", (c, w, s, a) -> window(c, a, saveConfig), "seconds", "mode", "reopenSeconds"));
-        // TEST DEVICE: proofs A and B of the descent
+        group.addSubCommand(WorldPositional.build("descent", LANG + "descent.desc", (c, w, s, a) -> descent(c, a, saveConfig), "speed"));
+        group.addSubCommand(WorldPositional.build("tune", LANG + "tune.desc", (c, w, s, a) -> tune(c, a, saveConfig), "key", "value"));
+        // TEST DEVICE: the probe
         group.addSubCommand(WorldPositional.build("probe", LANG + "probe.desc", (c, w, s, a) -> probe(c, s, a), "mode"));
-        group.addSubCommand(WorldPositional.build("push", LANG + "push.desc", (c, w, s, a) -> push(c, s, a), "first", "second", "third", "fourth"));
     }
 
     private static Double number(String text) {
@@ -88,6 +88,43 @@ final class SuspensorCommands {
                 + (config.tapMode() == BeltMachine.GateMode.GROUND_OPEN ? ", reopen after " + config.reopenSeconds() + " s on the ground" : "");
     }
 
+    private static void descent(CommandContext c, String[] args, Runnable saveConfig) {
+        Double speed = args.length > 0 ? number(args[0]) : null;
+        if (speed == null || speed < 0 || speed > SuspensorConfig.MAX_DESCENT_SPEED) {
+            CoreModule.say(c, "usage: suspensor descent <blocks a second, 0 = off, at most " + SuspensorConfig.MAX_DESCENT_SPEED + ">");
+            return;
+        }
+        Suspensors.config().setDescentSpeed(speed);
+        saveConfig.run();
+        CoreModule.say(c, speed <= 0 ? "descent OFF: the belt hovers (saved)" : "descent " + speed + " blocks a second (saved; players flying get it on the next tick)");
+    }
+
+    private static void tune(CommandContext c, String[] args, Runnable saveConfig) {
+        String key = args.length > 0 ? args[0] : null;
+        Double value = args.length > 1 ? number(args[1]) : null;
+        if (key == null || value == null || value < 0) {
+            CoreModule.say(c, "usage: suspensor tune <ascendFraction|debounceTicks|groundTicks|takeoffGrace|refreshSeconds|descentCostFactor> <value, 0 or more>");
+            return;
+        }
+        SuspensorConfig config = Suspensors.config();
+        if (key.equalsIgnoreCase("descentSpeed") && value > SuspensorConfig.MAX_DESCENT_SPEED) {
+            CoreModule.say(c, "refused: DescentSpeed is at most " + SuspensorConfig.MAX_DESCENT_SPEED);
+            return;
+        }
+        if (!config.tune(key, value)) {
+            CoreModule.say(c, "unknown key '" + key + "': ascendFraction, debounceTicks, groundTicks, takeoffGrace, refreshSeconds, descentCostFactor (or descentSpeed)");
+            return;
+        }
+        saveConfig.run();
+        CoreModule.say(c, descentText(config) + " (saved)");
+    }
+
+    private static String descentText(SuspensorConfig config) {
+        return "descent " + (config.descentSpeed() <= 0 ? "OFF" : config.descentSpeed() + " blocks a second") + ", ascendFraction " + config.ascendFraction()
+                + ", debounceTicks " + config.debounceTicks() + ", groundTicks " + config.groundTicks() + ", takeoffGrace " + config.takeoffGrace()
+                + ", refreshSeconds " + config.refreshSeconds() + ", descentCostFactor " + config.descentCostFactor();
+    }
+
     private static void off(CommandContext c, Store<EntityStore> store) {
         if (!c.isPlayer() || c.senderAsPlayerRef() == null) {
             CoreModule.say(c, "Run this as a player in the game.");
@@ -132,58 +169,10 @@ final class SuspensorCommands {
         }
     }
 
-    private static void push(CommandContext c, Store<EntityStore> store, String[] args) {
-        PlayerRef player = caller(c, store);
-        if (player == null) {
-            return;
-        }
-        String first = args.length > 0 ? args[0] : null;
-        PushRig rig = TestDevices.rig(player.getUuid());
-        if ("off".equalsIgnoreCase(first)) {
-            if (!rig.active()) {
-                CoreModule.say(c, "No push is running.");
-                return;
-            }
-            rig.cancel();
-            CoreModule.say(c, "push off: Set (0, 0, 0) with the default config goes out on the next tick");
-            return;
-        }
-        boolean hold = "hold".equalsIgnoreCase(first);
-        int at = hold ? 1 : 0;
-        Double y = at < args.length ? number(args[at]) : null;
-        Double every = hold && args.length > 2 ? number(args[2]) : null;
-        String resistanceText = args.length > at + (hold ? 2 : 1) ? args[at + (hold ? 2 : 1)] : null;
-        boolean defaultConfig = "default".equalsIgnoreCase(resistanceText);
-        Double resistance = resistanceText == null ? Double.valueOf(1.0) : defaultConfig ? Double.valueOf(Double.NaN) : number(resistanceText);
-        if (y == null || resistance == null || (hold && (every == null || every < 1 || every > 100 || every != Math.rint(every)))) {
-            CoreModule.say(c, "usage: suspensor push <y> [resistance|default] | push hold <y> <everyTicks 1-100> [resistance|default] | push off (resistance: 1 = no decay, default = the config class's own)");
-            return;
-        }
-        double cap = Suspensors.config().pushCap();
-        if (!PushRig.allowed(y, cap)) {
-            CoreModule.say(c, "refused: |y| is at most " + cap + " (PushCap in the Suspensor section)");
-            return;
-        }
-        BeltMachine machine = Suspensors.peek(player.getUuid());
-        MovementStatesComponent states = store.getComponent(c.senderAsPlayerRef(), MovementStatesComponent.getComponentType());
-        if (machine == null || !machine.isOn() || states == null || !states.getMovementStates().flying) {
-            CoreModule.say(c, "refused: the push works only while your belt is on and you are flying");
-            return;
-        }
-        long now = System.currentTimeMillis();
-        if (hold) {
-            rig.startHold(y.floatValue(), resistance.floatValue(), every.intValue(), now);
-        } else {
-            rig.startOnce(y.floatValue(), resistance.floatValue(), now);
-        }
-        CoreModule.say(c, "push " + (hold ? "hold every " + every.intValue() + " ticks" : "once") + ": Set (0, " + y + ", 0), resistance "
-                + (defaultConfig ? "default" : String.valueOf(resistance)) + "; samples every 0.1 s in the log; 'suspensor push off' ends it, and so do landing, the belt off, death and leaving");
-    }
-
     private static void state(CommandContext c, Store<EntityStore> store) {
         SuspensorConfig config = Suspensors.config();
         String numbers = "speeds " + config.horizontalSpeed() + "/" + config.verticalSpeed() + " (horizontal/vertical), " + config.manaPerSecond()
-                + " Mana a second, resume at " + config.resumeMana() + "; " + windowText(config);
+                + " Mana a second, resume at " + config.resumeMana() + "; " + windowText(config) + "; " + descentText(config);
         if (!c.isPlayer() || c.senderAsPlayerRef() == null) {
             CoreModule.say(c, "Suspensor: " + Suspensors.count() + " belt(s) in memory; " + numbers);
             return;
@@ -201,6 +190,12 @@ final class SuspensorCommands {
             BeltMachine.GateInfo gate = machine.gate();
             CoreModule.say(c, "gate " + (config.tapWindow() <= 0 ? "off" : gate.open() ? "OPEN" : "closed") + "; windows opened " + gate.windows() + ", settings writes " + gate.pushes()
                     + ", flights started inside a window " + gate.flightsInWindow() + ", flights started with a gap to the jump start " + gate.flightsWithGap());
+        }
+        if (machine != null && machine.isOn()) {
+            BeltMachine.DescentInfo d = machine.descent();
+            CoreModule.say(c, "descent " + d.state() + ": own " + String.format(java.util.Locale.ROOT, "%.2f", d.own()) + ", vy now " + String.format(java.util.Locale.ROOT, "%.2f", d.vy())
+                    + ", push " + (d.pushInForce() ? "in force" : "none") + ", sends " + d.sends() + " (refresh " + d.refreshes() + ", drift " + d.drifts() + "), state changes "
+                    + d.transitions() + ", ground exits " + d.groundExits());
         }
         if (manager != null) {
             BeltMachine.FlySettings now = Suspensors.read(manager.getSettings());

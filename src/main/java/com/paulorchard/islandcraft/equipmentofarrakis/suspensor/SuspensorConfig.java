@@ -20,15 +20,22 @@ public class SuspensorConfig {
     static final double DEFAULT_TAP_WINDOW = 0.35;
     static final double DEFAULT_REOPEN_SECONDS = 1.2;
     static final double DEFAULT_MANA_PER_SECOND = 10.0;
-    /** TEST DEVICE: the largest |y| a {@code /arrakis suspensor push} may send. */
-    static final double DEFAULT_PUSH_CAP = 6.0;
+    static final double DEFAULT_DESCENT_SPEED = 2.0;
+    /** The sink is an external velocity; nothing above this is accepted (the cap of the push test that proved it). */
+    static final double MAX_DESCENT_SPEED = 6.0;
 
     private double horizontalSpeed = DEFAULT_SPEED;
     private double verticalSpeed = DEFAULT_SPEED;
     private double manaPerSecond = DEFAULT_MANA_PER_SECOND;
     private double resumeMana = 5.0;
     private boolean hum = true;
-    private double pushCap = DEFAULT_PUSH_CAP;
+    private double descentSpeed = DEFAULT_DESCENT_SPEED;
+    private double ascendFraction = 0.4;
+    private int debounceTicks = 4;
+    private int groundTicks = 2;
+    private double takeoffGrace = 0.5;
+    private double refreshSeconds = 1.0;
+    private double descentCostFactor = 1.0;
     private double tapWindow = DEFAULT_TAP_WINDOW;
     private String tapMode = "afterJump";
     private double reopenSeconds = DEFAULT_REOPEN_SECONDS;
@@ -81,9 +88,60 @@ public class SuspensorConfig {
         }
     }
 
-    /** TEST DEVICE: the hard cap of the push test command, blocks a second. */
-    public double pushCap() {
-        return Math.max(0, pushCap);
+    /** Blocks a second of sink while flying and not asking to go up (the belt's gravity); 0 = off, the hover of the earlier builds. */
+    public double descentSpeed() {
+        return Math.min(MAX_DESCENT_SPEED, Math.max(0, descentSpeed));
+    }
+
+    /** The player's own vertical speed must exceed this fraction of VerticalSpeed to count as asking to go up. */
+    public double ascendFraction() {
+        return Math.max(0, ascendFraction);
+    }
+
+    /** Ticks the input is ignored after the descent changes state (the client's report lags our change). */
+    public int debounceTicks() {
+        return Math.max(0, debounceTicks);
+    }
+
+    /** Consecutive ticks on the ground, not ascending, before flight ends. */
+    public int groundTicks() {
+        return Math.max(1, groundTicks);
+    }
+
+    /** Seconds after a flight start or the last ascending tick in which the ground is ignored. */
+    public double takeoffGrace() {
+        return Math.max(0, takeoffGrace);
+    }
+
+    /** Seconds between safety re-sends of the descent push. */
+    public double refreshSeconds() {
+        return Math.max(0.05, refreshSeconds);
+    }
+
+    /** Multiplies the Mana cost while descending (0 = only climbing costs Power). */
+    public double descentCostFactor() {
+        return Math.max(0, descentCostFactor);
+    }
+
+    void setDescentSpeed(double speed) {
+        descentSpeed = speed;
+    }
+
+    /** Live tuning of the other descent numbers by key (case does not matter); false when the key is unknown. */
+    boolean tune(String key, double value) {
+        switch (key.toLowerCase(java.util.Locale.ROOT)) {
+            case "descentspeed" -> descentSpeed = value;
+            case "ascendfraction" -> ascendFraction = value;
+            case "debounceticks" -> debounceTicks = (int) Math.round(value);
+            case "groundticks" -> groundTicks = (int) Math.round(value);
+            case "takeoffgrace" -> takeoffGrace = value;
+            case "refreshseconds" -> refreshSeconds = value;
+            case "descentcostfactor" -> descentCostFactor = value;
+            default -> {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** True: the wind loop plays while the belt flies. */
@@ -118,9 +176,20 @@ public class SuspensorConfig {
             .documentation("afterJump (the gate opens at a jump start) or groundOpen (open after ReopenSeconds on the ground, closes TapWindow after a jump start).").add()
             .append(new KeyedCodec<>("ReopenSeconds", Codec.DOUBLE, false), (c, v) -> c.reopenSeconds = v, c -> c.reopenSeconds)
             .documentation("groundOpen: seconds of ground contact before the gate opens again.").add()
-            // TEST DEVICE: goes with /arrakis suspensor push
-            .append(new KeyedCodec<>("PushCap", Codec.DOUBLE, false), (c, v) -> c.pushCap = v, c -> c.pushCap)
-            .documentation("Test device: the largest downward or upward speed the push test command accepts.").add()
+            .append(new KeyedCodec<>("DescentSpeed", Codec.DOUBLE, false), (c, v) -> c.descentSpeed = v, c -> c.descentSpeed)
+            .documentation("Blocks a second of sink while flying and not asking to go up; 0 = off (hover).").add()
+            .append(new KeyedCodec<>("AscendFraction", Codec.DOUBLE, false), (c, v) -> c.ascendFraction = v, c -> c.ascendFraction)
+            .documentation("The player's own vertical speed must exceed this fraction of VerticalSpeed to count as asking to go up.").add()
+            .append(new KeyedCodec<>("DebounceTicks", Codec.INTEGER, false), (c, v) -> c.debounceTicks = v, c -> c.debounceTicks)
+            .documentation("Ticks the input is ignored after the descent changes state.").add()
+            .append(new KeyedCodec<>("GroundTicks", Codec.INTEGER, false), (c, v) -> c.groundTicks = v, c -> c.groundTicks)
+            .documentation("Consecutive ticks on the ground, not ascending, before flight ends.").add()
+            .append(new KeyedCodec<>("TakeoffGrace", Codec.DOUBLE, false), (c, v) -> c.takeoffGrace = v, c -> c.takeoffGrace)
+            .documentation("Seconds after a flight start or the last ascending tick in which the ground is ignored.").add()
+            .append(new KeyedCodec<>("RefreshSeconds", Codec.DOUBLE, false), (c, v) -> c.refreshSeconds = v, c -> c.refreshSeconds)
+            .documentation("Seconds between safety re-sends of the descent push.").add()
+            .append(new KeyedCodec<>("DescentCostFactor", Codec.DOUBLE, false), (c, v) -> c.descentCostFactor = v, c -> c.descentCostFactor)
+            .documentation("Multiplies the Mana cost while descending (0 = only climbing costs Power).").add()
             // read only, never written: marks the file of the mark build (see the class comment)
             .append(new KeyedCodec<>("Mk3", Codec.BSON_DOCUMENT, false), (c, v) -> c.legacyFile = v != null, c -> (BsonDocument) null)
             .documentation("Old section of the mark build; ignored.").add()

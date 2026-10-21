@@ -61,6 +61,26 @@ final class Suspensors {
         }
     }
 
+    /** The descent numbers in force now. */
+    static BeltMachine.Descent descent() {
+        return new BeltMachine.Descent((float) config.descentSpeed(), (float) config.ascendFraction(), config.debounceTicks(), config.groundTicks(),
+                (float) config.takeoffGrace(), (float) config.refreshSeconds(), (float) config.descentCostFactor());
+    }
+
+    /**
+     * The velocity config of the descent push: no decay. Both resistances are per-step multipliers, so 1.0 keeps the speed (ground, air and
+     * both Max values; the push test of 2026-10-21 held a client speed of exactly the pushed value for 10 s from one send).
+     */
+    static com.hypixel.hytale.server.core.modules.splitvelocity.VelocityConfig noDecay() {
+        com.hypixel.hytale.server.core.modules.splitvelocity.VelocityConfig config =
+                new com.hypixel.hytale.server.core.modules.splitvelocity.VelocityConfig();
+        config.setGroundResistance(1.0f);
+        config.setGroundResistanceMax(1.0f);
+        config.setAirResistance(1.0f);
+        config.setAirResistanceMax(1.0f);
+        return config;
+    }
+
     /** The tap gate in force now. */
     static BeltMachine.Gate gate() {
         return new BeltMachine.Gate((float) config.tapWindow(), config.tapMode(), (float) config.reopenSeconds());

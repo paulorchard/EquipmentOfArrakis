@@ -7,14 +7,14 @@ import java.util.Locale;
 /**
  * TEST DEVICE: the flight probe of one player (proof A of the descent), with no engine types. Fed one {@link Sample} a tick, it says
  * every flip of the movement flags (with the height above the last ground and the time since onGround) and, every 0.25 s while the
- * player flies, the true flags, the two vertical speeds, the wish movement, Mana and whether the belt is armed. Delete with the proof
+ * player flies, the true flags, the two vertical speeds, the wish movement, Mana, whether the belt is armed and the descent (state, own speed, sends). Delete with the proof
  * (see the cleanup list in MODULES.md).
  */
 final class FlightProbe {
 
     /** {@code wish}: the three wish movement numbers as text, or why they are not readable. */
     record Sample(long tick, long nowMs, float dt, boolean flying, boolean jumping, boolean crouching, boolean onGround, boolean falling,
-                  boolean fallingFar, double y, double clientVy, String wish, float mana, boolean armed, String gate) {
+                  boolean fallingFar, double y, double clientVy, String wish, float mana, boolean armed, String gate, String descent) {
     }
 
     static final long PERIOD_MS = 250;
@@ -57,8 +57,8 @@ final class FlightProbe {
         }
         if (s.flying() && s.nowMs() >= nextPeriodic) {
             nextPeriodic = s.nowMs() + PERIOD_MS;
-            out.add(String.format(Locale.ROOT, "tick %d ms %d flying: flags %s, client vy %.2f, actual vy %.2f, wish %s, height %s, Mana %.1f, armed %s",
-                    s.tick(), s.nowMs(), flags(s), s.clientVy(), actualVy, s.wish(), height(s), s.mana(), s.armed()));
+            out.add(String.format(Locale.ROOT, "tick %d ms %d flying: flags %s, client vy %.2f, actual vy %.2f, wish %s, height %s, Mana %.1f, armed %s, descent %s",
+                    s.tick(), s.nowMs(), flags(s), s.clientVy(), actualVy, s.wish(), height(s), s.mana(), s.armed(), s.descent()));
         }
         last = s;
         return out;
