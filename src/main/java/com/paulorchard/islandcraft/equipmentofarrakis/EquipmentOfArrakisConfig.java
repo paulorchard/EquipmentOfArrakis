@@ -159,7 +159,7 @@ public class EquipmentOfArrakisConfig {
             .documentation("Settings of the thumper module (the sand-planted beat that draws the worm).")
             .add()
             .append(new KeyedCodec<>("Suspensor", com.paulorchard.islandcraft.equipmentofarrakis.suspensor.SuspensorConfig.CODEC, false), (c, v) -> c.suspensor = v, c -> c.suspensor)
-            .documentation("Settings of the suspensor module (the Suspensor Belt Mk II and Mk III toggles).")
+            .documentation("Settings of the suspensor module (the Suspensor Belt toggle).")
             .add()
             .append(new KeyedCodec<>("Hud", com.paulorchard.islandcraft.equipmentofarrakis.hud.HudConfig.CODEC, false), (c, v) -> c.hud = v, c -> c.hud)
             .documentation("Settings of the hud module (the four bars above the hotbar).")

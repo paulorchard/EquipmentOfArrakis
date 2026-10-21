@@ -1,5 +1,6 @@
 package com.paulorchard.islandcraft.equipmentofarrakis.suspensor;
 
+import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -7,6 +8,7 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
+import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -23,15 +25,13 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * The Suspensor Belt: two toggles on the picker page (Mk III rises and sinks at a low speed, Mk II flies flat), of one exclusive
- * group. While a mark is on, the movement setting {@code fly} is Allowed with the mark's fly speeds, so the client's own double tap
- * of Space starts creative-style flight; the server only watches the flying flag, charges Mana while it lasts and ends the flight at
- * 0 Mana. See {@link BeltMachine} for the rules and {@link SuspensorSystem} for the adapter.
+ * The Suspensor Belt: one toggle on the picker page. While it is on, the movement setting {@code fly} is Allowed with the belt's fly
+ * speeds, so the client's own double tap of Space starts creative-style flight; the server only watches the flying flag, charges
+ * Mana while it lasts and ends the flight at 0 Mana. See {@link BeltMachine} for the rules and {@link SuspensorSystem} for the adapter.
  */
 public final class SuspensorModule implements EquipmentModule {
 
     public static final String ID = "suspensor";
-    public static final String GROUP = "suspensor";
 
     private static final String LANG = "server.arrakis.suspensor.";
 
@@ -50,49 +50,36 @@ public final class SuspensorModule implements EquipmentModule {
     public void setup(ModuleContext ctx) {
         guard.activate();
         Suspensors.configure(ctx.settings(ID, SuspensorConfig.class), ctx.logger());
-        if (Suspensors.config().mk1().listed()) {
-            register(Suspensors.TOGGLE_I_FAR, 29, BeltMachine.Mark.I_FAR);
-            register(Suspensors.TOGGLE_I_SPEED, 30, BeltMachine.Mark.I_SPEED);
-        }
-        register(Suspensors.TOGGLE_III, 31, BeltMachine.Mark.III);
-        register(Suspensors.TOGGLE_II, 32, BeltMachine.Mark.II);
-        ctx.system(new SuspensorSystem());
-        ctx.events().registerGlobal(PlayerDisconnectEvent.class, event -> Suspensors.forget(event.getPlayerRef().getUuid()));
-        // never leave a stray glider: a relog or a world change finds none (the belt is off then, see ToggleRegistry.forget)
-        ctx.events().registerGlobal(com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent.class, event -> {
-            com.hypixel.hytale.component.Holder<EntityStore> holder = event.getHolder();
-            cleanse(holder);
-        });
-        SuspensorCommands.register(ctx.group("suspensor"), ctx::saveConfig);
-    }
-
-    private static void cleanse(com.hypixel.hytale.component.Holder<EntityStore> holder) {
-        if (holder != null && GliderItems.removeEverywhere(holder) > 0) {
-            Suspensors.logPlain("glider item found in the inventory at join and removed");
-        }
-    }
-
-    private static void register(String id, int order, BeltMachine.Mark mark) {
-        ToggleRegistry.get().register(new ToggleRegistry.Toggle(id, order, "server.customUI.arrakisPicker." + id, "Rune_WindStrike",
-                (store, ref, player, on) -> set(store, ref, player, mark, on),
+        ToggleRegistry.get().register(new ToggleRegistry.Toggle(Suspensors.TOGGLE, 29, "server.customUI.arrakisPicker." + Suspensors.TOGGLE, "Rune_WindStrike",
+                SuspensorModule::set,
                 uuid -> {
                     BeltMachine machine = Suspensors.peek(uuid);
-                    return machine != null && machine.isOn(mark);
+                    return machine != null && machine.isOn();
                 },
                 uuid -> {
                     BeltMachine machine = Suspensors.peek(uuid);
                     if (machine != null) {
                         machine.reset();
                     }
-                }, GROUP));
+                }));
+        ctx.system(new SuspensorSystem());
+        ctx.events().registerGlobal(PlayerDisconnectEvent.class, event -> Suspensors.forget(event.getPlayerRef().getUuid()));
+        // kept for one release: a saved Arrakis_Suspensor_Glider from the glider proof is removed at join (see LegacyGlider)
+        ctx.events().registerGlobal(AddPlayerToWorldEvent.class, event -> {
+            Holder<EntityStore> holder = event.getHolder();
+            if (holder != null && LegacyGlider.removeAll(holder) > 0) {
+                Suspensors.logPlain("a saved " + LegacyGlider.ITEM_ID + " (removed asset) was taken out of an inventory at join");
+            }
+        });
+        SuspensorCommands.register(ctx.group("suspensor"), ctx::saveConfig);
     }
 
-    /** The switch hook of both marks. ON takes the snapshot and records the wish; the system pushes the settings on its next tick. */
-    private static void set(Store<EntityStore> store, Ref<EntityStore> ref, PlayerRef player, BeltMachine.Mark mark, boolean on) {
+    /** The switch hook. ON takes the snapshot and records the wish; the system pushes the settings on its next tick. */
+    private static void set(Store<EntityStore> store, Ref<EntityStore> ref, PlayerRef player, boolean on) {
         UUID id = player.getUuid();
         if (!on) {
             BeltMachine machine = Suspensors.peek(id);
-            if (machine != null && machine.isOn(mark)) {
+            if (machine != null) {
                 machine.switchOff();
             }
             return;
@@ -108,19 +95,10 @@ public final class SuspensorModule implements EquipmentModule {
         }
         Power power = Power.get();
         float mana = power == null ? Float.MAX_VALUE : power.get(store, ref);
-        boolean armed = Suspensors.of(id).switchOn(mark, Suspensors.read(manager.getSettings()), mana, (float) Suspensors.config().resumeMana());
-        Suspensors.log(id, player.getUsername(), "state", "Mk " + mark + " on, " + (armed ? "armed" : "unarmed (Mana under " + Suspensors.config().resumeMana() + ")"));
-        if (armed && mark.falls() && Suspensors.config().mk1().way() == BeltMachine.Way.GLIDER) {
-            GliderSlot.Place place = GliderItems.placeInUtility(store, ref);
-            Suspensors.of(id).itemPlaced(place != GliderSlot.Place.BLOCKED);
-            Suspensors.log(id, player.getUsername(), "item", "glider item: " + place + " (active utility slot " + GliderItems.activeUtility(store, ref) + ")");
-            player.sendMessage(Message.translation(LANG + (place == GliderSlot.Place.BLOCKED ? "utilityBusy" : "gliderPlaced")));
-        } else if (armed) {
-            player.sendMessage(Message.translation(LANG + switch (mark) {
-                case III -> "ready3";
-                case II -> "ready2";
-                default -> "ready1";
-            }));
+        boolean armed = Suspensors.of(id).switchOn(Suspensors.read(manager.getSettings()), mana, (float) Suspensors.config().resumeMana());
+        Suspensors.log(id, player.getUsername(), "state", "belt on, " + (armed ? "armed" : "unarmed (Mana under " + Suspensors.config().resumeMana() + ")"));
+        if (armed) {
+            player.sendMessage(Message.translation(LANG + "ready"));
         } else {
             Notice.say(player, LANG + "needsMana");
         }
@@ -129,28 +107,18 @@ public final class SuspensorModule implements EquipmentModule {
     @Override
     public List<String> selfCheck() {
         List<String> lines = new ArrayList<>();
-        for (String id : new String[] {Suspensors.TOGGLE_III, Suspensors.TOGGLE_II}) {
-            lines.add(ToggleRegistry.get().find(id) == null ? "PROBLEM the toggle " + id + " is not registered" : "toggle " + id + " registered");
-        }
-        boolean listed = Suspensors.config().mk1().listed();
-        for (String id : new String[] {Suspensors.TOGGLE_I_FAR, Suspensors.TOGGLE_I_SPEED}) {
-            boolean there = ToggleRegistry.get().find(id) != null;
-            lines.add(there == listed ? "toggle " + id + (there ? " registered" : " not listed (Mk1.Listed false)") : "PROBLEM the toggle " + id + " is " + (there ? "registered" : "missing"));
-        }
-        Mk1Config m = Suspensors.config().mk1();
-        lines.add("suspensor Mk I route " + m.way().name().toLowerCase(java.util.Locale.ROOT) + ", descent " + m.descentSpeed() + ", speed threshold " + m.speedThreshold() + " x " + m.speedTicks()
-                + " ticks, refresh every " + m.pushTicks() + " ticks, " + m.manaPerSecond() + " Mana a second");
-        lines.add(EntityEffect.getAssetMap().getAsset(SuspensorSystem.FALLING_EFFECT) == null ? "PROBLEM effect " + SuspensorSystem.FALLING_EFFECT + " is not loaded"
-                : "effect " + SuspensorSystem.FALLING_EFFECT + " loaded");
-        com.hypixel.hytale.server.core.asset.type.item.config.Item glider = com.hypixel.hytale.server.core.asset.type.item.config.Item.getAssetMap().getAsset(GliderSlot.ITEM_ID);
-        lines.add(glider == null ? "PROBLEM item " + GliderSlot.ITEM_ID + " is not loaded" : "item " + GliderSlot.ITEM_ID + " loaded, interactions " + glider.getInteractions().keySet()
-                + ", utility " + glider.getUtility());
-        lines.add("suspensor glider trigger " + m.trigger().name().toLowerCase(java.util.Locale.ROOT) + ", falling ticks " + m.fallingTicks());
+        lines.add(ToggleRegistry.get().find(Suspensors.TOGGLE) == null ? "PROBLEM the toggle " + Suspensors.TOGGLE + " is not registered" : "toggle " + Suspensors.TOGGLE + " registered");
         lines.add(EntityEffect.getAssetMap().getAsset(SuspensorSystem.HUM_EFFECT) == null ? "PROBLEM effect " + SuspensorSystem.HUM_EFFECT + " is not loaded"
                 : "effect " + SuspensorSystem.HUM_EFFECT + " loaded");
+        // the glider proof is gone: its item and effect must not be loaded any more
+        if (com.hypixel.hytale.server.core.asset.type.item.config.Item.getAssetMap().getAsset(LegacyGlider.ITEM_ID) != null) {
+            lines.add("PROBLEM the removed item " + LegacyGlider.ITEM_ID + " is still loaded");
+        }
+        if (EntityEffect.getAssetMap().getAsset("Arrakis_Suspensor_Falling") != null) {
+            lines.add("PROBLEM the removed effect Arrakis_Suspensor_Falling is still loaded");
+        }
         SuspensorConfig c = Suspensors.config();
-        lines.add("suspensor Mk III " + c.mk3().horizontalSpeed() + "/" + c.mk3().verticalSpeed() + ", Mk II " + c.mk2().horizontalSpeed() + "/"
-                + c.mk2().verticalSpeed() + ", " + c.manaPerSecond() + " Mana a second, resume at " + c.resumeMana());
+        lines.add("suspensor belt " + c.horizontalSpeed() + "/" + c.verticalSpeed() + " (horizontal/vertical), " + c.manaPerSecond() + " Mana a second, resume at " + c.resumeMana());
         return lines;
     }
 }

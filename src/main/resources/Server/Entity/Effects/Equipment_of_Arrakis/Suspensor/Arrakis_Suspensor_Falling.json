@@ -1,7 +1,0 @@
-{
-  "$Comment": "The signal 'the server says this player is falling': a plain effect with no visuals, applied by the Suspensor Belt Mk I (glider route) and read by the EffectCondition in the chains of Arrakis_Suspensor_Glider. Refreshed every quarter second while the fall lasts (OVERWRITE restarts the time), so the half second never lapses mid-fall.",
-  "OverlapBehavior": "Overwrite",
-  "Debuff": false,
-  "Infinite": false,
-  "Duration": 0.5
-}

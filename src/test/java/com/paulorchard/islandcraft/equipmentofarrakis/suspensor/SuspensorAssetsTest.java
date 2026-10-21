@@ -2,6 +2,8 @@ package com.paulorchard.islandcraft.equipmentofarrakis.suspensor;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.hypixel.hytale.codec.ExtraInfo;
+import com.hypixel.hytale.codec.util.RawJsonReader;
 import com.paulorchard.islandcraft.equipmentofarrakis.EquipmentOfArrakisConfig;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The suspensor settings and files: defaults, the module in the default list, the hum effect, the language keys. */
@@ -24,30 +27,62 @@ class SuspensorAssetsTest {
         }
     }
 
-    @Test
-    void theDefaultsAreTheOnesTheSpecAsks() {
-        SuspensorConfig c = new SuspensorConfig();
-        assertEquals(1.0, c.mk3().horizontalSpeed());
-        assertEquals(1.0, c.mk3().verticalSpeed());
-        assertEquals(1.0, c.mk2().horizontalSpeed());
-        assertEquals(0.0, c.mk2().verticalSpeed());
-        assertEquals(1.0, c.manaPerSecond());
-        assertEquals(5.0, c.resumeMana());
-        assertEquals(4.0, c.mk1().descentSpeed());
-        assertEquals(12.0, c.mk1().speedThreshold());
-        assertEquals(2, c.mk1().speedTicks());
-        assertTrue(c.mk1().listed());
-        assertEquals(BeltMachine.Way.GLIDER, c.mk1().way());
-        assertEquals(0.0, c.mk1().manaPerSecond());
+    private static SuspensorConfig read(String json) throws IOException {
+        return SuspensorConfig.CODEC.decodeJson(RawJsonReader.fromJsonString(json), new ExtraInfo());
     }
 
     @Test
-    void liveTuningChangesOneMarkOnly() {
+    void theDefaultsAreTheBeltsNewNumbers() {
         SuspensorConfig c = new SuspensorConfig();
-        c.of(BeltMachine.Mark.III).set(2.0, 3.0);
-        assertEquals(2.0, c.mk3().horizontalSpeed());
-        assertEquals(3.0, c.mk3().verticalSpeed());
-        assertEquals(0.0, c.mk2().verticalSpeed());
+        assertEquals(0.5, c.horizontalSpeed());
+        assertEquals(0.5, c.verticalSpeed());
+        assertEquals(10.0, c.manaPerSecond());
+        assertEquals(5.0, c.resumeMana());
+        assertTrue(c.hum());
+    }
+
+    @Test
+    void theNewKeysAreReadAsPlainTopLevelKeys() throws IOException {
+        SuspensorConfig c = read("{\"HorizontalSpeed\":1.5,\"VerticalSpeed\":0.75,\"ManaPerSecond\":2,\"ResumeMana\":8,\"Hum\":false}");
+        assertEquals(1.5, c.horizontalSpeed());
+        assertEquals(0.75, c.verticalSpeed());
+        assertEquals(2.0, c.manaPerSecond());
+        assertEquals(8.0, c.resumeMana());
+        assertFalse(c.hum());
+    }
+
+    @Test
+    void anOldFileFromTheMarkBuildLoadsWithoutErrorAndTheNewDefaultsApply() throws IOException {
+        // what the 0.3.x build saved: Mk3/Mk2/Mk1 sections, ManaPerSecond 1
+        SuspensorConfig c = read("{\"Mk3\":{\"HorizontalSpeed\":1.0,\"VerticalSpeed\":1.0},\"Mk2\":{\"HorizontalSpeed\":1.0,\"VerticalSpeed\":0.0},"
+                + "\"Mk1\":{\"Route\":\"glider\",\"GliderTrigger\":\"falling\",\"Signal\":\"pulse\"},\"ManaPerSecond\":1.0,\"ResumeMana\":5.0,\"Hum\":true}");
+        assertEquals(0.5, c.horizontalSpeed(), "the old 1.0 speeds lived under Mk3 and are not carried over");
+        assertEquals(0.5, c.verticalSpeed());
+        assertEquals(10.0, c.manaPerSecond(), "the old 1 Mana is not carried over");
+        assertEquals(5.0, c.resumeMana());
+        // the very first build had a text placeholder under Mk1
+        assertEquals(0.5, read("{\"Mk1\":\"experimental\",\"Mk2\":\"x\"}").horizontalSpeed());
+    }
+
+    @Test
+    void savingAnOldFileWritesTheNewKeysOnly() throws IOException {
+        SuspensorConfig c = read("{\"Mk3\":{\"HorizontalSpeed\":1.0,\"VerticalSpeed\":1.0},\"ManaPerSecond\":1.0}");
+        String saved = SuspensorConfig.CODEC.encode(c, new ExtraInfo()).toString();
+        assertFalse(saved.contains("Mk"), saved);
+        assertTrue(saved.contains("HorizontalSpeed") && saved.contains("VerticalSpeed") && saved.contains("ManaPerSecond"), saved);
+        SuspensorConfig again = read(saved.replace("Document", ""));
+        assertEquals(10.0, again.manaPerSecond(), "the rewritten file keeps the new default");
+    }
+
+    @Test
+    void liveTuningSetsTheNumbersAndKeepsTheCostWhenNoneIsGiven() {
+        SuspensorConfig c = new SuspensorConfig();
+        c.set(2.0, 3.0, null);
+        assertEquals(2.0, c.horizontalSpeed());
+        assertEquals(3.0, c.verticalSpeed());
+        assertEquals(10.0, c.manaPerSecond());
+        c.set(1.0, 1.0, 2.0);
+        assertEquals(2.0, c.manaPerSecond());
     }
 
     @Test
@@ -68,49 +103,34 @@ class SuspensorAssetsTest {
     }
 
     @Test
-    void theLanguageKeysExistAndNoLabKeysRemain() throws IOException {
+    void theLanguageKeysExistAndNoMarkOrLabKeysRemain() throws IOException {
         String lang = text("/Server/Languages/en-US/server.lang");
-        for (String key : new String[] {"customUI.arrakisPicker.suspensor3 = Suspensor Belt Mk III", "customUI.arrakisPicker.suspensor2 = Suspensor Belt Mk II",
-                "arrakis.suspensor.ready3 = ", "arrakis.suspensor.ready2 = ", "arrakis.suspensor.needsMana = The belt needs Mana.",
-                "arrakis.suspensor.creative = ", "commands.arrakis.suspensor.state.desc", "commands.arrakis.suspensor.set.desc",
-                "commands.arrakis.suspensor.off.desc", "commands.arrakis.suspensor.desc"}) {
+        for (String key : new String[] {"customUI.arrakisPicker.suspensor = Suspensor Belt", "arrakis.suspensor.ready = Suspensor Belt ready: double-tap Space to fly.",
+                "arrakis.suspensor.needsMana = The belt needs Mana.", "arrakis.suspensor.creative = ", "commands.arrakis.suspensor.state.desc",
+                "commands.arrakis.suspensor.set.desc", "commands.arrakis.suspensor.off.desc", "commands.arrakis.suspensor.desc"}) {
             assertTrue(lang.contains(key), "missing " + key);
         }
         assertFalse(lang.contains("Arrakis_Lab_"));
         assertFalse(lang.contains("commands.arrakis.lab."));
-    }
-
-    @Test
-    void theFallingSignalEffectIsPlainAndShort() throws IOException {
-        JsonObject effect = JsonParser.parseString(text("/Server/Entity/Effects/Equipment_of_Arrakis/Suspensor/Arrakis_Suspensor_Falling.json")).getAsJsonObject();
-        assertEquals("Overwrite", effect.get("OverlapBehavior").getAsString());
-        assertFalse(effect.get("Debuff").getAsBoolean());
-        assertFalse(effect.get("Infinite").getAsBoolean());
-        assertEquals(0.5, effect.get("Duration").getAsDouble());
-        assertFalse(effect.has("ApplicationEffects"), "no visuals, no sound");
-    }
-
-    @Test
-    void theGliderItemIsTheVanillaOneWithOneTriggerOnTheSignal() throws IOException {
-        JsonObject item = JsonParser.parseString(text("/Server/Item/Items/Equipment_of_Arrakis/Suspensor/Arrakis_Suspensor_Glider.json")).getAsJsonObject();
-        assertEquals("Template_Glider", item.get("Parent").getAsString());
-        assertFalse(item.has("Glider"), "the inherited Glider block is untouched");
-        assertFalse(item.has("Recipe"));
-        assertFalse(item.has("MaxDurability"));
-        assertFalse(item.has("Model"), "the vanilla model comes by the parent");
-        assertTrue(item.getAsJsonObject("Utility").get("Usable").getAsBoolean());
-        assertTrue(item.getAsJsonObject("Utility").get("Compatible").getAsBoolean());
-        JsonObject chains = item.getAsJsonObject("Interactions");
-        assertEquals(java.util.Set.of("HeldOffhand"), chains.keySet(), "one added chain; Primary and SwapFrom are inherited, the control");
-        for (String key : chains.keySet()) {
-            String chain = chains.get(key).toString();
-            assertTrue(chain.contains("\"Gliding\":false"), key);
-            assertTrue(chain.contains("\"EntityEffectIds\":[\"Arrakis_Suspensor_Falling\"]"), key);
-            assertTrue(chain.contains("\"ToggleGlider\""), key);
-            assertFalse(chain.contains("Durability"), key);
+        for (String gone : new String[] {"Mk I", "Mk II", "Mk III", "Mk1", "Mk2", "Mk3", "Glider", "glider", "Arrakis_Suspensor_Falling", "suspensor1", "suspensor2", "suspensor3"}) {
+            assertFalse(lang.contains(gone), "leftover in the language file: " + gone);
         }
-        String lang = text("/Server/Languages/en-US/server.lang");
-        assertTrue(lang.contains("items.Arrakis_Suspensor_Glider.name"));
-        assertTrue(lang.contains("arrakis.suspensor.utilityBusy = Empty your utility slot for the glider."));
+    }
+
+    @Test
+    void theRemovedAssetsAreGone() {
+        for (String path : new String[] {"/Server/Entity/Effects/Equipment_of_Arrakis/Suspensor/Arrakis_Suspensor_Falling.json",
+                "/Server/Item/Items/Equipment_of_Arrakis/Suspensor/Arrakis_Suspensor_Glider.json"}) {
+            assertNull(SuspensorAssetsTest.class.getResource(path), path);
+        }
+        assertNotNull(SuspensorAssetsTest.class.getResource("/Server/Entity/Effects/Equipment_of_Arrakis/Suspensor/Arrakis_Suspensor_Hum.json"));
+    }
+
+    @Test
+    void theLegacyCleanupMatchesOnlyTheRemovedItem() {
+        assertTrue(LegacyGlider.isIt("Arrakis_Suspensor_Glider"));
+        assertFalse(LegacyGlider.isIt("Template_Glider"));
+        assertFalse(LegacyGlider.isIt(null));
+        assertFalse(LegacyGlider.isIt("Arrakis_Suspensor_Glider2"));
     }
 }

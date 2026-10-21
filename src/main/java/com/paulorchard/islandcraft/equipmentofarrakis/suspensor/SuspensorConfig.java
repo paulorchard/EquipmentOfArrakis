@@ -4,63 +4,42 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 
+import org.bson.BsonDocument;
+
 /**
  * The "Suspensor" section of Equipment_of_Arrakis.json. Speeds are the fly speeds of the movement settings; the lab found that 0.5 in
- * Adventure feels like 0.1 in creative, so both marks start at 1.0 and the numbers are meant to be tuned live
+ * Adventure feels like 0.1 in creative, so 0.5 is the start and the numbers are meant to be tuned live
  * ({@code /arrakis suspensor set}).
+ *
+ * <p>Keys of the removed marks (Mk1, Mk2, Mk3) in an old file are ignored. A file that still has the {@code Mk3} section was saved by
+ * the mark build, whose {@code ManaPerSecond} was 1: that old value is not carried over, the default applies until a new one is set
+ * or the file is saved without the old section.
  */
 public class SuspensorConfig {
 
-    /** The speeds of one mark. */
-    public static class Mark {
-        private double horizontalSpeed;
-        private double verticalSpeed;
+    static final double DEFAULT_MANA_PER_SECOND = 10.0;
 
-        public Mark() {
-        }
-
-        Mark(double horizontalSpeed, double verticalSpeed) {
-            this.horizontalSpeed = horizontalSpeed;
-            this.verticalSpeed = verticalSpeed;
-        }
-
-        public double horizontalSpeed() {
-            return Math.max(0, horizontalSpeed);
-        }
-
-        public double verticalSpeed() {
-            return Math.max(0, verticalSpeed);
-        }
-
-        void set(double horizontal, double vertical) {
-            horizontalSpeed = horizontal;
-            verticalSpeed = vertical;
-        }
-
-        public static final BuilderCodec<Mark> CODEC = BuilderCodec.builder(Mark.class, Mark::new)
-                .append(new KeyedCodec<>("HorizontalSpeed", Codec.DOUBLE, false), (c, v) -> c.horizontalSpeed = v, c -> c.horizontalSpeed).add()
-                .append(new KeyedCodec<>("VerticalSpeed", Codec.DOUBLE, false), (c, v) -> c.verticalSpeed = v, c -> c.verticalSpeed).add()
-                .build();
-    }
-
-    private Mark mk3 = new Mark(1.0, 1.0);
-    private Mark mk2 = new Mark(1.0, 0.0);
-    private double manaPerSecond = 1.0;
+    private double horizontalSpeed = 0.5;
+    private double verticalSpeed = 0.5;
+    private double manaPerSecond = DEFAULT_MANA_PER_SECOND;
     private double resumeMana = 5.0;
     private boolean hum = true;
-    private Mk1Config mk1 = new Mk1Config();
+    /** True when the old Mk3 section was read: the saved ManaPerSecond belongs to the mark build and is not used. */
+    private boolean legacyFile;
 
-    public Mark mk3() {
-        return mk3;
+    /** Horizontal fly speed of the movement settings. */
+    public double horizontalSpeed() {
+        return Math.max(0, horizontalSpeed);
     }
 
-    public Mark mk2() {
-        return mk2;
+    /** Vertical fly speed of the movement settings (Space up, crouch down). */
+    public double verticalSpeed() {
+        return Math.max(0, verticalSpeed);
     }
 
     /** Mana the belt costs a second while the player flies (creative pays nothing, and the belt does nothing there). */
     public double manaPerSecond() {
-        return Math.max(0, manaPerSecond);
+        return Math.max(0, legacyFile ? DEFAULT_MANA_PER_SECOND : manaPerSecond);
     }
 
     /** After a cut-off at 0 Mana the belt arms again when Mana is back at this value or more. */
@@ -73,29 +52,29 @@ public class SuspensorConfig {
         return hum;
     }
 
-    /** Mk I (slow descent): the two test marks. */
-    public Mk1Config mk1() {
-        return mk1;
-    }
-
-    /** The speeds of a flying mark (Mk I has none). */
-    SuspensorConfig.Mark of(BeltMachine.Mark mark) {
-        return mark == BeltMachine.Mark.III ? mk3 : mk2;
+    /** Live tuning: both speeds and, when given, the cost; saved from now on as the new numbers. */
+    void set(double horizontal, double vertical, Double mana) {
+        double keep = manaPerSecond();
+        horizontalSpeed = horizontal;
+        verticalSpeed = vertical;
+        manaPerSecond = mana == null ? keep : mana;
+        legacyFile = false;
     }
 
     public static final BuilderCodec<SuspensorConfig> CODEC = BuilderCodec.builder(SuspensorConfig.class, SuspensorConfig::new)
-            .documentation("Settings of the suspensor module: the Suspensor Belt Mk II and Mk III toggles (flight on the client's double tap of Space).")
-            .append(new KeyedCodec<>("Mk3", Mark.CODEC, false), (c, v) -> c.mk3 = v, c -> c.mk3)
-            .documentation("Mk III: HorizontalSpeed and VerticalSpeed of the flight (the fly speeds of the movement settings; 1.0 and 1.0 to start).").add()
-            .append(new KeyedCodec<>("Mk2", Mark.CODEC, false), (c, v) -> c.mk2 = v, c -> c.mk2)
-            .documentation("Mk II: the same, with VerticalSpeed 0.0 (horizontal flight only).").add()
-            .append(new KeyedCodec<>("Mk1", Mk1Config.CODEC, false), (c, v) -> c.mk1 = v, c -> c.mk1)
-            .documentation("Mk I, the slow descent (two test marks, far fall and speed). A file from 0.3.0 had a text placeholder here; it is read as the defaults.").add()
-            .append(new KeyedCodec<>("ManaPerSecond", Codec.DOUBLE, false), (c, v) -> c.manaPerSecond = v, c -> c.manaPerSecond)
+            .documentation("Settings of the suspensor module: the Suspensor Belt toggle (flight on the client's double tap of Space).")
+            .append(new KeyedCodec<>("HorizontalSpeed", Codec.DOUBLE, false), (c, v) -> c.horizontalSpeed = v, c -> c.horizontalSpeed)
+            .documentation("Horizontal fly speed of the movement settings (0.5 in Adventure is about creative 0.1).").add()
+            .append(new KeyedCodec<>("VerticalSpeed", Codec.DOUBLE, false), (c, v) -> c.verticalSpeed = v, c -> c.verticalSpeed)
+            .documentation("Vertical fly speed (Space up, crouch down).").add()
+            .append(new KeyedCodec<>("ManaPerSecond", Codec.DOUBLE, false), (c, v) -> c.manaPerSecond = v, c -> c.manaPerSecond())
             .documentation("Mana per second while flying.").add()
             .append(new KeyedCodec<>("ResumeMana", Codec.DOUBLE, false), (c, v) -> c.resumeMana = v, c -> c.resumeMana)
             .documentation("After the belt cut a flight off at 0 Mana, it works again at this much Mana.").add()
             .append(new KeyedCodec<>("Hum", Codec.BOOLEAN, false), (c, v) -> c.hum = v, c -> c.hum)
             .documentation("Play the wind loop while flying.").add()
+            // read only, never written: marks the file of the mark build (see the class comment)
+            .append(new KeyedCodec<>("Mk3", Codec.BSON_DOCUMENT, false), (c, v) -> c.legacyFile = v != null, c -> (BsonDocument) null)
+            .documentation("Old section of the mark build; ignored.").add()
             .build();
 }
