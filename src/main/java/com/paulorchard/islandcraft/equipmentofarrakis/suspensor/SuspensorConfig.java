@@ -17,6 +17,8 @@ import org.bson.BsonDocument;
 public class SuspensorConfig {
 
     static final double DEFAULT_SPEED = 2.0;
+    static final double DEFAULT_TAP_WINDOW = 0.35;
+    static final double DEFAULT_REOPEN_SECONDS = 1.2;
     static final double DEFAULT_MANA_PER_SECOND = 10.0;
     /** TEST DEVICE: the largest |y| a {@code /arrakis suspensor push} may send. */
     static final double DEFAULT_PUSH_CAP = 6.0;
@@ -27,6 +29,9 @@ public class SuspensorConfig {
     private double resumeMana = 5.0;
     private boolean hum = true;
     private double pushCap = DEFAULT_PUSH_CAP;
+    private double tapWindow = DEFAULT_TAP_WINDOW;
+    private String tapMode = "afterJump";
+    private double reopenSeconds = DEFAULT_REOPEN_SECONDS;
     /** True when the old Mk3 section was read: the saved ManaPerSecond belongs to the mark build and is not used. */
     private boolean legacyFile;
 
@@ -48,6 +53,32 @@ public class SuspensorConfig {
     /** After a cut-off at 0 Mana the belt arms again when Mana is back at this value or more. */
     public double resumeMana() {
         return Math.max(0.1, resumeMana);
+    }
+
+    /** Seconds from a jump start in which the double tap can start flight (0 = no gate: fly is Allowed whenever the belt is armed). */
+    public double tapWindow() {
+        return Math.max(0, tapWindow);
+    }
+
+    /** afterJump: the gate opens at a jump start. groundOpen: open while the player has stood on the ground for ReopenSeconds. */
+    public BeltMachine.GateMode tapMode() {
+        return "groundopen".equalsIgnoreCase(tapMode) ? BeltMachine.GateMode.GROUND_OPEN : BeltMachine.GateMode.AFTER_JUMP;
+    }
+
+    /** groundOpen: seconds of ground contact before the gate opens again. */
+    public double reopenSeconds() {
+        return Math.max(0, reopenSeconds);
+    }
+
+    /** Live tuning of the gate: the window, and when given the mode and the reopen seconds. */
+    void setWindow(double window, String mode, Double reopen) {
+        tapWindow = window;
+        if (mode != null) {
+            tapMode = "groundopen".equalsIgnoreCase(mode) ? "groundOpen" : "afterJump";
+        }
+        if (reopen != null) {
+            reopenSeconds = reopen;
+        }
     }
 
     /** TEST DEVICE: the hard cap of the push test command, blocks a second. */
@@ -81,6 +112,12 @@ public class SuspensorConfig {
             .documentation("After the belt cut a flight off at 0 Mana, it works again at this much Mana.").add()
             .append(new KeyedCodec<>("Hum", Codec.BOOLEAN, false), (c, v) -> c.hum = v, c -> c.hum)
             .documentation("Play the wind loop while flying.").add()
+            .append(new KeyedCodec<>("TapWindow", Codec.DOUBLE, false), (c, v) -> c.tapWindow = v, c -> c.tapWindow)
+            .documentation("Seconds after a jump start in which a second press can start flight; 0 = no gate (fly is Allowed whenever the belt is armed).").add()
+            .append(new KeyedCodec<>("TapMode", Codec.STRING, false), (c, v) -> c.tapMode = v, c -> c.tapMode)
+            .documentation("afterJump (the gate opens at a jump start) or groundOpen (open after ReopenSeconds on the ground, closes TapWindow after a jump start).").add()
+            .append(new KeyedCodec<>("ReopenSeconds", Codec.DOUBLE, false), (c, v) -> c.reopenSeconds = v, c -> c.reopenSeconds)
+            .documentation("groundOpen: seconds of ground contact before the gate opens again.").add()
             // TEST DEVICE: goes with /arrakis suspensor push
             .append(new KeyedCodec<>("PushCap", Codec.DOUBLE, false), (c, v) -> c.pushCap = v, c -> c.pushCap)
             .documentation("Test device: the largest downward or upward speed the push test command accepts.").add()

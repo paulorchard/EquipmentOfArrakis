@@ -120,7 +120,7 @@ public final class SuspensorModule implements EquipmentModule {
             lines.add("PROBLEM the removed effect Arrakis_Suspensor_Falling is still loaded");
         }
         SuspensorConfig c = Suspensors.config();
-        lines.add("suspensor belt " + c.horizontalSpeed() + "/" + c.verticalSpeed() + " (horizontal/vertical), " + c.manaPerSecond() + " Mana a second, resume at " + c.resumeMana());
+        lines.add("suspensor belt " + c.horizontalSpeed() + "/" + c.verticalSpeed() + " (horizontal/vertical), " + c.manaPerSecond() + " Mana a second, resume at " + c.resumeMana() + ", tap window " + c.tapWindow() + " s " + c.tapMode());
         return lines;
     }
 }

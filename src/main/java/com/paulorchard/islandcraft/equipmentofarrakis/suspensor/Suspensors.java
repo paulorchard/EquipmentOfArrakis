@@ -61,6 +61,19 @@ final class Suspensors {
         }
     }
 
+    /** The tap gate in force now. */
+    static BeltMachine.Gate gate() {
+        return new BeltMachine.Gate((float) config.tapWindow(), config.tapMode(), (float) config.reopenSeconds());
+    }
+
+    /** An INFO line that is never throttled (the gate's open and close lines: one pair per window). */
+    static void logGate(String name, String text) {
+        HytaleLogger log = logger;
+        if (log != null) {
+            log.at(Level.INFO).log("Suspensor [%s]: %s", name, text);
+        }
+    }
+
     /** The fly speeds in force now. */
     static BeltMachine.Speeds speeds() {
         return new BeltMachine.Speeds((float) config.horizontalSpeed(), (float) config.verticalSpeed());

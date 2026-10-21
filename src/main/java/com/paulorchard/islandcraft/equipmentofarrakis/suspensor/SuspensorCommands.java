@@ -19,6 +19,7 @@ import com.paulorchard.islandcraft.equipmentofarrakis.power.Power;
  * /arrakis suspensor state                                   your belt: on or off, armed, flying, Mana, the speeds and cost in force
  * /arrakis suspensor set horizontal vertical [manaPerSecond]  live tuning, saved to the config; players who have the belt on get it on the next tick
  * /arrakis suspensor off                                     turn your belt off
+ * /arrakis suspensor window <seconds> [afterJump|groundOpen] [reopenSeconds]   the tap gate, live and saved (0 = off)
  * /arrakis suspensor probe on|off                            TEST DEVICE: log the flags, speeds and wish movement of your flight (INFO)
  * /arrakis suspensor push <y> [resistance|default]           TEST DEVICE: one external velocity Set (0, y, 0) while you fly; resistance 1 (the default here) keeps it
  * /arrakis suspensor push hold <y> <everyTicks> [resistance] TEST DEVICE: the same push every N ticks until push off
@@ -36,6 +37,7 @@ final class SuspensorCommands {
         group.addSubCommand(WorldPositional.build("state", LANG + "state.desc", (c, w, s, a) -> state(c, s)));
         group.addSubCommand(WorldPositional.build("set", LANG + "set.desc", (c, w, s, a) -> set(c, a, saveConfig), "horizontal", "vertical", "manaPerSecond"));
         group.addSubCommand(WorldPositional.build("off", LANG + "off.desc", (c, w, s, a) -> off(c, s)));
+        group.addSubCommand(WorldPositional.build("window", LANG + "window.desc", (c, w, s, a) -> window(c, a, saveConfig), "seconds", "mode", "reopenSeconds"));
         // TEST DEVICE: proofs A and B of the descent
         group.addSubCommand(WorldPositional.build("probe", LANG + "probe.desc", (c, w, s, a) -> probe(c, s, a), "mode"));
         group.addSubCommand(WorldPositional.build("push", LANG + "push.desc", (c, w, s, a) -> push(c, s, a), "first", "second", "third", "fourth"));
@@ -63,6 +65,27 @@ final class SuspensorCommands {
         saveConfig.run();
         CoreModule.say(c, "Suspensor Belt: horizontal " + config.horizontalSpeed() + ", vertical " + config.verticalSpeed() + ", " + config.manaPerSecond()
                 + " Mana a second (saved; players with the belt on get it on the next tick)");
+    }
+
+    private static void window(CommandContext c, String[] args, Runnable saveConfig) {
+        Double seconds = args.length > 0 ? number(args[0]) : null;
+        String mode = args.length > 1 ? args[1] : null;
+        boolean modeOk = mode == null || "afterJump".equalsIgnoreCase(mode) || "groundOpen".equalsIgnoreCase(mode);
+        Double reopen = args.length > 2 ? number(args[2]) : null;
+        if (seconds == null || seconds < 0 || !modeOk || (args.length > 2 && (reopen == null || reopen < 0))) {
+            CoreModule.say(c, "usage: suspensor window <seconds, 0 = off> [afterJump|groundOpen] [reopenSeconds]");
+            return;
+        }
+        SuspensorConfig config = Suspensors.config();
+        config.setWindow(seconds, mode, reopen);
+        saveConfig.run();
+        CoreModule.say(c, windowText(config) + " (saved; players with the belt on get it on the next tick)");
+    }
+
+    private static String windowText(SuspensorConfig config) {
+        return config.tapWindow() <= 0 ? "tap gate OFF (fly is Allowed whenever the belt is armed)"
+                : "tap gate: " + (config.tapMode() == BeltMachine.GateMode.AFTER_JUMP ? "afterJump" : "groundOpen") + ", window " + config.tapWindow() + " s"
+                + (config.tapMode() == BeltMachine.GateMode.GROUND_OPEN ? ", reopen after " + config.reopenSeconds() + " s on the ground" : "");
     }
 
     private static void off(CommandContext c, Store<EntityStore> store) {
@@ -160,7 +183,7 @@ final class SuspensorCommands {
     private static void state(CommandContext c, Store<EntityStore> store) {
         SuspensorConfig config = Suspensors.config();
         String numbers = "speeds " + config.horizontalSpeed() + "/" + config.verticalSpeed() + " (horizontal/vertical), " + config.manaPerSecond()
-                + " Mana a second, resume at " + config.resumeMana();
+                + " Mana a second, resume at " + config.resumeMana() + "; " + windowText(config);
         if (!c.isPlayer() || c.senderAsPlayerRef() == null) {
             CoreModule.say(c, "Suspensor: " + Suspensors.count() + " belt(s) in memory; " + numbers);
             return;
@@ -174,6 +197,11 @@ final class SuspensorCommands {
         String belt = machine == null || !machine.isOn() ? "off"
                 : "on, " + (machine.armed() ? "armed" : "unarmed") + ", flying " + (states != null && states.getMovementStates().flying);
         CoreModule.say(c, "Suspensor Belt: " + belt + "; Mana " + (power == null ? "n/a" : power.get(store, ref)) + "; " + numbers);
+        if (machine != null && machine.isOn()) {
+            BeltMachine.GateInfo gate = machine.gate();
+            CoreModule.say(c, "gate " + (config.tapWindow() <= 0 ? "off" : gate.open() ? "OPEN" : "closed") + "; windows opened " + gate.windows() + ", settings writes " + gate.pushes()
+                    + ", flights started inside a window " + gate.flightsInWindow() + ", flights started with a gap to the jump start " + gate.flightsWithGap());
+        }
         if (manager != null) {
             BeltMachine.FlySettings now = Suspensors.read(manager.getSettings());
             CoreModule.say(c, "movement settings now: fly " + now.mode() + ", h " + now.horizontal() + ", v " + now.vertical()

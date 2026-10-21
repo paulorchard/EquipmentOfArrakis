@@ -24,6 +24,29 @@ final class BeltMachine {
     record Speeds(float horizontal, float vertical) {
     }
 
+    enum GateMode { AFTER_JUMP, GROUND_OPEN }
+
+    /**
+     * The tap gate: {@code window} seconds (0 = off: fly is Allowed whenever the belt is armed, as before the gate), the mode, and for
+     * GROUND_OPEN the seconds of ground contact before the gate opens again.
+     */
+    record Gate(float window, GateMode mode, float reopen) {
+        static final Gate OFF = new Gate(0f, GateMode.AFTER_JUMP, 1.2f);
+
+        boolean off() {
+            return window <= 0f;
+        }
+    }
+
+    /** What the adapter reads of the player each tick for the gate: the jumping and onGround flags, the wall clock and the world tick. */
+    record Ground(boolean jumping, boolean onGround, long nowMs, long tick) {
+        static final Ground NONE = new Ground(false, false, 0L, 0L);
+    }
+
+    /** The gate as the probe and `state` show it. */
+    record GateInfo(boolean open, long jumpMs, long jumpTick, long openMs, long openTick, int windows, int flightsInWindow, int flightsWithGap, int pushes) {
+    }
+
     enum Kind {
         /** Write these three settings and push once. */
         PUSH,
@@ -66,6 +89,30 @@ final class BeltMachine {
     private boolean snapshotTrusted = true;
     private float sinceStop;
     private int pushes;
+    // the tap gate
+    private float clock;
+    private boolean gateInit;
+    private boolean prevJumping;
+    private float sinceGround;
+    private float groundTime;
+    private float closeAt = -1f;
+    private boolean latched;
+    private boolean gateOpen;
+    private float lastJumpClock = -1f;
+    private long lastJumpMs;
+    private long lastJumpTick;
+    private long openMs;
+    private long openTick;
+    private int windows;
+    private int flightsInWindow;
+    private int flightsWithGap;
+
+    /** Seconds after a jump start in which a jump still counts as a jump start (it can have left the ground a tick before it is seen). */
+    static final float JUMP_GROUND_SLACK = 0.25f;
+    /** A flight with no jump start within this many seconds counts as "with a gap" when the gate is off. */
+    static final float DEFAULT_GAP = 0.35f;
+    /** Float slack for the gate timers: 7 ticks of 0.05 s are a 0.35 s window. */
+    private static final float EPS = 1e-4f;
 
     synchronized boolean isOn() {
         return on;
@@ -96,6 +143,11 @@ final class BeltMachine {
         return pushes;
     }
 
+    /** The gate state and the counters (windows opened, settings writes, flights started inside a window, flights started with a gap). */
+    synchronized GateInfo gate() {
+        return new GateInfo(gateOpen, lastJumpMs, lastJumpTick, openMs, openTick, windows, flightsInWindow, flightsWithGap, pushes);
+    }
+
     /** Whether the machine has nothing to do or remember (an idle one can be dropped). */
     synchronized boolean idle() {
         return !on && !restorePending;
@@ -110,6 +162,7 @@ final class BeltMachine {
             on = true;
             armed = mana >= resumeMana;
             sinceStop = 0f;
+            resetGate();
         }
         if (snapshot == null && !restorePending) {
             snapshot = current;
@@ -147,6 +200,15 @@ final class BeltMachine {
      */
     synchronized List<Act> tick(float dt, boolean flyingNow, boolean modeOk, float mana, float manaPerSecond, float resumeMana,
                                 FlySettings current, Speeds speeds) {
+        return tick(dt, flyingNow, modeOk, mana, manaPerSecond, resumeMana, current, speeds, Gate.OFF, Ground.NONE);
+    }
+
+    /**
+     * The same with the tap gate. While the belt is on and armed and the player is not flying, fly is Disabled except while the gate is
+     * open; flying keeps it Allowed (see {@link #gateStep}). {@code gate} off gives the behaviour of the belt without a gate.
+     */
+    synchronized List<Act> tick(float dt, boolean flyingNow, boolean modeOk, float mana, float manaPerSecond, float resumeMana,
+                                FlySettings current, Speeds speeds, Gate gate, Ground ground) {
         List<Act> out = new ArrayList<>();
         if (on && !modeOk) {
             on = false;
@@ -167,6 +229,7 @@ final class BeltMachine {
         }
         boolean wasFlying = flying;
         flying = flyingNow;
+        gateStep(dt, wasFlying, flyingNow, gate, ground);
         if (armed) {
             if (flyingNow) {
                 if (mana <= EMPTY) {
@@ -195,14 +258,110 @@ final class BeltMachine {
             armed = true;
             out.add(new Act(Kind.LOG, null, 0f, "armed: Mana is back"));
         }
-        FlySettings want = armed ? new FlySettings(Fly.ALLOWED, speeds.horizontal(), speeds.vertical())
+        boolean allow = armed && (gate.off() || gateOpen);
+        FlySettings want = allow ? new FlySettings(Fly.ALLOWED, speeds.horizontal(), speeds.vertical())
                 : new FlySettings(Fly.DISABLED, snapshot.horizontal(), snapshot.vertical());
         if (!want.equals(pushed)) {
+            boolean byGate = armed && !gate.off() && !flyingNow;
+            if (byGate && allow) {
+                openMs = ground.nowMs();
+                openTick = ground.tick();
+                out.add(new Act(Kind.LOG, null, 0f, String.format(java.util.Locale.ROOT,
+                        "gate open (%s): jump start tick %d ms %d, push at tick %d ms %d (+%d ticks, +%d ms); window %.2f s",
+                        gate.mode() == GateMode.AFTER_JUMP ? "afterJump" : "groundOpen", lastJumpTick, lastJumpMs, ground.tick(), ground.nowMs(),
+                        ground.tick() - lastJumpTick, ground.nowMs() - lastJumpMs, gate.window())));
+            } else if (byGate) {
+                out.add(new Act(Kind.LOG, null, 0f, String.format(java.util.Locale.ROOT, "gate closed (%s): push at tick %d ms %d; window %.2f s",
+                        gate.mode() == GateMode.AFTER_JUMP ? "afterJump" : "groundOpen", ground.tick(), ground.nowMs(), gate.window())));
+            }
             pushed = want;
             pushes++;
             out.add(new Act(Kind.PUSH, want, 0f, null));
         }
         return out;
+    }
+
+    private void resetGate() {
+        gateInit = false;
+        prevJumping = false;
+        sinceGround = 0f;
+        groundTime = 0f;
+        closeAt = -1f;
+        latched = false;
+        gateOpen = false;
+    }
+
+    /**
+     * One tick of the tap gate (state only; the push comes from the settings that should be in force). A jump start is the jumping flag
+     * rising while the player is not flying and was not flying a tick ago, on the ground or just off it. AFTER_JUMP: the gate opens at a jump
+     * start and closes {@code window} seconds later (another jump start restarts the timer, no extra push). GROUND_OPEN: the gate is open
+     * after {@code reopen} seconds of ground contact (at switch-on: if the player stands), closes {@code window} seconds after a jump start
+     * and stays closed until the ground contact has lasted {@code reopen} again. Flying keeps the gate open; when flight ends it is closed.
+     */
+    private void gateStep(float dt, boolean wasFlying, boolean flyingNow, Gate gate, Ground g) {
+        clock += dt;
+        boolean jumpEdge = g.jumping() && !prevJumping;
+        prevJumping = g.jumping();
+        if (!gateInit) {
+            gateInit = true;
+            latched = !g.onGround();
+            groundTime = g.onGround() ? gate.reopen() : 0f;
+            sinceGround = g.onGround() ? 0f : JUMP_GROUND_SLACK + 1f;
+        } else {
+            groundTime = g.onGround() ? groundTime + dt : 0f;
+            sinceGround = g.onGround() ? 0f : sinceGround + dt;
+        }
+        boolean jumpStart = jumpEdge && !flyingNow && !wasFlying && (g.onGround() || sinceGround <= JUMP_GROUND_SLACK);
+        if (flyingNow && !wasFlying) {
+            if (!gate.off() && gateOpen) {
+                flightsInWindow++;
+            }
+            float gap = lastJumpClock < 0f ? Float.MAX_VALUE : clock - lastJumpClock;
+            if (gap > (gate.off() ? DEFAULT_GAP : gate.window())) {
+                flightsWithGap++;
+            }
+        }
+        if (jumpStart) {
+            lastJumpClock = clock;
+            lastJumpMs = g.nowMs();
+            lastJumpTick = g.tick();
+        }
+        boolean before = gateOpen;
+        if (gate.off()) {
+            gateOpen = true;
+            closeAt = -1f;
+            latched = false;
+        } else if (flyingNow) {
+            gateOpen = true;
+            closeAt = -1f;
+        } else {
+            if (wasFlying) {
+                closeAt = -1f;
+                latched = true;
+                groundTime = 0f;
+            }
+            if (gate.mode() == GateMode.AFTER_JUMP) {
+                if (jumpStart) {
+                    closeAt = clock + gate.window();
+                }
+                gateOpen = closeAt >= 0f && clock < closeAt - EPS;
+            } else {
+                if (jumpStart) {
+                    closeAt = clock + gate.window();
+                }
+                if (closeAt >= 0f && clock >= closeAt - EPS) {
+                    latched = true;
+                    closeAt = -1f;
+                }
+                if (latched && groundTime >= gate.reopen() - EPS) {
+                    latched = false;
+                }
+                gateOpen = !latched;
+            }
+        }
+        if (gateOpen && !before && !flyingNow && !gate.off()) {
+            windows++;
+        }
     }
 
     /** The belt went off: stop flight, put the settings back, once. */
@@ -217,6 +376,7 @@ final class BeltMachine {
         }
         snapshot = null;
         pushed = null;
+        resetGate();
         restorePending = false;
         snapshotTrusted = true;
         flying = false;

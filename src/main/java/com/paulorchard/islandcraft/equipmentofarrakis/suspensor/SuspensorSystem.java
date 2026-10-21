@@ -73,7 +73,8 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
         Power power = Power.get();
         float mana = power == null ? Float.MAX_VALUE : power.get(buffer, ref);
         List<BeltMachine.Act> acts = machine.tick(dt, states.flying, who.getGameMode() == GameMode.Adventure, mana, (float) config.manaPerSecond(),
-                (float) config.resumeMana(), Suspensors.read(manager.getSettings()), Suspensors.speeds());
+                (float) config.resumeMana(), Suspensors.read(manager.getSettings()), Suspensors.speeds(), Suspensors.gate(),
+                new BeltMachine.Ground(states.jumping, states.onGround, System.currentTimeMillis(), buffer.getExternalData().getWorld().getTick()));
         for (BeltMachine.Act act : acts) {
             carryOut(act, player, who, manager, ref, buffer, power, config);
         }
@@ -122,7 +123,13 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
                 }
             }
             case NEEDS_MANA -> Notice.say(player, "server.arrakis.suspensor.needsMana");
-            case LOG -> Suspensors.log(player.getUuid(), name, act.text().substring(0, Math.min(14, act.text().length())), act.text());
+            case LOG -> {
+                if (act.text().startsWith("gate ")) {
+                    Suspensors.logGate(name, act.text());
+                } else {
+                    Suspensors.log(player.getUuid(), name, act.text().substring(0, Math.min(14, act.text().length())), act.text());
+                }
+            }
         }
     }
 }

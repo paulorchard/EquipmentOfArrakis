@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FlightProbeTest {
 
     private static Sample s(long tick, long ms, boolean flying, boolean jumping, boolean crouching, boolean onGround, double y, double vy) {
-        return new Sample(tick, ms, 0.05f, flying, jumping, crouching, onGround, false, false, y, vy, "(0.00, 1.00, 0.00)", 80f, true);
+        return new Sample(tick, ms, 0.05f, flying, jumping, crouching, onGround, false, false, y, vy, "(0.00, 1.00, 0.00)", 80f, true, "OPEN (afterJump, window 0.35 s)");
     }
 
     @Test
@@ -42,6 +42,22 @@ class FlightProbeTest {
         String line = lines.stream().filter(l -> l.contains(" flying: flags ")).skip(2).findFirst().orElseThrow();
         assertTrue(line.contains("client vy 2.00") && line.contains("actual vy 2.00") && line.contains("wish (0.00, 1.00, 0.00)") && line.contains("Mana 80.0")
                 && line.contains("armed true"), line);
+    }
+
+    @Test
+    void aFlightStartLineGivesTheGapFromTheLastJumpStartAndTheGate() {
+        FlightProbe probe = new FlightProbe();
+        probe.observe(s(1, 1000, false, false, false, true, 64, 0));
+        probe.observe(s(2, 1050, false, true, false, false, 64.2, 5)); // jump start at ms 1050
+        probe.observe(s(3, 1100, false, true, false, false, 64.8, 4));
+        List<String> start = probe.observe(s(4, 1250, true, false, false, false, 65, 3));
+        String line = start.stream().filter(l -> l.contains("FLIGHT START")).findFirst().orElseThrow();
+        assertTrue(line.contains("gap from the last jump start 200 ms (2 ticks)") && line.contains("gate OPEN (afterJump, window 0.35 s)") && line.contains("onGround false"), line);
+        // no jump seen before a flight: said, not invented
+        FlightProbe fresh = new FlightProbe();
+        fresh.observe(s(1, 1000, false, false, false, true, 64, 0));
+        String none = String.join("\n", fresh.observe(s(2, 1050, true, false, false, true, 64, 0)));
+        assertTrue(none.contains("n/a (no jump seen)"), none);
     }
 
     @Test

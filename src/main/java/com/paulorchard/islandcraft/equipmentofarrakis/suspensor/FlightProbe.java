@@ -14,7 +14,7 @@ final class FlightProbe {
 
     /** {@code wish}: the three wish movement numbers as text, or why they are not readable. */
     record Sample(long tick, long nowMs, float dt, boolean flying, boolean jumping, boolean crouching, boolean onGround, boolean falling,
-                  boolean fallingFar, double y, double clientVy, String wish, float mana, boolean armed) {
+                  boolean fallingFar, double y, double clientVy, String wish, float mana, boolean armed, String gate) {
     }
 
     static final long PERIOD_MS = 250;
@@ -23,6 +23,8 @@ final class FlightProbe {
     private double lastGroundY = Double.NaN;
     private long lastGroundMs = -1;
     private long nextPeriodic;
+    private long jumpMs = -1;
+    private long jumpTick = -1;
 
     /** The lines to log for this sample (none when nothing flipped and no period is due). */
     synchronized List<String> observe(Sample s) {
@@ -39,7 +41,17 @@ final class FlightProbe {
             flip(out, s, "onGround", last.onGround(), s.onGround());
             flip(out, s, "falling", last.falling(), s.falling());
             flip(out, s, "fallingFar", last.fallingFar(), s.fallingFar());
+            if (s.jumping() && !last.jumping()) {
+                jumpMs = s.nowMs();
+                jumpTick = s.tick();
+            }
+            if (s.flying() && !last.flying()) {
+                out.add(String.format(Locale.ROOT, "tick %d ms %d FLIGHT START: gap from the last jump start %s, gate %s, onGround %s, since onGround %s, height %s",
+                        s.tick(), s.nowMs(), jumpMs < 0 ? "n/a (no jump seen)" : (s.nowMs() - jumpMs) + " ms (" + (s.tick() - jumpTick) + " ticks)", s.gate(),
+                        s.onGround(), sinceGround(s), height(s)));
+            }
         } else {
+            jumpMs = -1;
             out.add(String.format(Locale.ROOT, "tick %d ms %d probe started: flags %s, y %.2f", s.tick(), s.nowMs(), flags(s), s.y()));
             nextPeriodic = s.nowMs();
         }

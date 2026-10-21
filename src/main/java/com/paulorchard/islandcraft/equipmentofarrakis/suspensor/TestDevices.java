@@ -108,7 +108,7 @@ final class TestDevices {
             long tick = buffer.getExternalData().getWorld().getTick();
             List<String> lines = probe.observe(new FlightProbe.Sample(tick, now, dt, states.flying, states.jumping, states.crouching, states.onGround,
                     states.falling, states.fallingFar, y, clientVy, wish(chunk.getComponent(index, PlayerInput.getComponentType())), mana,
-                    machine != null && machine.armed()));
+                    machine != null && machine.armed(), gateText(machine)));
             for (String line : lines) {
                 Suspensors.logTest(player.getUsername(), "probe", line);
             }
@@ -136,6 +136,21 @@ final class TestDevices {
         if (probe == null && RIGS.get(id) == null) {
             PREVIOUS_Y.remove(id);
         }
+    }
+
+    /** The gate as the probe prints it at a flight start: the state the client had (the machine has not ticked yet), the mode and the last window. */
+    static String gateText(BeltMachine machine) {
+        BeltMachine.Gate gate = Suspensors.gate();
+        if (machine == null) {
+            return "n/a (no belt)";
+        }
+        if (gate.off()) {
+            return "off (TapWindow 0, fly Allowed whenever armed)";
+        }
+        BeltMachine.GateInfo info = machine.gate();
+        return (info.open() ? "OPEN" : "CLOSED") + " (" + (gate.mode() == BeltMachine.GateMode.AFTER_JUMP ? "afterJump" : "groundOpen") + ", window " + gate.window()
+                + " s); last window: jump tick " + info.jumpTick() + " ms " + info.jumpMs() + " -> push tick " + info.openTick() + " ms " + info.openMs() + " (+"
+                + (info.openTick() - info.jumpTick()) + " ticks, +" + (info.openMs() - info.jumpMs()) + " ms)";
     }
 
     /**

@@ -57,6 +57,26 @@ class SuspensorAssetsTest {
     }
 
     @Test
+    void theTapGateSettingsHaveTheirDefaultsAreReadAndTunedLive() throws IOException {
+        SuspensorConfig c = new SuspensorConfig();
+        assertEquals(0.35, c.tapWindow());
+        assertEquals(BeltMachine.GateMode.AFTER_JUMP, c.tapMode());
+        assertEquals(1.2, c.reopenSeconds());
+        assertEquals(0.35, read("{\"HorizontalSpeed\":0.5}").tapWindow(), "an old file without the keys gets the gate defaults");
+        SuspensorConfig r = read("{\"TapWindow\":0.5,\"TapMode\":\"groundOpen\",\"ReopenSeconds\":2}");
+        assertEquals(0.5, r.tapWindow());
+        assertEquals(BeltMachine.GateMode.GROUND_OPEN, r.tapMode());
+        assertEquals(2.0, r.reopenSeconds());
+        c.setWindow(0, null, null);
+        assertEquals(0.0, c.tapWindow());
+        assertEquals(BeltMachine.GateMode.AFTER_JUMP, c.tapMode(), "no mode given: unchanged");
+        c.setWindow(0.25, "GROUNDOPEN", 1.0);
+        assertEquals(BeltMachine.GateMode.GROUND_OPEN, c.tapMode());
+        assertEquals(1.0, c.reopenSeconds());
+        assertTrue(SuspensorConfig.CODEC.encode(c, new ExtraInfo()).toString().contains("groundOpen"));
+    }
+
+    @Test
     void theNewKeysAreReadAsPlainTopLevelKeys() throws IOException {
         SuspensorConfig c = read("{\"HorizontalSpeed\":1.5,\"VerticalSpeed\":0.75,\"ManaPerSecond\":2,\"ResumeMana\":8,\"Hum\":false}");
         assertEquals(1.5, c.horizontalSpeed());
@@ -122,7 +142,7 @@ class SuspensorAssetsTest {
         String lang = text("/Server/Languages/en-US/server.lang");
         for (String key : new String[] {"customUI.arrakisPicker.suspensor = Suspensor Belt", "arrakis.suspensor.ready = Suspensor Belt ready: double-tap Space to fly.",
                 "arrakis.suspensor.needsMana = The belt needs Mana.", "arrakis.suspensor.creative = ", "commands.arrakis.suspensor.state.desc",
-                "commands.arrakis.suspensor.set.desc", "commands.arrakis.suspensor.off.desc", "commands.arrakis.suspensor.probe.desc", "commands.arrakis.suspensor.push.desc", "commands.arrakis.suspensor.desc"}) {
+                "commands.arrakis.suspensor.set.desc", "commands.arrakis.suspensor.off.desc", "commands.arrakis.suspensor.window.desc", "commands.arrakis.suspensor.probe.desc", "commands.arrakis.suspensor.push.desc", "commands.arrakis.suspensor.desc"}) {
             assertTrue(lang.contains(key), "missing " + key);
         }
         assertFalse(lang.contains("Arrakis_Lab_"));
