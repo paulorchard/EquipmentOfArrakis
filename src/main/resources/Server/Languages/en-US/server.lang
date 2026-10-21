@@ -150,10 +150,12 @@ arrakis.thumper.noRoom = There is no room to plant it there.
 arrakis.thumper.occupied = A Thumper is already there.
 
 # ---- suspensor
-commands.arrakis.suspensor.desc = Suspensor Belt: state, set, off
+commands.arrakis.suspensor.desc = Suspensor Belt: state, set, off (test devices: probe, push)
 commands.arrakis.suspensor.state.desc = Show your belt: on or off, armed, flying, Mana, the speeds and cost in force
 commands.arrakis.suspensor.set.desc = Tune the belt live (saved): arrakis suspensor set <horizontal> <vertical> [manaPerSecond]
 commands.arrakis.suspensor.off.desc = Turn your Suspensor Belt off
+commands.arrakis.suspensor.probe.desc = Test device: log the flags, speeds and wish movement of your flight: arrakis suspensor probe on|off
+commands.arrakis.suspensor.push.desc = Test device: a downward velocity while you fly: arrakis suspensor push <y> [resistance] | hold <y> <everyTicks> [resistance] | off
 customUI.arrakisPicker.suspensor = Suspensor Belt
 arrakis.suspensor.ready = Suspensor Belt ready: double-tap Space to fly.
 arrakis.suspensor.needsMana = The belt needs Mana.

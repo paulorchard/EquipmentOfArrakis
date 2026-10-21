@@ -61,6 +61,7 @@ public final class SuspensorModule implements EquipmentModule {
                     if (machine != null) {
                         machine.reset();
                     }
+                    TestDevices.cancelPush(uuid); // TEST DEVICE: death, respawn, world change: the push ends with a CLEAR
                 }));
         ctx.system(new SuspensorSystem());
         ctx.events().registerGlobal(PlayerDisconnectEvent.class, event -> Suspensors.forget(event.getPlayerRef().getUuid()));
@@ -82,6 +83,7 @@ public final class SuspensorModule implements EquipmentModule {
             if (machine != null) {
                 machine.switchOff();
             }
+            TestDevices.cancelPush(id); // TEST DEVICE
             return;
         }
         Player who = store.getComponent(ref, Player.getComponentType());

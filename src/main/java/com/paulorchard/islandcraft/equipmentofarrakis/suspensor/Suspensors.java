@@ -45,6 +45,7 @@ final class Suspensors {
 
     static void forget(UUID player) {
         MACHINES.remove(player);
+        TestDevices.forget(player); // TEST DEVICE
         LAST_LOG.keySet().removeIf(key -> key.startsWith(player + "|"));
     }
 
@@ -80,6 +81,14 @@ final class Suspensors {
         };
         settings.horizontalFlySpeed = fly.horizontal();
         settings.verticalFlySpeed = fly.vertical();
+    }
+
+    /** TEST DEVICE: an INFO line of the probe or the push test, never throttled (the timestamps are in the text). */
+    static void logTest(String name, String kind, String text) {
+        HytaleLogger log = logger;
+        if (log != null) {
+            log.at(Level.INFO).log("Suspensor %s [%s]: %s", kind, name, text);
+        }
     }
 
     /** An INFO line, at most one a second per player. */

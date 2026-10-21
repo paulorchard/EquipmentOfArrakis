@@ -84,6 +84,15 @@ The server log only says "Crash"; the real message is in the client log, `%APPDA
       `PlayerReadyEvent` gives only a `Ref`, `AddPlayerToWorldEvent` a holder. `Player.setFlying(ref, boolean, accessor)` starts or stops flying, pushes settings and flag and restores the default fly mode when stopping. A saved stack of a removed item decodes fine and is kept as `Item.UNKNOWN`.
     - **Decision.** Floating down is parked until the engine or the client allows it. The belt is only what works: the double tap flight with a Mana cost.
 
+14. **The descent proofs (prompt 22): what was settled by reading, and what the client trials must answer.** The goal is an automatic descent in belt flight. The proofs are the TEST DEVICES `suspensor probe` and `suspensor push` (MODULES.md); the belt is unchanged.
+    - **Read from the code (confirmed):** the belt never reads `onGround`, vertical speed or a key, and sends no velocity, so a player can stand on the ground still "flying" and paying; the old ground exit came from the forced flight of the Mk I build, not from double tap flight. The server cannot press a key for the player:
+      movement is client-owned (`ClientMovement` carries states, position and wish movement); the server levers are `UpdateMovementSettings`, `ChangeVelocity`, `ClientTeleport` and `SetMovementStates` (only the flying flag). The server `PlayerInput` queue is the server's copy of what the client reported, so writing crouching there does not make the client sink.
+      The stand-in for pressing crouch is an external downward velocity, `Velocity.addInstruction((0, y, 0), VelocityConfig, Set)`, refreshed at a low rate.
+    - **Correction to the brief:** "no decay" is resistance **1.0**, not 0 (rule 13: per-step multipliers; 0 removes the velocity at once). The push test therefore defaults to 1.0 for ground, air and both Max values and has `default` for `new VelocityConfig()` (0.82 / 0.96).
+    - **Wish movement:** reaches the server as `PlayerInput.WishMovement(x, y, z)` in `getMovementUpdateQueue()`; whether the queue still holds it when `SuspensorSystem` runs is not known until a client runs (the probe says `n/a (input queue empty at this tick)` if it does not).
+    - **To be filled in from the client trials (sheet items 28 and 29), not guessed:** onGround and flying on landing in belt flight; the numbers per case for jumping, crouching, wish movement and the two vertical speeds, and the "asking to go up" rule; whether a single push -2 holds, decays or drifts; which refresh rate (2, 5, 10 ticks) is steady and its packets a second;
+      what Space and crouch do while the push runs; which downward speed feels like gravity, against a held crouch at `VerticalSpeed` 2; what is left after `push off`.
+
 ## Tried and abandoned
 
 - **Flame Cutter and Flame Beam Cutter (the experiments module).** A flamethrower-style tool and a beam tool with a calibration rig (about 17 `exp cal` commands, particles, a measured angle unit) to place a

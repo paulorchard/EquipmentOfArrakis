@@ -54,7 +54,7 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
         }
         UUID id = player.getUuid();
         BeltMachine machine = Suspensors.peek(id);
-        if (machine == null) {
+        if (machine == null && !TestDevices.any(id)) {
             return;
         }
         Ref<EntityStore> ref = chunk.getReferenceTo(index);
@@ -65,6 +65,10 @@ final class SuspensorSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
         MovementStates states = statesComponent.getMovementStates();
+        TestDevices.tick(dt, index, chunk, buffer, player, ref, states, machine); // TEST DEVICE: the probe and the push test; the belt below is unchanged
+        if (machine == null) {
+            return;
+        }
         SuspensorConfig config = Suspensors.config();
         Power power = Power.get();
         float mana = power == null ? Float.MAX_VALUE : power.get(buffer, ref);

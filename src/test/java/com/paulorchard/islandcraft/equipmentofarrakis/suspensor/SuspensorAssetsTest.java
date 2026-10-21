@@ -34,11 +34,26 @@ class SuspensorAssetsTest {
     @Test
     void theDefaultsAreTheBeltsNewNumbers() {
         SuspensorConfig c = new SuspensorConfig();
-        assertEquals(0.5, c.horizontalSpeed());
-        assertEquals(0.5, c.verticalSpeed());
+        assertEquals(2.0, c.horizontalSpeed());
+        assertEquals(2.0, c.verticalSpeed());
         assertEquals(10.0, c.manaPerSecond());
         assertEquals(5.0, c.resumeMana());
         assertTrue(c.hum());
+    }
+
+    @Test
+    void aSavedFileKeepsItsNumbersAndOnlyAFreshFileGetsTheNewDefaults() throws IOException {
+        // the numbers the 0.5 build saved stay (the defaults change fresh files only)
+        SuspensorConfig saved = read("{\"HorizontalSpeed\":0.5,\"VerticalSpeed\":0.5,\"ManaPerSecond\":10.0,\"ResumeMana\":5.0,\"Hum\":true}");
+        assertEquals(0.5, saved.horizontalSpeed());
+        assertEquals(0.5, saved.verticalSpeed());
+        assertEquals(10.0, saved.manaPerSecond());
+        // a file with only some keys: the missing ones take the defaults
+        SuspensorConfig partial = read("{\"HorizontalSpeed\":0.75}");
+        assertEquals(0.75, partial.horizontalSpeed());
+        assertEquals(2.0, partial.verticalSpeed());
+        assertEquals(6.0, new SuspensorConfig().pushCap(), "TEST DEVICE: the push cap default");
+        assertEquals(3.0, read("{\"PushCap\":3}").pushCap());
     }
 
     @Test
@@ -56,12 +71,12 @@ class SuspensorAssetsTest {
         // what the 0.3.x build saved: Mk3/Mk2/Mk1 sections, ManaPerSecond 1
         SuspensorConfig c = read("{\"Mk3\":{\"HorizontalSpeed\":1.0,\"VerticalSpeed\":1.0},\"Mk2\":{\"HorizontalSpeed\":1.0,\"VerticalSpeed\":0.0},"
                 + "\"Mk1\":{\"Route\":\"glider\",\"GliderTrigger\":\"falling\",\"Signal\":\"pulse\"},\"ManaPerSecond\":1.0,\"ResumeMana\":5.0,\"Hum\":true}");
-        assertEquals(0.5, c.horizontalSpeed(), "the old 1.0 speeds lived under Mk3 and are not carried over");
-        assertEquals(0.5, c.verticalSpeed());
+        assertEquals(2.0, c.horizontalSpeed(), "the old 1.0 speeds lived under Mk3 and are not carried over");
+        assertEquals(2.0, c.verticalSpeed());
         assertEquals(10.0, c.manaPerSecond(), "the old 1 Mana is not carried over");
         assertEquals(5.0, c.resumeMana());
         // the very first build had a text placeholder under Mk1
-        assertEquals(0.5, read("{\"Mk1\":\"experimental\",\"Mk2\":\"x\"}").horizontalSpeed());
+        assertEquals(2.0, read("{\"Mk1\":\"experimental\",\"Mk2\":\"x\"}").horizontalSpeed());
     }
 
     @Test
@@ -107,7 +122,7 @@ class SuspensorAssetsTest {
         String lang = text("/Server/Languages/en-US/server.lang");
         for (String key : new String[] {"customUI.arrakisPicker.suspensor = Suspensor Belt", "arrakis.suspensor.ready = Suspensor Belt ready: double-tap Space to fly.",
                 "arrakis.suspensor.needsMana = The belt needs Mana.", "arrakis.suspensor.creative = ", "commands.arrakis.suspensor.state.desc",
-                "commands.arrakis.suspensor.set.desc", "commands.arrakis.suspensor.off.desc", "commands.arrakis.suspensor.desc"}) {
+                "commands.arrakis.suspensor.set.desc", "commands.arrakis.suspensor.off.desc", "commands.arrakis.suspensor.probe.desc", "commands.arrakis.suspensor.push.desc", "commands.arrakis.suspensor.desc"}) {
             assertTrue(lang.contains(key), "missing " + key);
         }
         assertFalse(lang.contains("Arrakis_Lab_"));
